@@ -1,0 +1,86 @@
+<div class="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="w-full max-w-md space-y-8">
+    <div class="text-center">
+      <img src={~p"/images/logo.svg"} width="72" class="mx-auto" />
+      <h2 class="mt-6 text-3xl font-bold tracking-tight">
+        Sign in to Hermes
+      </h2>
+      <p class="mt-2 text-sm text-gray-600">
+        Team Request Management System
+      </p>
+    </div>
+
+    <form action={~p"/login"} method="post" class="mt-8 space-y-6">
+      <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+
+      <div class="space-y-4">
+        <div>
+          <label for="user_email" class="block text-sm font-medium leading-6">
+            Email address
+          </label>
+          <div class="mt-2">
+            <input
+              type="email"
+              name="user[email]"
+              id="user_email"
+              required
+              autocomplete="email"
+              placeholder="user@example.com"
+              class="input input-bordered w-full"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="user_password" class="block text-sm font-medium leading-6">
+            Password
+          </label>
+          <div class="mt-2">
+            <input
+              type="password"
+              name="user[password]"
+              id="user_password"
+              required
+              autocomplete="current-password"
+              class="input input-bordered w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          class="btn btn-primary w-full"
+        >
+          Sign in
+        </button>
+      </div>
+    </form>
+
+    <div class="mt-8 border-t border-base-300 pt-6">
+      <h3 class="text-sm font-semibold mb-3">Demo Accounts:</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between items-center">
+          <span class="font-medium">Development Team:</span>
+          <code class="text-xs bg-base-200 px-2 py-1 rounded">dev@hermes.com / dev123</code>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-medium">Marketing Team:</span>
+          <code class="text-xs bg-base-200 px-2 py-1 rounded">marketing@hermes.com / marketing123</code>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-medium">Sales Team:</span>
+          <code class="text-xs bg-base-200 px-2 py-1 rounded">sales@hermes.com / sales123</code>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-medium">HR Team:</span>
+          <code class="text-xs bg-base-200 px-2 py-1 rounded">hr@hermes.com / hr123</code>
+        </div>
+      </div>
+      <p class="mt-4 text-xs opacity-60">
+        Note: This is an MVP with simplified authentication for demonstration purposes.
+      </p>
+    </div>
+  </div>
+</div>

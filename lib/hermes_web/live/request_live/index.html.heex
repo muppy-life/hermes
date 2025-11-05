@@ -1,0 +1,136 @@
+<div class="sticky top-0 z-10 bg-base-100 py-2">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">Team Requests</h1>
+    <.link navigate={~p"/requests/new"}>
+      <button class="btn btn-primary btn-sm">New Request</button>
+    </.link>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-base-100 shadow-sm border border-base-300 rounded-lg p-3 mt-2 sticky top-12 z-10">
+  <div class="flex items-center justify-between gap-3">
+    <form phx-change="apply_filters" class="flex-1">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <!-- Status Filter -->
+        <select class="select select-bordered select-sm" name="status">
+          <option value="all" selected={@filter_status == "all"}>All Statuses</option>
+          <option value="pending" selected={@filter_status == "pending"}>Pending</option>
+          <option value="in_progress" selected={@filter_status == "in_progress"}>In Progress</option>
+          <option value="completed" selected={@filter_status == "completed"}>Completed</option>
+          <option value="blocked" selected={@filter_status == "blocked"}>Blocked</option>
+        </select>
+
+        <!-- Priority Filter -->
+        <select class="select select-bordered select-sm" name="priority">
+          <option value="all" selected={@filter_priority == "all"}>All Priorities</option>
+          <option value="4" selected={@filter_priority == "4"}>Critical</option>
+          <option value="3" selected={@filter_priority == "3"}>Important</option>
+          <option value="2" selected={@filter_priority == "2"}>Normal</option>
+          <option value="1" selected={@filter_priority == "1"}>Low</option>
+        </select>
+
+        <!-- Team Filter -->
+        <select class="select select-bordered select-sm" name="team">
+          <option value="all" selected={@filter_team == "all"}>All Teams</option>
+          <%= for team <- @teams do %>
+            <option value={team.id} selected={@filter_team == to_string(team.id)}><%= team.name %></option>
+          <% end %>
+        </select>
+
+        <!-- Clear Filters Button -->
+        <button type="button" phx-click="clear_filters" class="btn btn-outline btn-sm">
+          Clear
+        </button>
+      </div>
+    </form>
+
+    <!-- Item Count -->
+    <div class="text-sm opacity-70 whitespace-nowrap">
+      <%= length(@requests) %> items
+    </div>
+  </div>
+</div>
+
+<div class="max-h-[calc(100vh-200px)] overflow-y-auto mt-2">
+  <!-- Table Headers -->
+  <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px] gap-3 text-sm font-semibold">
+    <div class="opacity-70">#</div>
+    <button phx-click="sort" phx-value-by="kind" class="flex items-center gap-1 hover:text-primary text-left">
+      Type
+      <%= if @sort_by == :kind do %>
+        <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+      <% end %>
+    </button>
+    <button phx-click="sort" phx-value-by="title" class="flex items-center gap-1 hover:text-primary text-left">
+      Title
+      <%= if @sort_by == :title do %>
+        <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+      <% end %>
+    </button>
+    <button phx-click="sort" phx-value-by="priority" class="flex items-center gap-1 hover:text-primary text-left">
+      Priority
+      <%= if @sort_by == :priority do %>
+        <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+      <% end %>
+    </button>
+    <button phx-click="sort" phx-value-by="status" class="flex items-center gap-1 hover:text-primary text-left">
+      Status
+      <%= if @sort_by == :status do %>
+        <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+      <% end %>
+    </button>
+    <button phx-click="sort" phx-value-by="requesting_team_id" class="flex items-center gap-1 hover:text-primary text-left">
+      Requesting Team
+      <%= if @sort_by == :requesting_team_id do %>
+        <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+      <% end %>
+    </button>
+    <button phx-click="sort" phx-value-by="assigned_to_team_id" class="flex items-center gap-1 hover:text-primary text-left">
+      Assigned To
+      <%= if @sort_by == :assigned_to_team_id do %>
+        <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+      <% end %>
+    </button>
+    <button phx-click="sort" phx-value-by="updated_at" class="flex items-center gap-1 hover:text-primary text-left">
+      Updated
+      <%= if @sort_by == :updated_at do %>
+        <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+      <% end %>
+    </button>
+  </div>
+
+  <!-- Card-style Rows -->
+  <div class="space-y-2 mt-2">
+    <%= for {request, index} <- Enum.with_index(@requests, 1) do %>
+      <div
+        class="bg-base-100 rounded-lg shadow-md border border-base-300 hover:shadow-xl hover:border-primary transition-all cursor-pointer p-4 overflow-visible"
+        phx-click="view_request"
+        phx-value-id={request.id}
+      >
+        <div class="grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px] gap-3 items-center">
+          <div class="opacity-60 text-sm"><%= index %></div>
+          <div><.kind_badge kind={request.kind} size="sm" /></div>
+          <div class="font-medium relative group w-[300px]">
+            <span class="block truncate w-full"><%= request.title %></span>
+            <div class="absolute left-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 delay-500 z-[100] bg-base-300 text-base-content px-3 py-2 rounded-lg shadow-xl border border-base-300 min-w-max max-w-md whitespace-normal break-words pointer-events-none">
+              <%= request.title %>
+            </div>
+          </div>
+          <div><.priority_badge priority={request.priority} size="sm" /></div>
+          <div><.status_badge status={request.status} size="sm" /></div>
+          <div class="text-sm truncate"><%= request.requesting_team.name %></div>
+          <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: "Unassigned" %></div>
+          <div class="text-sm opacity-70"><%= Calendar.strftime(request.updated_at, "%b %d, %Y") %></div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%= if Enum.empty?(@requests) do %>
+  <div class="text-center py-12 opacity-60">
+    <p class="text-lg">No requests found matching your filters.</p>
+    <button phx-click="clear_filters" class="btn btn-link">Clear filters</button>
+  </div>
+<% end %>

@@ -1,0 +1,246 @@
+<.header>
+  Request Details
+  <:subtitle><%= @request.title %></:subtitle>
+  <:actions>
+    <.link navigate={~p"/requests"}>
+      <.button class="btn btn-ghost">Back to Requests</.button>
+    </.link>
+    <.button phx-click="open_edit_modal" class="btn btn-primary">
+      Edit Request
+    </.button>
+    <.button phx-click="open_delete_modal" class="btn btn-error">
+      Delete Request
+    </.button>
+  </:actions>
+</.header>
+
+<div class="mt-8 space-y-4">
+  <!-- Basic Information Card -->
+  <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
+    <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">Basic Information</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold">Status</span>
+          </label>
+          <.status_badge status={@request.status} size="lg" />
+        </div>
+
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold">Priority</span>
+          </label>
+          <.priority_badge priority={@request.priority} size="lg" />
+        </div>
+
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold">Requesting Team</span>
+          </label>
+          <p class="text-base"><%= @request.requesting_team.name %></p>
+        </div>
+
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold">Assigned To</span>
+          </label>
+          <p class="text-base">
+            <%= if @request.assigned_to_team do %>
+              <%= @request.assigned_to_team.name %>
+            <% else %>
+              <span class="opacity-60">Not assigned yet</span>
+            <% end %>
+          </p>
+        </div>
+
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold">Created By</span>
+          </label>
+          <p class="text-base"><%= @request.created_by.email %></p>
+        </div>
+
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold">Created At</span>
+          </label>
+          <p class="text-base"><%= Calendar.strftime(@request.inserted_at, "%B %d, %Y at %I:%M %p") %></p>
+        </div>
+      </div>
+  </div>
+
+  <!-- Request Type Card -->
+  <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
+    <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">Request Type</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <%= if @request.kind do %>
+          <div>
+            <label class="label">
+              <span class="label-text font-semibold">Kind of Request</span>
+            </label>
+            <.kind_badge kind={@request.kind} size="lg" />
+          </div>
+        <% end %>
+
+        <%= if @request.target_user_type do %>
+          <div>
+            <label class="label">
+              <span class="label-text font-semibold">Target User</span>
+            </label>
+            <p class="text-base"><%= Hermes.Requests.Request.target_user_label(@request.target_user_type) %></p>
+          </div>
+        <% end %>
+
+        <%= if @request.goal_target do %>
+          <div>
+            <label class="label">
+              <span class="label-text font-semibold">Expected Output Type</span>
+            </label>
+            <span class="badge badge-lg badge-info">
+              <%= Hermes.Requests.Request.goal_target_label(@request.goal_target) %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+  </div>
+
+  <!-- Current Situation Card -->
+  <%= if @request.current_situation do %>
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
+      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">Current Situation</h2>
+      <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.current_situation %></p>
+    </div>
+  <% end %>
+
+  <!-- Goal Description Card -->
+  <%= if @request.goal_description do %>
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
+      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">Goal Description</h2>
+      <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.goal_description %></p>
+    </div>
+  <% end %>
+
+  <!-- Data Description Card -->
+  <%= if @request.data_description && @request.data_description != "" do %>
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
+      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">Data Type Description</h2>
+      <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.data_description %></p>
+    </div>
+  <% end %>
+
+  <!-- Expected Output Card -->
+  <%= if @request.expected_output do %>
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
+      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">Expected Output</h2>
+      <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.expected_output %></p>
+    </div>
+  <% end %>
+
+  <!-- Legacy Description (if exists) -->
+  <%= if @request.description && @request.description != "" do %>
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
+      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">Description</h2>
+      <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.description %></p>
+    </div>
+  <% end %>
+</div>
+
+<!-- Edit Modal -->
+<%= if @show_edit_modal do %>
+  <div class="modal modal-open">
+    <div class="modal-box max-w-3xl">
+      <h3 class="font-bold text-lg mb-4">Edit Request</h3>
+
+      <.form for={@form} id="edit-request-form" phx-change="validate" phx-submit="save">
+        <div class="space-y-4 max-h-[60vh] overflow-y-auto">
+          <.input field={@form[:title]} type="text" label="Title" />
+          <.input field={@form[:description]} type="textarea" label="Description" />
+
+          <.input
+            field={@form[:kind]}
+            type="select"
+            label="Kind of Request"
+            prompt="Choose a kind"
+            options={[
+              {"Problem with current app or service", :problem},
+              {"New need", :new_need},
+              {"Improvement suggestion", :improvement}
+            ]}
+          />
+
+          <.input
+            field={@form[:target_user_type]}
+            type="select"
+            label="Target User"
+            prompt="Choose target user"
+            options={[
+              {"Internal user (company team)", :internal},
+              {"External user (client, provider)", :external}
+            ]}
+          />
+
+          <.input field={@form[:current_situation]} type="textarea" label="Current Situation" />
+          <.input field={@form[:goal_description]} type="textarea" label="Goal Description" />
+          <.input field={@form[:data_description]} type="textarea" label="Data Type Description (optional)" />
+
+          <.input
+            field={@form[:goal_target]}
+            type="select"
+            label="Expected Output Type"
+            prompt="Choose output type"
+            options={[
+              {"Interface / View", :interface_view},
+              {"Report File", :report_file},
+              {"Alert / Message / Communication", :alert_message}
+            ]}
+          />
+
+          <.input field={@form[:expected_output]} type="textarea" label="Expected Output" />
+
+          <.input
+            field={@form[:priority]}
+            type="select"
+            label="Priority"
+            prompt="Choose a priority"
+            options={[{"Low", 1}, {"Normal", 2}, {"Important", 3}, {"Critical", 4}]}
+          />
+          <.input
+            field={@form[:status]}
+            type="select"
+            label="Status"
+            prompt="Choose a status"
+            options={[{"Pending", "pending"}, {"In Progress", "in_progress"}, {"Completed", "completed"}, {"Blocked", "blocked"}]}
+          />
+          <.input
+            field={@form[:assigned_to_team_id]}
+            type="select"
+            label="Assign To Team"
+            prompt="Choose a team (optional)"
+            options={Enum.map(@teams, &{&1.name, &1.id})}
+          />
+        </div>
+
+        <div class="modal-action">
+          <button type="button" phx-click="close_edit_modal" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary" phx-disable-with="Saving...">Save Changes</button>
+        </div>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
+<!-- Delete Confirmation Modal -->
+<%= if @show_delete_modal do %>
+  <div class="modal modal-open">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Confirm Delete</h3>
+      <p class="py-4">Are you sure you want to delete this request? This action cannot be undone.</p>
+      <div class="modal-action">
+        <button type="button" phx-click="close_delete_modal" class="btn btn-ghost">Cancel</button>
+        <button type="button" phx-click="confirm_delete" class="btn btn-error">Delete</button>
+      </div>
+    </div>
+  </div>
+<% end %>

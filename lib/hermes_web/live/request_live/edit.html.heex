@@ -1,0 +1,56 @@
+<.header>
+  Edit Request
+  <:subtitle>Update request details</:subtitle>
+  <:actions>
+    <.link navigate={~p"/requests"}>
+      <.button>Back</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.form
+  for={@form}
+  id="request-form"
+  phx-change="validate"
+  phx-submit="save"
+>
+  <div class="space-y-4 mt-8">
+    <.input field={@form[:title]} type="text" label="Title" />
+    <.input field={@form[:description]} type="textarea" label="Description" />
+    <.input
+      field={@form[:priority]}
+      type="select"
+      label="Priority"
+      prompt="Choose a priority"
+      options={[{"1 - Lowest", 1}, {"2 - Low", 2}, {"3 - Medium", 3}, {"4 - High", 4}, {"5 - Highest", 5}]}
+    />
+    <.input
+      field={@form[:status]}
+      type="select"
+      label="Status"
+      prompt="Choose a status"
+      options={[{"Pending", "pending"}, {"In Progress", "in_progress"}, {"Completed", "completed"}, {"Blocked", "blocked"}]}
+    />
+    <.input
+      field={@form[:requesting_team_id]}
+      type="select"
+      label="Requesting Team"
+      prompt="Choose a team"
+      options={Enum.map(@teams, &{&1.name, &1.id})}
+    />
+    <.input
+      field={@form[:assigned_to_team_id]}
+      type="select"
+      label="Assign To Team"
+      prompt="Choose a team (optional)"
+      options={Enum.map(@teams, &{&1.name, &1.id})}
+    />
+  </div>
+
+  <div class="mt-6 flex items-center justify-end gap-x-6">
+    <.link navigate={~p"/requests"}>
+      <button type="button" class="text-sm font-semibold leading-6">Cancel</button>
+    </.link>
+    <.button type="submit" phx-disable-with="Saving...">Save Changes</.button>
+  </div>
+</.form>

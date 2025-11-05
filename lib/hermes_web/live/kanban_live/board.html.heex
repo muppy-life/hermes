@@ -1,0 +1,84 @@
+<div class="-mx-4 sm:-mx-6 lg:-mx-8">
+  <.header>
+    <%= @board.name %>
+    <:subtitle>Team: <%= @board.team.name %></:subtitle>
+    <:actions>
+      <.link navigate={~p"/boards"}>
+        <.button>Back to Boards</.button>
+      </.link>
+    </:actions>
+  </.header>
+
+  <div class="kanban-board mt-8 h-[calc(100vh-12rem)] relative">
+    <!-- Scroll indicator on left edge -->
+    <div id="scroll-indicator-left" class="absolute left-0 top-0 bottom-0 w-12 pointer-events-none z-10 flex items-center justify-center bg-gradient-to-r from-base-100 to-transparent transition-opacity duration-300 opacity-0">
+      <div class="opacity-40 animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Scroll indicator on right edge -->
+    <div id="scroll-indicator-right" class="absolute right-0 top-0 bottom-0 w-12 pointer-events-none z-10 flex items-center justify-center bg-gradient-to-l from-base-100 to-transparent transition-opacity duration-300">
+      <div class="opacity-40 animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+        </svg>
+      </div>
+    </div>
+
+    <div id="kanban-scroll-container" class="flex gap-4 overflow-x-auto pb-4 h-full" phx-hook="KanbanScroll">
+    <%= for column <- @board.columns do %>
+      <div class="kanban-column bg-base-200 rounded-lg p-4 min-w-[300px] flex-shrink-0 flex flex-col h-full">
+        <h3 class="font-semibold text-lg mb-4 flex-shrink-0"><%= column.name %></h3>
+        <div
+          id={"kanban-column-#{column.id}"}
+          class="kanban-cards space-y-2 overflow-y-auto flex-1"
+          data-column-id={column.id}
+        >
+          <%= for card <- column.cards do %>
+            <%= if card.request do %>
+              <.link navigate={~p"/requests/#{card.request.id}"} class="block">
+                <div
+                  class="kanban-card bg-base-100 rounded-lg shadow-md border border-base-300 p-4 cursor-pointer hover:shadow-xl hover:border-primary transition-all"
+                  data-card-id={card.id}
+                >
+                <!-- Request Title -->
+                <div class="font-semibold text-base mb-3"><%= card.request.title %></div>
+
+                <!-- Badges Row -->
+                <div class="flex items-center gap-2 flex-wrap mb-3">
+                  <.priority_badge priority={card.request.priority} size="sm" />
+                  <.status_badge status={card.request.status} size="sm" />
+                  <%= if card.request.kind do %>
+                    <.kind_badge kind={card.request.kind} size="sm" />
+                  <% end %>
+                </div>
+
+                <!-- Footer with Team Info -->
+                <div class="pt-3 border-t border-base-300 text-xs space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="opacity-60">
+                      <%= card.request.requesting_team.name %>
+                    </span>
+                    <%= if card.request.assigned_to_team do %>
+                      <span class="opacity-60">
+                        → <%= card.request.assigned_to_team.name %>
+                      </span>
+                    <% end %>
+                  </div>
+                  <div class="opacity-50 text-[10px]">
+                    Updated: <%= Calendar.strftime(card.request.updated_at, "%b %d, %Y %H:%M") %>
+                  </div>
+                </div>
+                </div>
+              </.link>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  </div>
+</div>

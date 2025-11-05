@@ -1,0 +1,120 @@
+<div class="mt-0">
+  <h2 class="text-2xl font-semibold mb-4">Statistics</h2>
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="bg-blue-100 rounded-lg p-6">
+      <div class="text-3xl font-bold text-blue-900"><%= @stats.total_requests %></div>
+      <div class="text-blue-700 mt-1">Total Requests</div>
+    </div>
+    <div class="bg-yellow-100 rounded-lg p-6">
+      <div class="text-3xl font-bold text-yellow-900"><%= @stats.pending %></div>
+      <div class="text-yellow-700 mt-1">Pending</div>
+    </div>
+    <div class="bg-purple-100 rounded-lg p-6">
+      <div class="text-3xl font-bold text-purple-900"><%= @stats.in_progress %></div>
+      <div class="text-purple-700 mt-1">In Progress</div>
+    </div>
+    <div class="bg-green-100 rounded-lg p-6">
+      <div class="text-3xl font-bold text-green-900"><%= @stats.completed %></div>
+      <div class="text-green-700 mt-1">Completed</div>
+    </div>
+    <div class="bg-red-100 rounded-lg p-6">
+      <div class="text-3xl font-bold text-red-900"><%= @stats.blocked %></div>
+      <div class="text-red-700 mt-1">Blocked</div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <div>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold">Recent Requests</h2>
+      <.link navigate={~p"/requests"} class="text-sm link link-primary">
+        View all →
+      </.link>
+    </div>
+    <%= if @recent_requests != [] do %>
+      <div class="space-y-3">
+        <%= for request <- @recent_requests do %>
+          <div class="card bg-base-100 shadow-md border border-base-300">
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <h3 class="card-title text-base"><%= request.title %></h3>
+                  <p class="text-sm opacity-70 mt-1">
+                    <%= if String.length(request.description) > 100 do %>
+                      <%= String.slice(request.description, 0..100) %>...
+                    <% else %>
+                      <%= request.description %>
+                    <% end %>
+                  </p>
+                  <p class="text-xs opacity-50 mt-2">
+                    Updated <%= Calendar.strftime(request.updated_at, "%b %d, %Y at %I:%M %p") %>
+                  </p>
+                </div>
+                <div class="flex flex-col items-end gap-2 ml-4">
+                  <.priority_badge priority={request.priority} size="sm" />
+                  <.status_badge status={request.status} size="sm" />
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="opacity-60">No requests yet.</p>
+    <% end %>
+  </div>
+
+  <div>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold">Your Boards</h2>
+      <.link navigate={~p"/boards"} class="text-sm link link-primary">
+        View all →
+      </.link>
+    </div>
+    <%= if @boards != [] do %>
+      <div class="space-y-4">
+        <%= for board <- @boards do %>
+          <.link navigate={~p"/boards/#{board}"} class="block">
+            <div class="card bg-base-100 shadow-md border border-base-300 hover:shadow-lg transition-shadow mb-4">
+              <div class="card-body p-4">
+                <h3 class="card-title text-base"><%= board.name %></h3>
+                <p class="text-sm opacity-70 mt-1">Team: <%= board.team.name %></p>
+
+                <!-- Task statistics -->
+                <div class="flex gap-3 mt-3 text-xs">
+                  <span class="flex items-center gap-1">
+                    <span class="font-semibold"><%= board.task_stats.total %></span>
+                    <span class="opacity-60">total</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-yellow-700">
+                    <span class="font-semibold"><%= board.task_stats.pending %></span>
+                    <span class="opacity-60">pending</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-blue-700">
+                    <span class="font-semibold"><%= board.task_stats.in_progress %></span>
+                    <span class="opacity-60">active</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-green-700">
+                    <span class="font-semibold"><%= board.task_stats.completed %></span>
+                    <span class="opacity-60">done</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-red-700">
+                    <span class="font-semibold"><%= board.task_stats.blocked %></span>
+                    <span class="opacity-60">blocked</span>
+                  </span>
+                </div>
+
+                <p class="text-xs opacity-50 mt-3">
+                  Updated <%= Calendar.strftime(board.updated_at, "%b %d, %Y at %I:%M %p") %>
+                </p>
+              </div>
+            </div>
+          </.link>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="opacity-60">No boards available.</p>
+    <% end %>
+  </div>
+</div>

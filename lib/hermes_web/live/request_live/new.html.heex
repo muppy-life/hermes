@@ -1,0 +1,249 @@
+<.header>
+  New Request
+  <:subtitle>Step <%= @current_step %> of 7</:subtitle>
+</.header>
+
+<!-- Progress Bar -->
+<div class="mt-8 mb-8">
+  <div class="flex justify-between mb-2">
+    <%= for {step, label} <- [
+      {1, "Kind"},
+      {2, "Priority"},
+      {3, "Target User"},
+      {4, "Current Situation"},
+      {5, "Goal"},
+      {6, "Data"},
+      {7, "Output"}
+    ] do %>
+      <div class={"flex-1 text-center text-xs font-medium #{if step == @current_step, do: "text-primary", else: (if step < @current_step, do: "text-success", else: "opacity-50")}"}>
+        <%= label %>
+      </div>
+    <% end %>
+  </div>
+  <div class="w-full bg-base-300 rounded-full h-2.5">
+    <div class="bg-primary h-2.5 rounded-full transition-all duration-300" style={"width: #{(@current_step / 7 * 100)}%"}></div>
+  </div>
+</div>
+
+<.form for={@form} id="request-form" phx-submit={if @current_step == 7, do: "save", else: "next_step"}>
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <!-- Step 1: Kind of Request -->
+      <%= if @current_step == 1 do %>
+        <h2 class="card-title text-2xl mb-4">Kind of Request</h2>
+        <p class="mb-6 opacity-70">What type of request are you submitting?</p>
+
+        <div class="form-control space-y-3">
+          <%= for {value, label, description} <- [
+            {"problem", "Problem with current app or service", "Report an issue or bug that needs to be fixed"},
+            {"new_need", "New need", "Request a new feature or functionality"},
+            {"improvement", "Improvement suggestion", "Suggest an enhancement to existing features"}
+          ] do %>
+            <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
+              <input type="radio" name="request[kind]" value={value} class="radio radio-primary" checked={@form_data["kind"] == value} phx-click="next_step" phx-value-kind={value} />
+              <div class="flex-1">
+                <span class="label-text font-semibold text-base"><%= label %></span>
+                <p class="text-sm opacity-60 mt-1"><%= description %></p>
+              </div>
+            </label>
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Step 2: Priority -->
+      <%= if @current_step == 2 do %>
+        <h2 class="card-title text-2xl mb-4">Priority Level</h2>
+        <p class="mb-6 opacity-70">How urgent is this request?</p>
+
+        <div class="form-control space-y-3">
+          <%= for {value, label, description} <- [
+            {4, "Critical", "Blocking current department procedures"},
+            {3, "Important", "Will significantly improve department procedures"},
+            {2, "Normal", "Will help, but not mandatory"},
+            {1, "Low", "Nice to have, if there are spare resources"}
+          ] do %>
+            <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
+              <input type="radio" name="request[priority]" value={value} class="radio radio-primary" checked={to_string(@form_data["priority"]) == to_string(value)} phx-click="next_step" phx-value-priority={value} />
+              <div class="flex-1">
+                <span class="label-text font-semibold text-base"><%= label %></span>
+                <p class="text-sm opacity-60 mt-1"><%= description %></p>
+              </div>
+            </label>
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Step 3: Target User -->
+      <%= if @current_step == 3 do %>
+        <h2 class="card-title text-2xl mb-4">Target User</h2>
+        <p class="mb-6 opacity-70">Who is the final user of this request?</p>
+
+        <div class="form-control space-y-3">
+          <%= for {value, label, description} <- [
+            {"internal", "Internal user", "Part of a company team"},
+            {"external", "External user", "Client or external provider"}
+          ] do %>
+            <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
+              <input type="radio" name="request[target_user_type]" value={value} class="radio radio-primary" checked={@form_data["target_user_type"] == value} phx-click="next_step" phx-value-target_user_type={value} />
+              <div class="flex-1">
+                <span class="label-text font-semibold text-base"><%= label %></span>
+                <p class="text-sm opacity-60 mt-1"><%= description %></p>
+              </div>
+            </label>
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Step 4: Current Situation -->
+      <%= if @current_step == 4 do %>
+        <div class="space-y-4">
+          <div>
+            <h2 class="card-title text-2xl mb-2">Current Situation</h2>
+            <p class="opacity-70">Describe the current situation or problem</p>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">What is the current situation?</span>
+            </label>
+            <textarea
+              name="request[current_situation]"
+              class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
+              placeholder="Describe the current state, what's happening now, what problems exist..."
+              required
+            ><%= @form_data["current_situation"] %></textarea>
+            <label class="label">
+              <span class="label-text-alt opacity-60">Be as detailed as possible</span>
+            </label>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Step 5: Goal Description -->
+      <%= if @current_step == 5 do %>
+        <div class="space-y-4">
+          <div>
+            <h2 class="card-title text-2xl mb-2">Goal Description</h2>
+            <p class="opacity-70">What do you want to achieve?</p>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Describe the desired outcome</span>
+            </label>
+            <textarea
+              name="request[goal_description]"
+              class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
+              placeholder="What should be the result? What do you want to accomplish?"
+              required
+            ><%= @form_data["goal_description"] %></textarea>
+            <label class="label">
+              <span class="label-text-alt opacity-60">Explain the desired end state</span>
+            </label>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Step 6: Data Description -->
+      <%= if @current_step == 6 do %>
+        <div class="space-y-4">
+          <div>
+            <h2 class="card-title text-2xl mb-2">Data Type Description</h2>
+            <p class="opacity-70">What data is involved? (if applicable)</p>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Describe the data types and sources</span>
+              <span class="label-text-alt badge badge-ghost">Optional</span>
+            </label>
+            <textarea
+              name="request[data_description]"
+              class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
+              placeholder="What data will be used or affected? Where does it come from? Leave empty if not applicable..."
+            ><%= @form_data["data_description"] %></textarea>
+            <label class="label">
+              <span class="label-text-alt opacity-60">Include data sources, formats, and any relevant details (optional)</span>
+            </label>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Step 7: Final Output -->
+      <%= if @current_step == 7 do %>
+        <div class="space-y-6">
+          <div>
+            <h2 class="card-title text-2xl mb-2">Final Output</h2>
+            <p class="opacity-70">What form should the solution take?</p>
+          </div>
+
+          <div class="form-control">
+            <label class="label mb-3">
+              <span class="label-text font-semibold text-lg">Output Type</span>
+            </label>
+            <div class="space-y-3">
+              <%= for {value, label, description} <- [
+                {"interface_view", "Interface / View", "A user interface or screen"},
+                {"report_file", "Report File", "A downloadable report or document"},
+                {"alert_message", "Alert / Message / Communication", "A notification, email, or message"}
+              ] do %>
+                <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
+                  <input type="radio" name="request[goal_target]" value={value} class="radio radio-primary" checked={@form_data["goal_target"] == value} required />
+                  <div class="flex-1">
+                    <span class="label-text font-semibold text-base"><%= label %></span>
+                    <p class="text-sm opacity-60 mt-1"><%= description %></p>
+                  </div>
+                </label>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold text-lg">Expected Output Details</span>
+            </label>
+            <textarea
+              name="request[expected_output]"
+              class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
+              placeholder="Describe in detail what the final output should look like or contain..."
+              required
+            ><%= @form_data["expected_output"] %></textarea>
+            <label class="label">
+              <span class="label-text-alt opacity-60">Provide specific details about the expected result</span>
+            </label>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Navigation Buttons -->
+  <div class="mt-6 flex items-center justify-between">
+    <div>
+      <%= if @current_step > 1 do %>
+        <button type="button" phx-click="prev_step" class="btn btn-outline">
+          ← Previous
+        </button>
+      <% end %>
+    </div>
+
+    <div class="flex gap-2">
+      <.link navigate={~p"/requests"}>
+        <button type="button" class="btn btn-ghost">Cancel</button>
+      </.link>
+
+      <%= cond do %>
+        <% @current_step in [1, 2, 3] -> %>
+          <!-- No next button for enum selection steps - auto-advance on click -->
+        <% @current_step < 7 -> %>
+          <button type="submit" class="btn btn-primary">
+            Next →
+          </button>
+        <% @current_step == 7 -> %>
+          <button type="submit" class="btn btn-success" phx-disable-with="Creating...">
+            Create Request
+          </button>
+      <% end %>
+    </div>
+  </div>
+</.form>
