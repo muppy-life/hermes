@@ -6,7 +6,7 @@ defmodule HermesWeb.KanbanLive.Board do
 
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
-    board = Kanbans.get_board!(board_id)
+    board = Kanbans.get_board!(board_id) |> sort_cards_by_updated_at()
     current_user = socket.assigns[:current_user]
 
     if can_access_board?(current_user, board) do
@@ -34,7 +34,7 @@ defmodule HermesWeb.KanbanLive.Board do
 
     case Kanbans.move_card(card_id, column_id, position) do
       {:ok, _card} ->
-        board = Kanbans.get_board!(socket.assigns.board.id)
+        board = Kanbans.get_board!(socket.assigns.board.id) |> sort_cards_by_updated_at()
         {:noreply, assign(socket, :board, board)}
 
       {:error, _changeset} ->
@@ -44,6 +44,24 @@ defmodule HermesWeb.KanbanLive.Board do
 
   defp can_access_board?(user, board) do
     Accounts.can_access_team?(user, board.team_id)
+  end
+
+  defp sort_cards_by_updated_at(board) do
+    sorted_columns =
+      Enum.map(board.columns, fn column ->
+        sorted_cards =
+          Enum.sort_by(column.cards, fn card ->
+            if card.request do
+              card.request.updated_at
+            else
+              ~N[1970-01-01 00:00:00]
+            end
+          end, {:desc, NaiveDateTime})
+
+        %{column | cards: sorted_cards}
+      end)
+
+    %{board | columns: sorted_columns}
   end
 
   defp truncate_words(text, word_count) do

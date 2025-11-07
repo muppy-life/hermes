@@ -62,7 +62,7 @@ defmodule HermesWeb.RequestLive.New do
       |> Map.put("title", generate_title(form_data))
       |> Map.put("description", form_data["current_situation"] || "")
 
-    case Requests.create_request(final_params) do
+    case Requests.create_request(final_params, current_user.id) do
       {:ok, _request} ->
         {:noreply,
          socket

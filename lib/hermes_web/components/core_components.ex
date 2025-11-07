@@ -288,16 +288,16 @@ defmodule HermesWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
+    <header class={[@actions != [] && "flex items-center justify-between gap-4", "pb-2"]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8">
+        <h1 class="text-base font-semibold leading-6">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="text-xs text-base-content/70 mt-0.5">
           {render_slot(@subtitle)}
         </p>
       </div>
-      <div class="flex-none">{render_slot(@actions)}</div>
+      <div class="flex-none flex gap-2">{render_slot(@actions)}</div>
     </header>
     """
   end

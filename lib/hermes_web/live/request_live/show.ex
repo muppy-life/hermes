@@ -7,11 +7,16 @@ defmodule HermesWeb.RequestLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     request = Requests.get_request!(id)
+    changes = Requests.list_request_changes(id)
+    comments = Requests.list_request_comments(id)
 
     {:ok,
      socket
      |> assign(:page_title, "Request Details")
      |> assign(:request, request)
+     |> assign(:changes, changes)
+     |> assign(:comments, comments)
+     |> assign(:comment_content, "")
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:teams, Accounts.list_teams())
@@ -41,14 +46,20 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   def handle_event("save", %{"request" => request_params}, socket) do
-    case Requests.update_request(socket.assigns.request, request_params) do
+    current_user = socket.assigns[:current_user]
+    user_id = if current_user, do: current_user.id, else: nil
+
+    case Requests.update_request(socket.assigns.request, request_params, user_id) do
       {:ok, _updated_request} ->
         # Reload the request with all associations preloaded
-        updated_request = Requests.get_request!(socket.assigns.request.id)
+        request_id = socket.assigns.request.id
+        updated_request = Requests.get_request!(request_id)
+        changes = Requests.list_request_changes(request_id)
 
         {:noreply,
          socket
          |> assign(:request, updated_request)
+         |> assign(:changes, changes)
          |> assign(:show_edit_modal, false)
          |> assign(:form, to_form(Requests.change_request(updated_request)))
          |> put_flash(:info, "Request updated successfully")}
@@ -75,4 +86,46 @@ defmodule HermesWeb.RequestLive.Show do
          |> put_flash(:error, "Failed to delete request")}
     end
   end
+
+  def handle_event("add_comment", %{"content" => content}, socket) do
+    current_user = socket.assigns[:current_user]
+
+    attrs = %{
+      request_id: socket.assigns.request.id,
+      user_id: current_user.id,
+      content: content
+    }
+
+    case Requests.create_comment(attrs) do
+      {:ok, _comment} ->
+        comments = Requests.list_request_comments(socket.assigns.request.id)
+
+        {:noreply,
+         socket
+         |> assign(:comments, comments)
+         |> assign(:comment_content, "")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to add comment")}
+    end
+  end
+
+  def handle_event("update_comment", %{"content" => content}, socket) do
+    {:noreply, assign(socket, :comment_content, content)}
+  end
+
+  defp humanize_field(field) when is_binary(field) do
+    field
+    |> String.replace("_", " ")
+    |> String.capitalize()
+  end
+
+  defp humanize_field(_), do: "Unknown field"
+
+  defp format_change_value(nil), do: "(empty)"
+  defp format_change_value(""), do: "(empty)"
+  defp format_change_value(value) when byte_size(value) > 50 do
+    String.slice(value, 0..47) <> "..."
+  end
+  defp format_change_value(value), do: value
 end

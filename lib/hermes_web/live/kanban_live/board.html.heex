@@ -49,18 +49,18 @@
 
                 <!-- Badges Row -->
                 <div class="flex items-center gap-2 flex-wrap mb-3">
-                  <.priority_badge priority={card.request.priority} size="sm" />
-                  <.status_badge status={card.request.status} size="sm" />
                   <%= if card.request.kind do %>
                     <.kind_badge kind={card.request.kind} size="sm" />
                   <% end %>
+                  <.priority_badge priority={card.request.priority} size="sm" />
+                  <.status_badge status={card.request.status} size="sm" />
                 </div>
 
                 <!-- Footer with Team Info -->
                 <div class="pt-3 border-t border-base-300 text-xs space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="opacity-60">
-                      <%= card.request.requesting_team.name %>
+                      <%= card.request.requesting_team.name %> →
                     </span>
                     <%= if card.request.assigned_to_team do %>
                       <span class="opacity-60">
