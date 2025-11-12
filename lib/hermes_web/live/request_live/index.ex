@@ -42,7 +42,7 @@ defmodule HermesWeb.RequestLive.Index do
 
   @impl true
   def handle_event("view_request", %{"id" => id}, socket) do
-    {:noreply, push_navigate(socket, to: ~p"/requests/#{id}")}
+    {:noreply, push_navigate(socket, to: ~p"/backlog/#{id}")}
   end
 
   def handle_event("delete", %{"id" => id}, socket) do
@@ -58,28 +58,28 @@ defmodule HermesWeb.RequestLive.Index do
 
     {:noreply,
      push_patch(socket,
-       to: ~p"/requests?#{build_params(socket, sort_by: field, sort_order: Atom.to_string(sort_order))}"
+       to: ~p"/backlog?#{build_params(socket, sort_by: field, sort_order: Atom.to_string(sort_order))}"
      )}
   end
 
   def handle_event("apply_filters", %{"status" => status, "priority" => priority, "team" => team}, socket) do
     {:noreply,
      push_patch(socket,
-       to: ~p"/requests?#{build_params(socket, status: status, priority: priority, team: team)}"
+       to: ~p"/backlog?#{build_params(socket, status: status, priority: priority, team: team)}"
      )}
   end
 
   def handle_event("clear_filters", _params, socket) do
     {:noreply,
      push_patch(socket,
-       to: ~p"/requests?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}&tab=#{socket.assigns.active_tab}"
+       to: ~p"/backlog?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}&tab=#{socket.assigns.active_tab}"
      )}
   end
 
   def handle_event("change_tab", %{"tab" => tab}, socket) do
     {:noreply,
      push_patch(socket,
-       to: ~p"/requests?#{build_params(socket, tab: tab)}"
+       to: ~p"/backlog?#{build_params(socket, tab: tab)}"
      )}
   end
 

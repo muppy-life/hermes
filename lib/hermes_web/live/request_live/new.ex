@@ -6,7 +6,7 @@ defmodule HermesWeb.RequestLive.New do
 
   @impl true
   def mount(params, _session, socket) do
-    return_to = params["return_to"] || ~p"/requests"
+    return_to = params["return_to"] || ~p"/backlog"
 
     {:ok,
      socket
@@ -70,7 +70,7 @@ defmodule HermesWeb.RequestLive.New do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Request created successfully"))
-         |> push_navigate(to: ~p"/requests")}
+         |> push_navigate(to: ~p"/backlog")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,

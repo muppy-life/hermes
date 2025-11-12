@@ -55,7 +55,7 @@ defmodule HermesWeb.Layouts do
               <a href={~p"/dashboard"} class="btn btn-ghost">{gettext("Dashboard")}</a>
             </li>
             <li>
-              <a href={~p"/requests"} class="btn btn-ghost">{gettext("Requests")}</a>
+              <a href={~p"/backlog"} class="btn btn-ghost">{gettext("Backlog")}</a>
             </li>
             <li>
               <a href={~p"/boards"} class="btn btn-ghost">{gettext("Boards")}</a>

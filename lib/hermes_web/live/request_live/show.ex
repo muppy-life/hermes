@@ -13,7 +13,7 @@ defmodule HermesWeb.RequestLive.Show do
 
     {:ok,
      socket
-     |> NavigationHistory.assign_return_path(default: ~p"/requests")
+     |> NavigationHistory.assign_return_path(default: ~p"/backlog")
      |> assign(:page_title, "Request Details")
      |> assign(:request, request)
      |> assign(:changes, changes)
@@ -79,7 +79,7 @@ defmodule HermesWeb.RequestLive.Show do
         {:noreply,
          socket
          |> put_flash(:info, "Request deleted successfully")
-         |> push_navigate(to: ~p"/requests")}
+         |> push_navigate(to: ~p"/backlog")}
 
       {:error, _} ->
         {:noreply,

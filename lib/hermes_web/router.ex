@@ -39,10 +39,10 @@ defmodule HermesWeb.Router do
       on_mount: [{HermesWeb.Plugs.Auth, :ensure_authenticated}] do
       live "/dashboard", DashboardLive, :index
 
-      live "/requests", RequestLive.Index, :index
-      live "/requests/new", RequestLive.New, :new
-      live "/requests/:id", RequestLive.Show, :show
-      live "/requests/:id/edit", RequestLive.Edit, :edit
+      live "/backlog", RequestLive.Index, :index
+      live "/backlog/new", RequestLive.New, :new
+      live "/backlog/:id", RequestLive.Show, :show
+      live "/backlog/:id/edit", RequestLive.Edit, :edit
 
       live "/boards", KanbanLive.Index, :index
       live "/boards/:id", KanbanLive.Board, :show

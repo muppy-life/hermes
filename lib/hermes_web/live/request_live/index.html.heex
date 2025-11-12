@@ -1,7 +1,7 @@
 <div class="sticky top-0 z-10 bg-base-100 py-2">
   <div class="flex items-center justify-between">
-    <h1 class="text-xl font-bold">{gettext("Team Requests")}</h1>
-    <.link navigate={~p"/requests/new"}>
+    <h1 class="text-xl font-bold">{gettext("Backlog")}</h1>
+    <.link navigate={~p"/backlog/new"}>
       <button class="btn btn-primary btn-sm">{gettext("New Request")}</button>
     </.link>
   </div>
@@ -28,7 +28,7 @@
     phx-click="change_tab"
     phx-value-tab="new"
   >
-    {gettext("New Requests")}
+    {gettext("New")}
     <span class="badge badge-primary ml-2"><%= length(@new_requests) %></span>
   </button>
   <button
@@ -41,7 +41,7 @@
     phx-click="change_tab"
     phx-value-tab="ongoing"
   >
-    {gettext("On-going Requests")}
+    {gettext("Ongoing")}
     <span class="badge badge-info ml-2"><%= length(@ongoing_requests) %></span>
   </button>
   <button

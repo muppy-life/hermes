@@ -11,7 +11,7 @@ defmodule HermesWeb.RequestLive.Edit do
 
     {:ok,
      socket
-     |> NavigationHistory.assign_return_path(default: ~p"/requests")
+     |> NavigationHistory.assign_return_path(default: ~p"/backlog")
      |> assign(:page_title, "Edit Request")
      |> assign(:request, request)
      |> assign(:teams, Accounts.list_teams())
@@ -30,7 +30,7 @@ defmodule HermesWeb.RequestLive.Edit do
         {:noreply,
          socket
          |> put_flash(:info, "Request updated successfully")
-         |> push_navigate(to: ~p"/requests")}
+         |> push_navigate(to: ~p"/backlog")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
