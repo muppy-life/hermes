@@ -35,3 +35,6 @@ hermes-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# macOS system files
+.DS_Store
+
