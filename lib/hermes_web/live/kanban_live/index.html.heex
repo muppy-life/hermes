@@ -1,6 +1,6 @@
 <.header>
-  Kanban Boards
-  <:subtitle>Manage your team workflows</:subtitle>
+  {gettext("Kanban Boards")}
+  <:subtitle>{gettext("Manage your team workflows")}</:subtitle>
 </.header>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
@@ -9,9 +9,9 @@
     <.link navigate={~p"/boards/#{board_id}"} class="block">
       <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-200">
         <h3 class="text-xl font-semibold mb-2"><%= board.name %></h3>
-        <p class="text-gray-600">Teams: <%= board.team.name %> ↔ <%= board.team_b.name %></p>
+        <p class="text-gray-600">{gettext("Teams")}: <%= board.team.name %> ↔ <%= board.team_b.name %></p>
         <div class="mt-4 text-blue-600 font-medium">
-          View Board →
+          {gettext("View Board")} →
         </div>
       </div>
     </.link>
@@ -20,6 +20,6 @@
 
 <%= if @boards == [] do %>
   <div class="text-center py-12">
-    <p class="text-gray-500 text-lg">No boards available for your team yet.</p>
+    <p class="text-gray-500 text-lg">{gettext("No boards available for your team yet.")}</p>
   </div>
 <% end %>

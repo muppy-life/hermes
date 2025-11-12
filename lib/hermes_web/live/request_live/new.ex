@@ -8,7 +8,7 @@ defmodule HermesWeb.RequestLive.New do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "New Request")
+     |> assign(:page_title, gettext("New Request"))
      |> assign(:current_step, 1)
      |> assign(:form_data, %{})
      |> assign(:teams, Accounts.list_teams())
@@ -66,13 +66,13 @@ defmodule HermesWeb.RequestLive.New do
       {:ok, _request} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Request created successfully")
+         |> put_flash(:info, gettext("Request created successfully"))
          |> push_navigate(to: ~p"/requests")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,
          socket
-         |> put_flash(:error, "Please check the form for errors")
+         |> put_flash(:error, gettext("Please check the form for errors"))
          |> assign(:form, to_form(changeset))}
     end
   end

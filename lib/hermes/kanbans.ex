@@ -76,12 +76,12 @@ defmodule Hermes.Kanbans do
 
     # Define columns for all status types
     columns = [
-      %{id: 1, name: "New", position: 0, status: "new"},
-      %{id: 2, name: "Pending", position: 1, status: "pending"},
-      %{id: 3, name: "In Progress", position: 2, status: "in_progress"},
-      %{id: 4, name: "Review", position: 3, status: "review"},
-      %{id: 5, name: "Blocked", position: 4, status: "blocked"},
-      %{id: 6, name: "Completed", position: 5, status: "completed"}
+      %{id: 1, name: Gettext.gettext(HermesWeb.Gettext, "New"), position: 0, status: "new"},
+      %{id: 2, name: Gettext.gettext(HermesWeb.Gettext, "Pending"), position: 1, status: "pending"},
+      %{id: 3, name: Gettext.gettext(HermesWeb.Gettext, "In Progress"), position: 2, status: "in_progress"},
+      %{id: 4, name: Gettext.gettext(HermesWeb.Gettext, "Review"), position: 3, status: "review"},
+      %{id: 5, name: Gettext.gettext(HermesWeb.Gettext, "Blocked"), position: 4, status: "blocked"},
+      %{id: 6, name: Gettext.gettext(HermesWeb.Gettext, "Completed"), position: 5, status: "completed"}
     ]
 
     # Organize requests into columns

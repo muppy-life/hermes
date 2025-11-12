@@ -132,10 +132,10 @@ defmodule HermesWeb.RequestLive.Show do
          |> assign(:request, updated_request)
          |> assign(:changes, changes)
          |> assign(:form, to_form(Requests.change_request(updated_request)))
-         |> put_flash(:info, "Status updated successfully")}
+         |> put_flash(:info, gettext("Status updated successfully"))}
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update status")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to update status"))}
     end
   end
 

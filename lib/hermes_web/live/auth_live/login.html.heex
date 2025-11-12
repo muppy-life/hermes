@@ -3,10 +3,10 @@
     <div class="text-center">
       <img src={~p"/images/logo.svg"} width="72" class="mx-auto" />
       <h2 class="mt-6 text-3xl font-bold tracking-tight">
-        Sign in to Hermes
+        {gettext("Sign in to Hermes")}
       </h2>
       <p class="mt-2 text-sm text-gray-600">
-        Team Request Management System
+        {gettext("Team Request Management System")}
       </p>
     </div>
 
@@ -16,7 +16,7 @@
       <div class="space-y-4">
         <div>
           <label for="user_email" class="block text-sm font-medium leading-6">
-            Email address
+            {gettext("Email address")}
           </label>
           <div class="mt-2">
             <input
@@ -25,7 +25,7 @@
               id="user_email"
               required
               autocomplete="email"
-              placeholder="user@example.com"
+              placeholder={gettext("user@example.com")}
               class="input input-bordered w-full"
             />
           </div>
@@ -33,7 +33,7 @@
 
         <div>
           <label for="user_password" class="block text-sm font-medium leading-6">
-            Password
+            {gettext("Password")}
           </label>
           <div class="mt-2">
             <input
@@ -53,33 +53,33 @@
           type="submit"
           class="btn btn-primary w-full"
         >
-          Sign in
+          {gettext("Sign in")}
         </button>
       </div>
     </form>
 
     <div class="mt-8 border-t border-base-300 pt-6">
-      <h3 class="text-sm font-semibold mb-3">Demo Accounts:</h3>
+      <h3 class="text-sm font-semibold mb-3">{gettext("Demo Accounts:")}</h3>
       <div class="space-y-2 text-sm">
         <div class="flex justify-between items-center">
-          <span class="font-medium">Development Team:</span>
+          <span class="font-medium">{gettext("Development Team:")}</span>
           <code class="text-xs bg-base-200 px-2 py-1 rounded">dev@hermes.com / dev123</code>
         </div>
         <div class="flex justify-between items-center">
-          <span class="font-medium">Marketing Team:</span>
+          <span class="font-medium">{gettext("Marketing Team:")}</span>
           <code class="text-xs bg-base-200 px-2 py-1 rounded">marketing@hermes.com / marketing123</code>
         </div>
         <div class="flex justify-between items-center">
-          <span class="font-medium">Sales Team:</span>
+          <span class="font-medium">{gettext("Sales Team:")}</span>
           <code class="text-xs bg-base-200 px-2 py-1 rounded">sales@hermes.com / sales123</code>
         </div>
         <div class="flex justify-between items-center">
-          <span class="font-medium">HR Team:</span>
+          <span class="font-medium">{gettext("HR Team:")}</span>
           <code class="text-xs bg-base-200 px-2 py-1 rounded">hr@hermes.com / hr123</code>
         </div>
       </div>
       <p class="mt-4 text-xs opacity-60">
-        Note: This is an MVP with simplified authentication for demonstration purposes.
+        {gettext("Note: This is an MVP with simplified authentication for demonstration purposes.")}
       </p>
     </div>
   </div>

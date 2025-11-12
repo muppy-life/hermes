@@ -142,7 +142,7 @@ defmodule HermesWeb.CoreComponents do
         <%= if @inner_block != [] do %>
           {render_slot(@inner_block)}
         <% else %>
-          Back
+          {gettext("Back")}
         <% end %>
       </.button>
     </.link>
@@ -529,11 +529,11 @@ defmodule HermesWeb.CoreComponents do
 
   defp priority_label(priority) do
     case priority do
-      1 -> "Low"
-      2 -> "Normal"
-      3 -> "Important"
-      4 -> "Critical"
-      _ -> "Unknown"
+      1 -> gettext("Low")
+      2 -> gettext("Normal")
+      3 -> gettext("Important")
+      4 -> gettext("Critical")
+      _ -> gettext("Unknown")
     end
   end
 
@@ -607,10 +607,12 @@ defmodule HermesWeb.CoreComponents do
 
   defp status_label(status) do
     case status do
-      "pending" -> "Pending"
-      "in_progress" -> "In Progress"
-      "completed" -> "Completed"
-      "blocked" -> "Blocked"
+      "pending" -> gettext("Pending")
+      "in_progress" -> gettext("In Progress")
+      "completed" -> gettext("Completed")
+      "blocked" -> gettext("Blocked")
+      "new" -> gettext("New")
+      "review" -> gettext("Review")
       _ -> String.capitalize(status)
     end
   end
@@ -660,15 +662,15 @@ defmodule HermesWeb.CoreComponents do
 
   defp kind_label(kind) do
     case kind do
-      "problem" -> "Problem"
-      :problem -> "Problem"
-      "new_need" -> "New Need"
-      :new_need -> "New Need"
-      "improvement" -> "Improvement"
-      :improvement -> "Improvement"
+      "problem" -> gettext("Problem")
+      :problem -> gettext("Problem")
+      "new_need" -> gettext("New Need")
+      :new_need -> gettext("New Need")
+      "improvement" -> gettext("Improvement")
+      :improvement -> gettext("Improvement")
       _ when is_atom(kind) -> kind |> Atom.to_string() |> String.capitalize()
       _ when is_binary(kind) -> String.capitalize(kind)
-      _ -> "Unknown"
+      _ -> gettext("Unknown")
     end
   end
 
@@ -723,28 +725,28 @@ defmodule HermesWeb.CoreComponents do
             <!-- Status Filter -->
             <%= if @show_status do %>
               <select class="select select-bordered select-sm" name="status">
-                <option value="all" selected={@filter_status == "all"}>All Statuses</option>
-                <option value="new" selected={@filter_status == "new"}>New</option>
-                <option value="pending" selected={@filter_status == "pending"}>Pending</option>
-                <option value="in_progress" selected={@filter_status == "in_progress"}>In Progress</option>
-                <option value="review" selected={@filter_status == "review"}>Review</option>
-                <option value="completed" selected={@filter_status == "completed"}>Completed</option>
-                <option value="blocked" selected={@filter_status == "blocked"}>Blocked</option>
+                <option value="all" selected={@filter_status == "all"}>{gettext("All Statuses")}</option>
+                <option value="new" selected={@filter_status == "new"}>{gettext("New")}</option>
+                <option value="pending" selected={@filter_status == "pending"}>{gettext("Pending")}</option>
+                <option value="in_progress" selected={@filter_status == "in_progress"}>{gettext("In Progress")}</option>
+                <option value="review" selected={@filter_status == "review"}>{gettext("Review")}</option>
+                <option value="completed" selected={@filter_status == "completed"}>{gettext("Completed")}</option>
+                <option value="blocked" selected={@filter_status == "blocked"}>{gettext("Blocked")}</option>
               </select>
             <% end %>
 
             <!-- Priority Filter -->
             <select class="select select-bordered select-sm" name="priority">
-              <option value="all" selected={@filter_priority == "all"}>All Priorities</option>
-              <option value="4" selected={@filter_priority == "4"}>Critical</option>
-              <option value="3" selected={@filter_priority == "3"}>Important</option>
-              <option value="2" selected={@filter_priority == "2"}>Normal</option>
-              <option value="1" selected={@filter_priority == "1"}>Low</option>
+              <option value="all" selected={@filter_priority == "all"}>{gettext("All Priorities")}</option>
+              <option value="4" selected={@filter_priority == "4"}>{gettext("Critical")}</option>
+              <option value="3" selected={@filter_priority == "3"}>{gettext("Important")}</option>
+              <option value="2" selected={@filter_priority == "2"}>{gettext("Normal")}</option>
+              <option value="1" selected={@filter_priority == "1"}>{gettext("Low")}</option>
             </select>
 
             <!-- Team Filter -->
             <select class="select select-bordered select-sm" name="team">
-              <option value="all" selected={@filter_team == "all"}>All Teams</option>
+              <option value="all" selected={@filter_team == "all"}>{gettext("All Teams")}</option>
               <%= for team <- @teams do %>
                 <option value={team.id} selected={@filter_team == to_string(team.id)}><%= team.name %></option>
               <% end %>
@@ -752,14 +754,14 @@ defmodule HermesWeb.CoreComponents do
 
             <!-- Clear Filters Button -->
             <button type="button" phx-click="clear_filters" class="btn btn-outline btn-sm">
-              Clear
+              {gettext("Clear")}
             </button>
           </div>
         </form>
 
         <!-- Item Count -->
         <div class="text-sm opacity-70 whitespace-nowrap">
-          <%= @total_count %> items
+          <%= @total_count %> {gettext("items")}
         </div>
       </div>
     </div>

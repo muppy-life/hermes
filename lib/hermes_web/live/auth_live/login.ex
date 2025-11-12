@@ -7,7 +7,7 @@ defmodule HermesWeb.AuthLive.Login do
     if socket.assigns[:current_user] do
       {:ok, push_navigate(socket, to: ~p"/dashboard")}
     else
-      {:ok, assign(socket, :page_title, "Login")}
+      {:ok, assign(socket, :page_title, gettext("Login"))}
     end
   end
 end

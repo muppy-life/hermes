@@ -52,6 +52,8 @@ defmodule HermesWeb do
     quote do
       use Phoenix.LiveView
 
+      on_mount HermesWeb.Plugs.Locale
+
       unquote(html_helpers())
     end
   end

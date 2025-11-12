@@ -1,8 +1,8 @@
 <div class="sticky top-0 z-10 bg-base-100 py-2">
   <div class="flex items-center justify-between">
-    <h1 class="text-xl font-bold">Team Requests</h1>
+    <h1 class="text-xl font-bold">{gettext("Team Requests")}</h1>
     <.link navigate={~p"/requests/new"}>
-      <button class="btn btn-primary btn-sm">New Request</button>
+      <button class="btn btn-primary btn-sm">{gettext("New Request")}</button>
     </.link>
   </div>
 </div>
@@ -28,7 +28,7 @@
     phx-click="change_tab"
     phx-value-tab="new"
   >
-    New Requests
+    {gettext("New Requests")}
     <span class="badge badge-primary ml-2"><%= length(@new_requests) %></span>
   </button>
   <button
@@ -41,7 +41,7 @@
     phx-click="change_tab"
     phx-value-tab="ongoing"
   >
-    On-going Requests
+    {gettext("On-going Requests")}
     <span class="badge badge-info ml-2"><%= length(@ongoing_requests) %></span>
   </button>
   <button
@@ -54,7 +54,7 @@
     phx-click="change_tab"
     phx-value-tab="completed"
   >
-    Completed Requests
+    {gettext("Completed Requests")}
     <span class="badge badge-success ml-2"><%= length(@completed_requests) %></span>
   </button>
 </div>
@@ -64,44 +64,44 @@
   <div class={[@active_tab != "new" && "hidden"]}>
     <%= if Enum.empty?(@new_requests) do %>
       <div class="text-center py-6 opacity-60 bg-base-200 rounded-lg">
-        <p>No new requests</p>
+        <p>{gettext("No new requests")}</p>
       </div>
     <% else %>
       <!-- Table Headers -->
       <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_150px_150px_120px] gap-3 text-sm font-semibold">
         <div class="opacity-70">#</div>
         <button phx-click="sort" phx-value-by="kind" class="flex items-center gap-1 hover:text-primary text-left">
-          Type
+          {gettext("Type")}
           <%= if @sort_by == :kind do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="title" class="flex items-center gap-1 hover:text-primary text-left">
-          Title
+          {gettext("Title")}
           <%= if @sort_by == :title do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="priority" class="flex items-center gap-1 hover:text-primary text-left">
-          Priority
+          {gettext("Priority")}
           <%= if @sort_by == :priority do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="requesting_team_id" class="flex items-center gap-1 hover:text-primary text-left">
-          Requesting Team
+          {gettext("Requesting Team")}
           <%= if @sort_by == :requesting_team_id do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="assigned_to_team_id" class="flex items-center gap-1 hover:text-primary text-left">
-          Assigned To
+          {gettext("Assigned To")}
           <%= if @sort_by == :assigned_to_team_id do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="updated_at" class="flex items-center gap-1 hover:text-primary text-left">
-          Updated
+          {gettext("Updated")}
           <%= if @sort_by == :updated_at do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
@@ -127,7 +127,7 @@
               </div>
               <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate"><%= request.requesting_team.name %></div>
-              <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: "Unassigned" %></div>
+              <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: gettext("Unassigned") %></div>
               <div class="text-sm opacity-70"><%= Calendar.strftime(request.updated_at, "%b %d, %Y") %></div>
             </div>
           </div>
@@ -140,50 +140,50 @@
   <div class={[@active_tab != "ongoing" && "hidden"]}>
     <%= if Enum.empty?(@ongoing_requests) do %>
       <div class="text-center py-6 opacity-60 bg-base-200 rounded-lg">
-        <p>No on-going requests</p>
+        <p>{gettext("No on-going requests")}</p>
       </div>
     <% else %>
       <!-- Table Headers -->
       <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px] gap-3 text-sm font-semibold">
         <div class="opacity-70">#</div>
         <button phx-click="sort" phx-value-by="kind" class="flex items-center gap-1 hover:text-primary text-left">
-          Type
+          {gettext("Type")}
           <%= if @sort_by == :kind do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="title" class="flex items-center gap-1 hover:text-primary text-left">
-          Title
+          {gettext("Title")}
           <%= if @sort_by == :title do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="priority" class="flex items-center gap-1 hover:text-primary text-left">
-          Priority
+          {gettext("Priority")}
           <%= if @sort_by == :priority do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="status" class="flex items-center gap-1 hover:text-primary text-left">
-          Status
+          {gettext("Status")}
           <%= if @sort_by == :status do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="requesting_team_id" class="flex items-center gap-1 hover:text-primary text-left">
-          Requesting Team
+          {gettext("Requesting Team")}
           <%= if @sort_by == :requesting_team_id do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="assigned_to_team_id" class="flex items-center gap-1 hover:text-primary text-left">
-          Assigned To
+          {gettext("Assigned To")}
           <%= if @sort_by == :assigned_to_team_id do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="updated_at" class="flex items-center gap-1 hover:text-primary text-left">
-          Updated
+          {gettext("Updated")}
           <%= if @sort_by == :updated_at do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
@@ -210,7 +210,7 @@
               <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div><.status_badge status={request.status} size="sm" /></div>
               <div class="text-sm truncate"><%= request.requesting_team.name %></div>
-              <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: "Unassigned" %></div>
+              <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: gettext("Unassigned") %></div>
               <div class="text-sm opacity-70"><%= Calendar.strftime(request.updated_at, "%b %d, %Y") %></div>
             </div>
           </div>
@@ -223,44 +223,44 @@
   <div class={[@active_tab != "completed" && "hidden"]}>
     <%= if Enum.empty?(@completed_requests) do %>
       <div class="text-center py-6 opacity-60 bg-base-200 rounded-lg">
-        <p>No completed requests</p>
+        <p>{gettext("No completed requests")}</p>
       </div>
     <% else %>
       <!-- Table Headers -->
       <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_150px_150px_120px] gap-3 text-sm font-semibold">
         <div class="opacity-70">#</div>
         <button phx-click="sort" phx-value-by="kind" class="flex items-center gap-1 hover:text-primary text-left">
-          Type
+          {gettext("Type")}
           <%= if @sort_by == :kind do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="title" class="flex items-center gap-1 hover:text-primary text-left">
-          Title
+          {gettext("Title")}
           <%= if @sort_by == :title do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="priority" class="flex items-center gap-1 hover:text-primary text-left">
-          Priority
+          {gettext("Priority")}
           <%= if @sort_by == :priority do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="requesting_team_id" class="flex items-center gap-1 hover:text-primary text-left">
-          Requesting Team
+          {gettext("Requesting Team")}
           <%= if @sort_by == :requesting_team_id do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="assigned_to_team_id" class="flex items-center gap-1 hover:text-primary text-left">
-          Assigned To
+          {gettext("Assigned To")}
           <%= if @sort_by == :assigned_to_team_id do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
         <button phx-click="sort" phx-value-by="updated_at" class="flex items-center gap-1 hover:text-primary text-left">
-          Updated
+          {gettext("Updated")}
           <%= if @sort_by == :updated_at do %>
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
@@ -286,7 +286,7 @@
               </div>
               <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate"><%= request.requesting_team.name %></div>
-              <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: "Unassigned" %></div>
+              <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: gettext("Unassigned") %></div>
               <div class="text-sm opacity-70"><%= Calendar.strftime(request.updated_at, "%b %d, %Y") %></div>
             </div>
           </div>
@@ -298,7 +298,7 @@
 
 <%= if @total_count == 0 do %>
   <div class="text-center py-12 opacity-60">
-    <p class="text-lg">No requests found matching your filters.</p>
-    <button phx-click="clear_filters" class="btn btn-link">Clear filters</button>
+    <p class="text-lg">{gettext("No requests found matching your filters.")}</p>
+    <button phx-click="clear_filters" class="btn btn-link">{gettext("Clear filters")}</button>
   </div>
 <% end %>

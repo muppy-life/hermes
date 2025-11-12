@@ -46,13 +46,13 @@ defmodule HermesWeb.Layouts do
         <ul class="flex flex-row px-1 space-x-2 items-center">
           <%= if @current_user do %>
             <li>
-              <a href={~p"/dashboard"} class="btn btn-ghost">Dashboard</a>
+              <a href={~p"/dashboard"} class="btn btn-ghost">{gettext("Dashboard")}</a>
             </li>
             <li>
-              <a href={~p"/requests"} class="btn btn-ghost">Requests</a>
+              <a href={~p"/requests"} class="btn btn-ghost">{gettext("Requests")}</a>
             </li>
             <li>
-              <a href={~p"/boards"} class="btn btn-ghost">Boards</a>
+              <a href={~p"/boards"} class="btn btn-ghost">{gettext("Boards")}</a>
             </li>
             <li class="text-sm px-3">
               <span class="font-semibold"><%= @current_user.email %></span>
@@ -61,10 +61,13 @@ defmodule HermesWeb.Layouts do
             </li>
             <li>
               <.link href={~p"/logout"} method="delete" class="btn btn-ghost btn-sm">
-                Logout
+                {gettext("Logout")}
               </.link>
             </li>
           <% end %>
+          <li>
+            <.language_selector locale={assigns[:locale] || "en"} />
+          </li>
           <li>
             <.theme_toggle />
           </li>
@@ -121,6 +124,44 @@ defmodule HermesWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
+    </div>
+    """
+  end
+
+  @doc """
+  Provides language selector for internationalization.
+  """
+  attr :locale, :string, default: nil
+
+  def language_selector(assigns) do
+    # Get current locale from Gettext
+    current_locale = Gettext.get_locale(HermesWeb.Gettext)
+    assigns = assign(assigns, :current_locale, current_locale)
+
+    ~H"""
+    <div class="dropdown dropdown-end">
+      <button tabindex="0" class="btn btn-ghost btn-sm">
+        <%= case @current_locale do %>
+          <% "es" -> %>
+            <span class="text-xl">🇪🇸</span>
+          <% _ -> %>
+            <span class="text-xl">🇺🇸</span>
+        <% end %>
+      </button>
+      <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-40 border border-base-300 mt-1">
+        <li>
+          <a href={"?locale=en"} class={["gap-2", @current_locale == "en" && "active"]}>
+            <span class="text-lg">🇺🇸</span>
+            <span>English</span>
+          </a>
+        </li>
+        <li>
+          <a href={"?locale=es"} class={["gap-2", @current_locale == "es" && "active"]}>
+            <span class="text-lg">🇪🇸</span>
+            <span>Español</span>
+          </a>
+        </li>
+      </ul>
     </div>
     """
   end
