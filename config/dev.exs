@@ -1,5 +1,8 @@
 import Config
 
+# Set environment
+config :hermes, :env, :dev
+
 # Configure your database
 config :hermes, Hermes.Repo,
   username: "postgres",

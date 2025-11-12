@@ -35,16 +35,22 @@ defmodule HermesWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar bg-base-300 px-4 sm:px-6 lg:px-8 sticky top-0 z-50">
-      <div class="flex-1">
-        <a href={if @current_user, do: ~p"/dashboard", else: ~p"/"} class="flex items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-xl font-bold">Hermes</span>
+    <header class="navbar bg-base-300 px-4 sm:px-6 lg:px-8 sticky top-0 z-50 justify-between">
+      <div class="flex items-center gap-3">
+        <a href={if @current_user, do: ~p"/dashboard", else: ~p"/"} class="flex items-center">
+          <img src={~p"/images/logo_light_themes.png"} width="32" class="[[data-theme=dark]_&]:hidden" />
+          <img src={~p"/images/logo_dark_themes.png"} width="32" class="[[data-theme=light]_&]:hidden [[data-theme=system]_&]:hidden dark:block" />
         </a>
+        <%= if @current_user do %>
+          <div class="text-sm">
+            <div class="font-semibold"><%= @current_user.email %></div>
+            <div class="text-xs text-gray-600"><%= String.capitalize(@current_user.role) %></div>
+          </div>
+        <% end %>
       </div>
-      <div class="flex-none">
-        <ul class="flex flex-row px-1 space-x-2 items-center">
-          <%= if @current_user do %>
+      <%= if @current_user do %>
+        <div class="flex items-center">
+          <ul class="flex flex-row items-center">
             <li>
               <a href={~p"/dashboard"} class="btn btn-ghost">{gettext("Dashboard")}</a>
             </li>
@@ -54,14 +60,15 @@ defmodule HermesWeb.Layouts do
             <li>
               <a href={~p"/boards"} class="btn btn-ghost">{gettext("Boards")}</a>
             </li>
-            <li class="text-sm px-3">
-              <span class="font-semibold"><%= @current_user.email %></span>
-              <br />
-              <span class="text-xs text-gray-600"><%= String.capitalize(@current_user.role) %></span>
-            </li>
+          </ul>
+        </div>
+      <% end %>
+      <div class="flex items-center">
+        <ul class="flex flex-row items-center">
+          <%= if @current_user do %>
             <li>
-              <.link href={~p"/logout"} method="delete" class="btn btn-ghost btn-sm">
-                {gettext("Logout")}
+              <.link href={~p"/logout"} method="delete" class="btn btn-ghost btn-sm rounded-full">
+                <.icon name="hero-arrow-right-on-rectangle" class="size-5" />
               </.link>
             </li>
           <% end %>
@@ -140,7 +147,7 @@ defmodule HermesWeb.Layouts do
 
     ~H"""
     <div class="dropdown dropdown-end">
-      <button tabindex="0" class="btn btn-ghost btn-sm">
+      <button tabindex="0" class="btn btn-ghost btn-sm rounded-full">
         <%= case @current_locale do %>
           <% "es" -> %>
             <span class="text-xl">🇪🇸</span>
@@ -173,33 +180,20 @@ defmodule HermesWeb.Layouts do
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="system"
-      >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="light"
-      >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
-      >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-    </div>
+    <button
+      class="btn btn-ghost btn-sm rounded-full [[data-theme=light]_&]:hidden [[data-theme=system]_&]:hidden"
+      phx-click={JS.dispatch("phx:set-theme")}
+      data-phx-theme="light"
+    >
+      <span class="text-xl">🌙</span>
+    </button>
+    <button
+      class="btn btn-ghost btn-sm rounded-full [[data-theme=dark]_&]:hidden"
+      phx-click={JS.dispatch("phx:set-theme")}
+      data-phx-theme="dark"
+    >
+      <span class="text-xl">☀️</span>
+    </button>
     """
   end
 end
