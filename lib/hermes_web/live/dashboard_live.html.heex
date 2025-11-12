@@ -87,9 +87,17 @@
                       <%= request.description %>
                     <% end %>
                   </p>
-                  <div class="flex items-center gap-2 mt-2 text-xs">
-                    <span class="opacity-60">{gettext("From:")}</span>
-                    <span class="font-medium"><%= request.requesting_team.name %></span>
+                  <div class="flex items-center gap-4 mt-2 text-xs">
+                    <div class="flex items-center gap-2">
+                      <span class="opacity-60">{gettext("From:")}</span>
+                      <span class="font-medium"><%= request.requesting_team.name %></span>
+                    </div>
+                    <%= if request.assigned_to_team do %>
+                      <div class="flex items-center gap-2">
+                        <span class="opacity-60">{gettext("To:")}</span>
+                        <span class="font-medium"><%= request.assigned_to_team.name %></span>
+                      </div>
+                    <% end %>
                   </div>
                   <p class="text-xs opacity-50 mt-2">
                     {gettext("Updated")} <%= Calendar.strftime(request.updated_at, "%b %d, %Y at %I:%M %p") %>
