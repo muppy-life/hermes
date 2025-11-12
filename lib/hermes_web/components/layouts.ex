@@ -37,14 +37,14 @@ defmodule HermesWeb.Layouts do
     ~H"""
     <header class="navbar bg-base-300 px-4 sm:px-6 lg:px-8 sticky top-0 z-50 justify-between">
       <div class="flex items-center gap-3">
-        <a href={if @current_user, do: ~p"/dashboard", else: ~p"/"} class="flex items-center">
+        <a href={if @current_user, do: ~p"/dashboard", else: ~p"/"} class="flex items-center transition-transform hover:scale-110">
           <img src={~p"/images/logo_light_themes.png"} width="32" class="[[data-theme=dark]_&]:hidden" />
           <img src={~p"/images/logo_dark_themes.png"} width="32" class="[[data-theme=light]_&]:hidden [[data-theme=system]_&]:hidden dark:block" />
         </a>
         <%= if @current_user do %>
           <div class="text-sm">
             <div class="font-semibold"><%= @current_user.email %></div>
-            <div class="text-xs text-gray-600"><%= String.capitalize(@current_user.role) %></div>
+            <div class="text-xs text-gray-600"><%= Phoenix.Naming.humanize(@current_user.role) %></div>
           </div>
         <% end %>
       </div>
@@ -67,7 +67,7 @@ defmodule HermesWeb.Layouts do
         <ul class="flex flex-row items-center">
           <%= if @current_user do %>
             <li>
-              <.link href={~p"/logout"} method="delete" class="btn btn-ghost btn-sm rounded-full">
+              <.link href={~p"/logout"} method="delete" class="btn btn-ghost">
                 <.icon name="hero-arrow-right-on-rectangle" class="size-5" />
               </.link>
             </li>
@@ -147,7 +147,7 @@ defmodule HermesWeb.Layouts do
 
     ~H"""
     <div class="dropdown dropdown-end">
-      <button tabindex="0" class="btn btn-ghost btn-sm rounded-full">
+      <button tabindex="0" class="btn btn-ghost">
         <%= case @current_locale do %>
           <% "es" -> %>
             <span class="text-xl">🇪🇸</span>
@@ -181,14 +181,14 @@ defmodule HermesWeb.Layouts do
   def theme_toggle(assigns) do
     ~H"""
     <button
-      class="btn btn-ghost btn-sm rounded-full [[data-theme=light]_&]:hidden [[data-theme=system]_&]:hidden"
+      class="btn btn-ghost [[data-theme=light]_&]:hidden [[data-theme=system]_&]:hidden"
       phx-click={JS.dispatch("phx:set-theme")}
       data-phx-theme="light"
     >
       <span class="text-xl">🌙</span>
     </button>
     <button
-      class="btn btn-ghost btn-sm rounded-full [[data-theme=dark]_&]:hidden"
+      class="btn btn-ghost [[data-theme=dark]_&]:hidden"
       phx-click={JS.dispatch("phx:set-theme")}
       data-phx-theme="dark"
     >
