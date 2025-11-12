@@ -125,10 +125,10 @@
       </.link>
     </div>
     <%= if @boards != [] do %>
-      <div class="space-y-4">
+      <div class="space-y-3">
         <%= for board <- @boards do %>
           <.link navigate={~p"/boards/#{board.id}"} class="block">
-            <div class="card bg-base-100 shadow-md border border-base-300 hover:shadow-lg transition-shadow mb-4">
+            <div class="card bg-base-100 shadow-md border border-base-300 hover:shadow-lg transition-shadow">
               <div class="card-body p-4">
                 <h3 class="card-title text-base"><%= board.name %></h3>
 
