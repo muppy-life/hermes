@@ -81,15 +81,7 @@ defmodule HermesWeb.RequestLive.New do
   end
 
   defp generate_title(form_data) do
-    kind = form_data["kind"] || "request"
-    kind_label = case kind do
-      "problem" -> "Problem"
-      "new_need" -> "New Need"
-      "improvement" -> "Improvement"
-      _ -> "Request"
-    end
-
     situation = form_data["current_situation"] || "Untitled"
-    "#{kind_label}: #{String.slice(situation, 0..50)}"
+    String.slice(situation, 0..50)
   end
 end
