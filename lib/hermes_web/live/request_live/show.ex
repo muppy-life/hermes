@@ -116,6 +116,29 @@ defmodule HermesWeb.RequestLive.Show do
     {:noreply, assign(socket, :comment_content, content)}
   end
 
+  def handle_event("change_status", %{"status" => new_status}, socket) do
+    current_user = socket.assigns[:current_user]
+    user_id = if current_user, do: current_user.id, else: nil
+
+    case Requests.update_request(socket.assigns.request, %{status: new_status}, user_id) do
+      {:ok, _updated_request} ->
+        # Reload the request with all associations preloaded
+        request_id = socket.assigns.request.id
+        updated_request = Requests.get_request!(request_id)
+        changes = Requests.list_request_changes(request_id)
+
+        {:noreply,
+         socket
+         |> assign(:request, updated_request)
+         |> assign(:changes, changes)
+         |> assign(:form, to_form(Requests.change_request(updated_request)))
+         |> put_flash(:info, "Status updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update status")}
+    end
+  end
+
   defp humanize_field(field) when is_binary(field) do
     field
     |> String.replace("_", " ")
