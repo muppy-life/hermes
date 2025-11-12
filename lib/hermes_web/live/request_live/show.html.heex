@@ -2,9 +2,7 @@
   Request Details
   <:subtitle><%= @request.title %></:subtitle>
   <:actions>
-    <.link navigate={@return_to}>
-      <.button class="btn btn-ghost">Back</.button>
-    </.link>
+    <.back_button navigate={@return_to} />
     <.button phx-click="open_edit_modal" class="btn btn-primary">
       Edit Request
     </.button>

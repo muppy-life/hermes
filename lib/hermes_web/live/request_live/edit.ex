@@ -3,6 +3,7 @@ defmodule HermesWeb.RequestLive.Edit do
 
   alias Hermes.Requests
   alias Hermes.Accounts
+  alias HermesWeb.NavigationHistory
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -10,6 +11,7 @@ defmodule HermesWeb.RequestLive.Edit do
 
     {:ok,
      socket
+     |> NavigationHistory.assign_return_path(default: ~p"/requests")
      |> assign(:page_title, "Edit Request")
      |> assign(:request, request)
      |> assign(:teams, Accounts.list_teams())

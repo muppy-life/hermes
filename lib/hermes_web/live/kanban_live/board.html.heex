@@ -1,43 +1,68 @@
 <div class="-mx-4 sm:-mx-6 lg:-mx-8">
-  <!-- Custom header in a single row with equal spacing -->
-  <div class="grid grid-cols-3 items-center gap-4 mb-8">
-    <!-- Left: Board Title -->
-    <h1 class="text-2xl font-semibold"><%= @board.name %></h1>
+  <!-- Compact header in a single row -->
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+    <!-- Board Title with Count -->
+    <div class="flex items-center gap-2">
+      <h1 class="text-xl font-semibold"><%= @board.name %></h1>
+      <div class="bg-primary/10 border border-primary/30 rounded-lg px-2 py-1">
+        <span class="text-xs font-semibold text-primary"><%= @total_count %></span>
+      </div>
+    </div>
 
-    <!-- Center: Filter Buttons -->
-    <div class="inline-flex gap-1 bg-base-200 rounded-lg p-1 justify-self-center">
+    <!-- Perspective Filter Buttons -->
+    <div class="inline-flex gap-1 bg-base-200 rounded-lg p-1">
       <button
         phx-click="set_filter"
         phx-value-filter="all"
-        class={["px-3 py-1 text-xs rounded transition-all", @filter_perspective == :all && "bg-primary text-primary-content" || "hover:bg-base-300"]}
+        class={["px-2 py-1 text-xs rounded transition-all", @filter_perspective == :all && "bg-primary text-primary-content" || "hover:bg-base-300"]}
       >
-        All Requests
+        All
       </button>
       <button
         phx-click="set_filter"
         phx-value-filter="created_by_us"
-        class={["px-3 py-1 text-xs rounded transition-all", @filter_perspective == :created_by_us && "bg-primary text-primary-content" || "hover:bg-base-300"]}
+        class={["px-2 py-1 text-xs rounded transition-all", @filter_perspective == :created_by_us && "bg-primary text-primary-content" || "hover:bg-base-300"]}
       >
         Created by Us
       </button>
       <button
         phx-click="set_filter"
         phx-value-filter="assigned_to_us"
-        class={["px-3 py-1 text-xs rounded transition-all", @filter_perspective == :assigned_to_us && "bg-primary text-primary-content" || "hover:bg-base-300"]}
+        class={["px-2 py-1 text-xs rounded transition-all", @filter_perspective == :assigned_to_us && "bg-primary text-primary-content" || "hover:bg-base-300"]}
       >
         Assigned to Us
       </button>
     </div>
 
-    <!-- Right: Back Button -->
-    <div class="justify-self-end">
-      <.link navigate={~p"/boards"}>
-        <.button>Back to Boards</.button>
-      </.link>
-    </div>
+    <!-- Inline Filters -->
+    <form phx-change="apply_filters" class="inline-flex gap-1 bg-base-200 rounded-lg p-1">
+      <select class={["text-xs px-2 py-1 rounded transition-all cursor-pointer outline-none border", HermesWeb.CoreComponents.priority_filter_class(@filter_priority)]} name="priority">
+        <option value="all" selected={@filter_priority == "all"}>All Priorities</option>
+        <option value="4" selected={@filter_priority == "4"}>🔴 Critical</option>
+        <option value="3" selected={@filter_priority == "3"}>🟠 Important</option>
+        <option value="2" selected={@filter_priority == "2"}>🟡 Normal</option>
+        <option value="1" selected={@filter_priority == "1"}>🟢 Low</option>
+      </select>
+
+      <select class="bg-transparent text-xs px-2 py-1 rounded hover:bg-base-300 transition-all cursor-pointer outline-none" name="team">
+        <option value="all" selected={@filter_team == "all"}>All Teams</option>
+        <%= for team <- @teams do %>
+          <option value={team.id} selected={@filter_team == to_string(team.id)}><%= team.name %></option>
+        <% end %>
+      </select>
+
+      <%= if @filter_priority != "all" or @filter_team != "all" do %>
+        <button type="button" phx-click="clear_filters" class="px-2 py-1 text-xs rounded hover:bg-base-300 transition-all">
+          Clear
+        </button>
+      <% end %>
+    </form>
+
+    <!-- Back Button -->
+    <.back_button navigate={@return_to} />
   </div>
 
-  <div class="kanban-board mt-8 h-[calc(100vh-12rem)] relative">
+  <div class="kanban-board mt-4 h-[calc(100vh-10rem)] relative">
     <!-- Scroll indicator on left edge -->
     <div id="scroll-indicator-left" class="absolute left-0 top-0 bottom-0 w-12 pointer-events-none z-10 flex items-center justify-center bg-gradient-to-r from-base-100 to-transparent transition-opacity duration-300 opacity-0">
       <div class="opacity-40 animate-pulse">

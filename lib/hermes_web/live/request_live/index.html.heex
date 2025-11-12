@@ -7,52 +7,14 @@
   </div>
 </div>
 
-<!-- Filters -->
-<div class="bg-base-100 shadow-sm border border-base-300 rounded-lg p-3 mt-2 sticky top-12 z-10">
-  <div class="flex items-center justify-between gap-3">
-    <form phx-change="apply_filters" class="flex-1">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <!-- Status Filter -->
-        <select class="select select-bordered select-sm" name="status">
-          <option value="all" selected={@filter_status == "all"}>All Statuses</option>
-          <option value="new" selected={@filter_status == "new"}>New</option>
-          <option value="pending" selected={@filter_status == "pending"}>Pending</option>
-          <option value="in_progress" selected={@filter_status == "in_progress"}>In Progress</option>
-          <option value="review" selected={@filter_status == "review"}>Review</option>
-          <option value="completed" selected={@filter_status == "completed"}>Completed</option>
-          <option value="blocked" selected={@filter_status == "blocked"}>Blocked</option>
-        </select>
-
-        <!-- Priority Filter -->
-        <select class="select select-bordered select-sm" name="priority">
-          <option value="all" selected={@filter_priority == "all"}>All Priorities</option>
-          <option value="4" selected={@filter_priority == "4"}>Critical</option>
-          <option value="3" selected={@filter_priority == "3"}>Important</option>
-          <option value="2" selected={@filter_priority == "2"}>Normal</option>
-          <option value="1" selected={@filter_priority == "1"}>Low</option>
-        </select>
-
-        <!-- Team Filter -->
-        <select class="select select-bordered select-sm" name="team">
-          <option value="all" selected={@filter_team == "all"}>All Teams</option>
-          <%= for team <- @teams do %>
-            <option value={team.id} selected={@filter_team == to_string(team.id)}><%= team.name %></option>
-          <% end %>
-        </select>
-
-        <!-- Clear Filters Button -->
-        <button type="button" phx-click="clear_filters" class="btn btn-outline btn-sm">
-          Clear
-        </button>
-      </div>
-    </form>
-
-    <!-- Item Count -->
-    <div class="text-sm opacity-70 whitespace-nowrap">
-      <%= @total_count %> items
-    </div>
-  </div>
-</div>
+<.request_filters
+  show_status={true}
+  filter_status={@filter_status}
+  filter_priority={@filter_priority}
+  filter_team={@filter_team}
+  teams={@teams}
+  total_count={@total_count}
+/>
 
 <!-- Tabs -->
 <div role="tablist" class="tabs tabs-bordered mt-4">

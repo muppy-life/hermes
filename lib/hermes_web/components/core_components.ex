@@ -117,6 +117,39 @@ defmodule HermesWeb.CoreComponents do
   end
 
   @doc """
+  Renders a back button with consistent styling across the app.
+
+  ## Examples
+
+      <.back_button navigate={~p"/boards"}>Back to Boards</.back_button>
+      <.back_button navigate={@return_to} />
+  """
+  attr :navigate, :string, required: true, doc: "the path to navigate back to"
+  attr :class, :string, default: nil
+  attr :rest, :global
+
+  slot :inner_block
+
+  def back_button(assigns) do
+    assigns =
+      assigns
+      |> assign_new(:inner_block, fn -> [] end)
+      |> assign(:btn_class, ["btn btn-ghost", assigns[:class]] |> Enum.reject(&is_nil/1) |> Enum.join(" "))
+
+    ~H"""
+    <.link navigate={@navigate}>
+      <.button class={@btn_class} {@rest}>
+        <%= if @inner_block != [] do %>
+          {render_slot(@inner_block)}
+        <% else %>
+          Back
+        <% end %>
+      </.button>
+    </.link>
+    """
+  end
+
+  @doc """
   Renders an input with label and error messages.
 
   A `Phoenix.HTML.FormField` may be passed as argument,
@@ -514,6 +547,31 @@ defmodule HermesWeb.CoreComponents do
     end
   end
 
+  @doc """
+  Returns priority color classes for use in filters and other components.
+  Accepts both integer and string priority values.
+
+  ## Examples
+
+      priority_filter_class("4") # => "bg-red-500 text-white border-red-600"
+      priority_filter_class(1) # => "bg-yellow-200 text-yellow-900 border-yellow-300"
+  """
+  def priority_filter_class(priority) when is_binary(priority) do
+    case priority do
+      "4" -> "bg-red-500 text-white border-red-600"
+      "3" -> "bg-red-300 text-red-900 border-red-400"
+      "2" -> "bg-orange-200 text-orange-900 border-orange-300"
+      "1" -> "bg-yellow-200 text-yellow-900 border-yellow-300"
+      _ -> "bg-transparent hover:bg-base-300"
+    end
+  end
+
+  def priority_filter_class(priority) when is_integer(priority) do
+    priority_filter_class(Integer.to_string(priority))
+  end
+
+  def priority_filter_class(_), do: "bg-transparent hover:bg-base-300"
+
   defp priority_size_class(size) do
     case size do
       "sm" -> "badge-sm text-xs"
@@ -633,5 +691,78 @@ defmodule HermesWeb.CoreComponents do
       "lg" -> "badge-lg text-base"
       _ -> "badge-md text-sm"
     end
+  end
+
+  @doc """
+  Renders a filter bar for requests.
+
+  ## Examples
+
+      <.request_filters
+        show_status={true}
+        filter_status={@filter_status}
+        filter_priority={@filter_priority}
+        filter_team={@filter_team}
+        teams={@teams}
+        total_count={@total_count}
+      />
+  """
+  attr :show_status, :boolean, default: true, doc: "whether to show the status filter"
+  attr :filter_status, :string, default: "all"
+  attr :filter_priority, :string, default: "all"
+  attr :filter_team, :string, default: "all"
+  attr :teams, :list, required: true
+  attr :total_count, :integer, default: 0
+
+  def request_filters(assigns) do
+    ~H"""
+    <div class="bg-base-100 shadow-sm border border-base-300 rounded-lg p-3 mt-2 sticky top-12 z-10">
+      <div class="flex items-center justify-between gap-3">
+        <form phx-change="apply_filters" class="flex-1">
+          <div class={["grid grid-cols-1 gap-3", if(@show_status, do: "md:grid-cols-4", else: "md:grid-cols-3")]}>
+            <!-- Status Filter -->
+            <%= if @show_status do %>
+              <select class="select select-bordered select-sm" name="status">
+                <option value="all" selected={@filter_status == "all"}>All Statuses</option>
+                <option value="new" selected={@filter_status == "new"}>New</option>
+                <option value="pending" selected={@filter_status == "pending"}>Pending</option>
+                <option value="in_progress" selected={@filter_status == "in_progress"}>In Progress</option>
+                <option value="review" selected={@filter_status == "review"}>Review</option>
+                <option value="completed" selected={@filter_status == "completed"}>Completed</option>
+                <option value="blocked" selected={@filter_status == "blocked"}>Blocked</option>
+              </select>
+            <% end %>
+
+            <!-- Priority Filter -->
+            <select class="select select-bordered select-sm" name="priority">
+              <option value="all" selected={@filter_priority == "all"}>All Priorities</option>
+              <option value="4" selected={@filter_priority == "4"}>Critical</option>
+              <option value="3" selected={@filter_priority == "3"}>Important</option>
+              <option value="2" selected={@filter_priority == "2"}>Normal</option>
+              <option value="1" selected={@filter_priority == "1"}>Low</option>
+            </select>
+
+            <!-- Team Filter -->
+            <select class="select select-bordered select-sm" name="team">
+              <option value="all" selected={@filter_team == "all"}>All Teams</option>
+              <%= for team <- @teams do %>
+                <option value={team.id} selected={@filter_team == to_string(team.id)}><%= team.name %></option>
+              <% end %>
+            </select>
+
+            <!-- Clear Filters Button -->
+            <button type="button" phx-click="clear_filters" class="btn btn-outline btn-sm">
+              Clear
+            </button>
+          </div>
+        </form>
+
+        <!-- Item Count -->
+        <div class="text-sm opacity-70 whitespace-nowrap">
+          <%= @total_count %> items
+        </div>
+      </div>
+    </div>
+    """
   end
 end
