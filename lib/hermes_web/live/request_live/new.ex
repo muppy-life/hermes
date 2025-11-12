@@ -5,13 +5,16 @@ defmodule HermesWeb.RequestLive.New do
   alias Hermes.Accounts
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
+    return_to = params["return_to"] || ~p"/requests"
+
     {:ok,
      socket
      |> assign(:page_title, gettext("New Request"))
      |> assign(:current_step, 1)
      |> assign(:form_data, %{})
      |> assign(:teams, Accounts.list_teams())
+     |> assign(:return_to, return_to)
      |> assign(:form, to_form(%{}, as: :request))}
   end
 
