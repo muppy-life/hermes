@@ -87,6 +87,10 @@
                       <%= request.description %>
                     <% end %>
                   </p>
+                  <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="opacity-60">{gettext("From:")}</span>
+                    <span class="font-medium"><%= request.requesting_team.name %></span>
+                  </div>
                   <p class="text-xs opacity-50 mt-2">
                     {gettext("Updated")} <%= Calendar.strftime(request.updated_at, "%b %d, %Y at %I:%M %p") %>
                   </p>

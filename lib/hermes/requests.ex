@@ -17,7 +17,8 @@ defmodule Hermes.Requests do
 
   def list_requests_by_team(team_id) do
     from(r in Request,
-      where: r.requesting_team_id == ^team_id or r.assigned_to_team_id == ^team_id
+      where: r.requesting_team_id == ^team_id or r.assigned_to_team_id == ^team_id,
+      order_by: [desc: r.updated_at]
     )
     |> Repo.all()
     |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
