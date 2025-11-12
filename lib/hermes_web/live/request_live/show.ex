@@ -5,10 +5,13 @@ defmodule HermesWeb.RequestLive.Show do
   alias Hermes.Accounts
 
   @impl true
-  def mount(%{"id" => id}, _session, socket) do
+  def mount(%{"id" => id} = params, _session, socket) do
     request = Requests.get_request!(id)
     changes = Requests.list_request_changes(id)
     comments = Requests.list_request_comments(id)
+
+    # Capture the return_to parameter to know where to navigate back
+    return_to = Map.get(params, "return_to", "/requests")
 
     {:ok,
      socket
@@ -20,6 +23,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:teams, Accounts.list_teams())
+     |> assign(:return_to, return_to)
      |> assign(:form, to_form(Requests.change_request(request)))}
   end
 

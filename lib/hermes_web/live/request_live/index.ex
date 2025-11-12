@@ -19,6 +19,7 @@ defmodule HermesWeb.RequestLive.Index do
     filter_status = params["status"] || "all"
     filter_priority = params["priority"] || "all"
     filter_team = params["team"] || "all"
+    active_tab = params["tab"] || "ongoing"
 
     {:noreply,
      socket
@@ -27,6 +28,7 @@ defmodule HermesWeb.RequestLive.Index do
      |> assign(:filter_status, filter_status)
      |> assign(:filter_priority, filter_priority)
      |> assign(:filter_team, filter_team)
+     |> assign(:active_tab, active_tab)
      |> load_requests()}
   end
 
@@ -70,37 +72,58 @@ defmodule HermesWeb.RequestLive.Index do
   def handle_event("clear_filters", _params, socket) do
     {:noreply,
      push_patch(socket,
-       to: ~p"/requests?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}"
+       to: ~p"/requests?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}&tab=#{socket.assigns.active_tab}"
+     )}
+  end
+
+  def handle_event("change_tab", %{"tab" => tab}, socket) do
+    {:noreply,
+     push_patch(socket,
+       to: ~p"/requests?#{build_params(socket, tab: tab)}"
      )}
   end
 
   defp build_params(socket, updates) do
+    updates_map = Enum.into(updates, %{}, fn {k, v} -> {Atom.to_string(k), v} end)
+
     %{
       "sort_by" => Atom.to_string(socket.assigns.sort_by),
       "sort_order" => Atom.to_string(socket.assigns.sort_order),
       "status" => socket.assigns.filter_status,
       "priority" => socket.assigns.filter_priority,
-      "team" => socket.assigns.filter_team
+      "team" => socket.assigns.filter_team,
+      "tab" => Map.get(updates_map, "tab", socket.assigns.active_tab)
     }
-    |> Map.merge(Enum.into(updates, %{}, fn {k, v} -> {Atom.to_string(k), v} end))
-    |> Enum.filter(fn {_k, v} -> v != "all" end)
+    |> Map.merge(updates_map)
+    |> Enum.filter(fn {k, v} -> v != "all" and k != "tab" end)
     |> Enum.into(%{})
+    |> Map.put("tab", Map.get(updates_map, "tab", socket.assigns.active_tab))
   end
 
   defp load_requests(socket) do
     current_user = socket.assigns[:current_user]
 
-    requests =
-      if Accounts.is_dev_team?(current_user) do
-        Requests.list_requests()
-      else
-        Requests.list_requests_by_team(current_user.team_id)
-      end
+    all_requests = Requests.list_requests_by_team(current_user.team_id)
+    filtered_requests = apply_filters(all_requests, socket.assigns)
 
-    requests = apply_filters(requests, socket.assigns)
-    requests = apply_sorting(requests, socket.assigns.sort_by, socket.assigns.sort_order)
+    # Split into three categories
+    new_requests = filtered_requests
+      |> Enum.filter(&(&1.status == "new"))
+      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
-    assign(socket, :requests, requests)
+    ongoing_requests = filtered_requests
+      |> Enum.filter(&(&1.status in ["pending", "in_progress", "review", "blocked"]))
+      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
+
+    completed_requests = filtered_requests
+      |> Enum.filter(&(&1.status == "completed"))
+      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
+
+    socket
+    |> assign(:new_requests, new_requests)
+    |> assign(:ongoing_requests, ongoing_requests)
+    |> assign(:completed_requests, completed_requests)
+    |> assign(:total_count, length(filtered_requests))
   end
 
   defp apply_filters(requests, assigns) do

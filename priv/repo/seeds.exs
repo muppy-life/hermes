@@ -13,9 +13,11 @@
 alias Hermes.Repo
 alias Hermes.Accounts.{Team, User}
 alias Hermes.Kanbans.{Board, Column, Card}
-alias Hermes.Requests.Request
+alias Hermes.Requests.{Request, RequestChange, RequestComment}
 
 # Clear existing data (optional - comment out if you want to keep existing data)
+Repo.delete_all(RequestComment)
+Repo.delete_all(RequestChange)
 Repo.delete_all(Card)
 Repo.delete_all(Column)
 Repo.delete_all(Board)
@@ -81,150 +83,526 @@ hr_user = Repo.insert!(%User{
   team_id: hr_team.id
 })
 
-# Create requests
-request1 = Repo.insert!(%Request{
-  title: "New landing page for product launch",
-  description: "We need a new landing page for our upcoming product launch in Q2. It should be mobile-responsive and integrate with our analytics.",
-  priority: 5,
-  status: "pending",
-  requesting_team_id: marketing_team.id,
-  assigned_to_team_id: dev_team.id,
-  created_by_id: marketing_user.id
+# Helper function to create request with changes and comments
+defmodule SeedHelper do
+  def create_request_with_history(attrs, creator_id, changes \\ [], comments \\ []) do
+    request = Hermes.Repo.insert!(struct(Hermes.Requests.Request, attrs))
+
+    # Create initial change
+    Hermes.Repo.insert!(%Hermes.Requests.RequestChange{
+      request_id: request.id,
+      user_id: creator_id,
+      action: "created",
+      changes: %{},
+      inserted_at: NaiveDateTime.add(request.inserted_at, -3600, :second)
+    })
+
+    # Create additional changes
+    Enum.each(changes, fn {field, old_val, new_val, user_id, days_ago} ->
+      Hermes.Repo.insert!(%Hermes.Requests.RequestChange{
+        request_id: request.id,
+        user_id: user_id,
+        action: "updated",
+        field: to_string(field),
+        old_value: old_val,
+        new_value: new_val,
+        inserted_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -days_ago * 24 * 3600, :second) |> NaiveDateTime.truncate(:second)
+      })
+    end)
+
+    # Create comments
+    Enum.each(comments, fn {content, user_id, days_ago} ->
+      Hermes.Repo.insert!(%Hermes.Requests.RequestComment{
+        request_id: request.id,
+        user_id: user_id,
+        content: content,
+        inserted_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -days_ago * 24 * 3600, :second) |> NaiveDateTime.truncate(:second)
+      })
+    end)
+
+    request
+  end
+end
+
+# Requests from Marketing Team
+request1 = SeedHelper.create_request_with_history(
+  %{
+    title: "New landing page for product launch",
+    description: "Landing page for Q2 product launch with analytics integration",
+    kind: :new_need,
+    target_user_type: :external,
+    current_situation: "We currently don't have a dedicated landing page for our new product. Marketing campaigns are directing users to the general homepage, which has a low conversion rate.",
+    goal_description: "Create a compelling landing page that showcases the new product features, includes customer testimonials, and has clear CTAs to drive conversions for the Q2 launch.",
+    data_description: "Product specifications, customer testimonials, pricing tiers, feature comparison matrix, and marketing copy.",
+    goal_target: :interface_view,
+    expected_output: "A responsive landing page with sections for hero banner, features, testimonials, pricing, and contact form. Should integrate with Google Analytics and our CRM system.",
+    priority: 4,
+    status: "in_progress",
+    requesting_team_id: marketing_team.id,
+    assigned_to_team_id: dev_team.id,
+    created_by_id: marketing_user.id
+  },
+  marketing_user.id,
+  [
+    {:status, "pending", "in_progress", product_owner.id, 2},
+    {:priority, "3", "4", marketing_user.id, 3}
+  ],
+  [
+    {"This is critical for our Q2 campaign launch. Can we prioritize this?", marketing_user.id, 5},
+    {"We've started working on this. ETA is end of next week.", dev_user.id, 2},
+    {"Great! Let me know if you need any assets or copy.", marketing_user.id, 2}
+  ]
+)
+
+request2 = SeedHelper.create_request_with_history(
+  %{
+    title: "Campaign analytics report automation",
+    description: "Automate weekly campaign performance reports",
+    kind: :improvement,
+    target_user_type: :internal,
+    current_situation: "Marketing team manually compiles campaign performance data from multiple sources every week, which takes 4-5 hours of work and is prone to errors.",
+    goal_description: "Automate the generation of weekly campaign performance reports that pull data from Google Analytics, social media platforms, and our email marketing system.",
+    data_description: "Campaign metrics: impressions, clicks, conversions, ROI, engagement rates from multiple platforms.",
+    goal_target: :report_file,
+    expected_output: "Automated weekly PDF report with charts and key metrics, delivered via email every Monday morning.",
+    priority: 2,
+    status: "pending",
+    requesting_team_id: marketing_team.id,
+    assigned_to_team_id: dev_team.id,
+    created_by_id: marketing_user.id
+  },
+  marketing_user.id,
+  [],
+  [
+    {"This would save us so much time each week!", marketing_user.id, 1}
+  ]
+)
+
+# Requests from Sales Team
+request3 = SeedHelper.create_request_with_history(
+  %{
+    title: "CRM integration with email system",
+    description: "Bi-directional sync between CRM and email marketing platform",
+    kind: :new_need,
+    target_user_type: :internal,
+    current_situation: "Sales team has to manually export contacts from the CRM and import them into the email marketing platform. This creates data inconsistencies and missed opportunities.",
+    goal_description: "Implement automatic synchronization between our CRM and email marketing platform so that contact updates, tags, and campaign responses are reflected in both systems in real-time.",
+    data_description: "Contact information, deal stages, interaction history, email campaign responses, tags, and custom fields.",
+    goal_target: :alert_message,
+    expected_output: "Real-time sync with notification alerts when sync fails or requires attention. Dashboard showing last sync time and status.",
+    priority: 4,
+    status: "in_progress",
+    requesting_team_id: sales_team.id,
+    assigned_to_team_id: dev_team.id,
+    created_by_id: sales_user.id
+  },
+  sales_user.id,
+  [
+    {:status, "pending", "in_progress", product_owner.id, 5},
+    {:priority, "3", "4", sales_user.id, 7}
+  ],
+  [
+    {"We're losing leads because of manual data entry delays.", sales_user.id, 8},
+    {"Understood. We've prioritized this for the current sprint.", product_owner.id, 5},
+    {"API integration is complete, working on error handling now.", dev_user.id, 1}
+  ]
+)
+
+request4 = SeedHelper.create_request_with_history(
+  %{
+    title: "Sales performance dashboard",
+    description: "Real-time dashboard for sales metrics and KPIs",
+    kind: :new_need,
+    target_user_type: :internal,
+    current_situation: "Sales managers have to pull reports from multiple systems to understand team performance. There's no single view of key metrics.",
+    goal_description: "Create a real-time dashboard that shows sales pipeline, conversion rates, individual rep performance, and forecasts in one place.",
+    data_description: "Deal data, revenue figures, conversion rates, sales activities, pipeline stages, individual and team quotas.",
+    goal_target: :interface_view,
+    expected_output: "Interactive dashboard with filters for time period, team, and individual reps. Should include charts for trends and comparative analysis.",
+    priority: 3,
+    status: "pending",
+    requesting_team_id: sales_team.id,
+    assigned_to_team_id: dev_team.id,
+    created_by_id: sales_user.id
+  },
+  sales_user.id,
+  [],
+  [
+    {"This would really help with our quarterly planning.", sales_user.id, 3}
+  ]
+)
+
+# Requests from HR Team
+request5 = SeedHelper.create_request_with_history(
+  %{
+    title: "Employee portal time-off system",
+    description: "Add time-off request and approval workflow to employee portal",
+    kind: :improvement,
+    target_user_type: :internal,
+    current_situation: "Employees submit time-off requests via email, which HR then manually tracks in a spreadsheet. This leads to lost requests and approval delays.",
+    goal_description: "Implement a digital time-off request system where employees can submit requests, managers can approve/deny, and everyone can see their balance and history.",
+    data_description: "Employee records, time-off balances, request details (dates, type, reason), manager hierarchy, approval status.",
+    goal_target: :interface_view,
+    expected_output: "Portal interface for submitting requests, manager approval dashboard, automated email notifications, and calendar view of team availability.",
+    priority: 3,
+    status: "completed",
+    requesting_team_id: hr_team.id,
+    assigned_to_team_id: dev_team.id,
+    created_by_id: hr_user.id
+  },
+  hr_user.id,
+  [
+    {:status, "pending", "in_progress", product_owner.id, 15},
+    {:status, "in_progress", "completed", dev_user.id, 7},
+    {:priority, "2", "3", hr_user.id, 18}
+  ],
+  [
+    {"This is causing a lot of confusion during holiday season.", hr_user.id, 20},
+    {"We'll get this done before year-end.", product_owner.id, 15},
+    {"Feature is complete and deployed. Please test it out!", dev_user.id, 7},
+    {"Works perfectly! Thank you so much.", hr_user.id, 6}
+  ]
+)
+
+request6 = SeedHelper.create_request_with_history(
+  %{
+    title: "Document management system for HR files",
+    description: "Secure document storage and sharing for employee files",
+    kind: :new_need,
+    target_user_type: :internal,
+    current_situation: "HR stores employee documents in a shared network drive with limited security controls. It's difficult to track who has accessed sensitive files.",
+    goal_description: "Implement a secure document management system with role-based access, version control, and audit logging for all employee-related documents.",
+    data_description: "Employee contracts, performance reviews, certifications, tax forms, and other confidential HR documents.",
+    goal_target: :interface_view,
+    expected_output: "Web portal for uploading, organizing, and accessing documents with granular permissions. Should log all access and changes for compliance.",
+    priority: 4,
+    status: "pending",
+    requesting_team_id: hr_team.id,
+    assigned_to_team_id: dev_team.id,
+    created_by_id: hr_user.id
+  },
+  hr_user.id,
+  [],
+  [
+    {"This is important for our compliance audit coming up.", hr_user.id, 2}
+  ]
+)
+
+# Requests from Dev Team (as requesting team)
+request7 = SeedHelper.create_request_with_history(
+  %{
+    title: "Development team onboarding documentation",
+    description: "Create comprehensive onboarding guide for new developers",
+    kind: :new_need,
+    target_user_type: :internal,
+    current_situation: "New developers joining the team have to piece together information from multiple sources. Onboarding takes 2-3 weeks longer than it should.",
+    goal_description: "Create a structured onboarding guide covering development environment setup, codebase architecture, deployment processes, and team workflows.",
+    data_description: "Setup instructions, architecture diagrams, code examples, tool configurations, and best practices documentation.",
+    goal_target: :interface_view,
+    expected_output: "Internal wiki or documentation site with searchable content, video tutorials, and step-by-step guides for common tasks.",
+    priority: 2,
+    status: "in_progress",
+    requesting_team_id: dev_team.id,
+    assigned_to_team_id: hr_team.id,
+    created_by_id: dev_user.id
+  },
+  dev_user.id,
+  [
+    {:status, "pending", "in_progress", hr_user.id, 4}
+  ],
+  [
+    {"We need HR's help with the organizational policies section.", dev_user.id, 10},
+    {"We're working on the company policies part now.", hr_user.id, 4}
+  ]
+)
+
+request8 = SeedHelper.create_request_with_history(
+  %{
+    title: "Developer productivity tools budget",
+    description: "Budget approval for team productivity software licenses",
+    kind: :improvement,
+    target_user_type: :internal,
+    current_situation: "Development team is using free tiers of various tools, which limits collaboration and productivity.",
+    goal_description: "Secure budget approval for premium versions of development tools including code review platforms, monitoring services, and collaboration software.",
+    data_description: "List of tools, pricing, expected productivity improvements, and ROI justification.",
+    goal_target: :alert_message,
+    expected_output: "Budget approval notification and procurement process for the identified tools.",
+    priority: 2,
+    status: "pending",
+    requesting_team_id: dev_team.id,
+    assigned_to_team_id: hr_team.id,
+    created_by_id: product_owner.id
+  },
+  product_owner.id,
+  [],
+  []
+)
+
+# Marketing Team requests to other teams
+request9 = SeedHelper.create_request_with_history(
+  %{
+    title: "Sales collateral for new product",
+    description: "Create sales presentations and one-pagers for new product",
+    kind: :new_need,
+    target_user_type: :external,
+    current_situation: "Sales team doesn't have proper marketing materials for the new product launch. They're creating their own inconsistent materials.",
+    goal_description: "Develop professional sales collateral including presentation decks, one-pagers, case studies, and battle cards that align with brand guidelines.",
+    data_description: "Product specifications, competitive analysis, target customer profiles, value propositions, and pricing information.",
+    goal_target: :report_file,
+    expected_output: "Complete sales enablement package with PowerPoint templates, PDF one-pagers, and editable battle cards.",
+    priority: 3,
+    status: "pending",
+    requesting_team_id: marketing_team.id,
+    assigned_to_team_id: sales_team.id,
+    created_by_id: marketing_user.id
+  },
+  marketing_user.id,
+  [],
+  [
+    {"We need your input on the pain points customers are asking about.", marketing_user.id, 1}
+  ]
+)
+
+# Sales Team requests to other teams
+request10 = SeedHelper.create_request_with_history(
+  %{
+    title: "Sales training on new product features",
+    description: "Technical training session for sales team on new product",
+    kind: :new_need,
+    target_user_type: :internal,
+    current_situation: "Sales team struggles to answer technical questions about the new product features during customer calls.",
+    goal_description: "Conduct comprehensive training sessions covering technical architecture, feature demonstrations, and common objection handling.",
+    data_description: "Product architecture, feature specifications, demo environment access, FAQ document, competitive comparison.",
+    goal_target: :interface_view,
+    expected_output: "Training session schedule, demo environment access, recorded training videos, and technical FAQ document.",
+    priority: 4,
+    status: "pending",
+    requesting_team_id: sales_team.id,
+    assigned_to_team_id: dev_team.id,
+    created_by_id: sales_user.id
+  },
+  sales_user.id,
+  [],
+  [
+    {"Can we schedule this before the big client demo next week?", sales_user.id, 1}
+  ]
+)
+
+request11 = SeedHelper.create_request_with_history(
+  %{
+    title: "Commission structure documentation",
+    description: "Clear documentation of sales commission and bonus structure",
+    kind: :problem,
+    target_user_type: :internal,
+    current_situation: "Sales team members are confused about how commissions are calculated, leading to disputes and decreased motivation.",
+    goal_description: "Create clear, detailed documentation explaining commission tiers, bonus structures, and calculation methodologies with examples.",
+    data_description: "Commission rates, bonus thresholds, calculation formulas, payment schedules, and example scenarios.",
+    goal_target: :report_file,
+    expected_output: "Comprehensive PDF guide with examples, an online calculator tool, and FAQ section.",
+    priority: 3,
+    status: "in_progress",
+    requesting_team_id: sales_team.id,
+    assigned_to_team_id: hr_team.id,
+    created_by_id: sales_user.id
+  },
+  sales_user.id,
+  [
+    {:status, "pending", "in_progress", hr_user.id, 3}
+  ],
+  [
+    {"This is causing a lot of frustration in the team.", sales_user.id, 5},
+    {"We're finalizing the policy with finance now.", hr_user.id, 3}
+  ]
+)
+
+# Create kanban boards for team pairs
+# Each board represents collaboration between two teams
+
+# Dev <-> Marketing Board
+dev_marketing_board = Repo.insert!(%Board{
+  name: "Dev ↔ Marketing",
+  team_id: dev_team.id,
+  team_b_id: marketing_team.id
 })
 
-request2 = Repo.insert!(%Request{
-  title: "CRM integration with email system",
-  description: "Sales team needs the CRM to automatically sync with our email marketing platform.",
-  priority: 4,
-  status: "in_progress",
-  requesting_team_id: sales_team.id,
-  assigned_to_team_id: dev_team.id,
-  created_by_id: sales_user.id
+# Dev <-> Sales Board
+dev_sales_board = Repo.insert!(%Board{
+  name: "Dev ↔ Sales",
+  team_id: dev_team.id,
+  team_b_id: sales_team.id
 })
 
-request3 = Repo.insert!(%Request{
-  title: "Employee portal improvements",
-  description: "Add new features to employee portal including time-off requests and document upload.",
-  priority: 3,
-  status: "pending",
-  requesting_team_id: hr_team.id,
-  assigned_to_team_id: dev_team.id,
-  created_by_id: hr_user.id
+# Dev <-> HR Board
+dev_hr_board = Repo.insert!(%Board{
+  name: "Dev ↔ HR",
+  team_id: dev_team.id,
+  team_b_id: hr_team.id
 })
 
-request4 = Repo.insert!(%Request{
-  title: "Performance dashboard",
-  description: "Create a dashboard to track sales metrics and KPIs in real-time.",
-  priority: 4,
-  status: "pending",
-  requesting_team_id: sales_team.id,
-  assigned_to_team_id: dev_team.id,
-  created_by_id: sales_user.id
+# Marketing <-> Sales Board
+marketing_sales_board = Repo.insert!(%Board{
+  name: "Marketing ↔ Sales",
+  team_id: marketing_team.id,
+  team_b_id: sales_team.id
 })
 
-request5 = Repo.insert!(%Request{
-  title: "Bug fix: Login timeout issue",
-  description: "Users are reporting that they get logged out too quickly. Need to extend session timeout.",
-  priority: 5,
-  status: "completed",
-  requesting_team_id: hr_team.id,
-  assigned_to_team_id: dev_team.id,
-  created_by_id: hr_user.id
-})
+# Helper function to create standard columns for a board
+defmodule BoardHelper do
+  def create_columns(board_id) do
+    backlog = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
+      name: "Backlog",
+      position: 0,
+      board_id: board_id
+    })
 
-# Create kanban boards for each team
-dev_board = Repo.insert!(%Board{
-  name: "Development Sprint Board",
-  team_id: dev_team.id
-})
+    todo = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
+      name: "To Do",
+      position: 1,
+      board_id: board_id
+    })
 
-marketing_board = Repo.insert!(%Board{
-  name: "Marketing Campaigns",
-  team_id: marketing_team.id
-})
+    in_progress = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
+      name: "In Progress",
+      position: 2,
+      board_id: board_id
+    })
 
-sales_board = Repo.insert!(%Board{
-  name: "Sales Pipeline",
-  team_id: sales_team.id
-})
+    done = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
+      name: "Done",
+      position: 3,
+      board_id: board_id
+    })
 
-# Create columns for dev board
-backlog = Repo.insert!(%Column{
-  name: "Backlog",
-  position: 0,
-  board_id: dev_board.id
-})
+    %{backlog: backlog, todo: todo, in_progress: in_progress, done: done}
+  end
+end
 
-todo = Repo.insert!(%Column{
-  name: "To Do",
-  position: 1,
-  board_id: dev_board.id
-})
+# Create columns for all team-pair boards
+dev_marketing_cols = BoardHelper.create_columns(dev_marketing_board.id)
+dev_sales_cols = BoardHelper.create_columns(dev_sales_board.id)
+dev_hr_cols = BoardHelper.create_columns(dev_hr_board.id)
+marketing_sales_cols = BoardHelper.create_columns(marketing_sales_board.id)
 
-in_progress = Repo.insert!(%Column{
-  name: "In Progress",
-  position: 2,
-  board_id: dev_board.id
-})
-
-review = Repo.insert!(%Column{
-  name: "Review",
-  position: 3,
-  board_id: dev_board.id
-})
-
-done = Repo.insert!(%Column{
-  name: "Done",
-  position: 4,
-  board_id: dev_board.id
-})
-
-# Create cards for the dev board
+# Dev ↔ Marketing Board - All requests between these two teams
+# request1: Marketing -> Dev (in_progress)
 Repo.insert!(%Card{
-  title: "New landing page for product launch",
-  description: "Marketing team request - high priority",
+  title: request1.title,
+  description: request1.description,
   position: 0,
-  column_id: backlog.id,
+  column_id: dev_marketing_cols.in_progress.id,
   request_id: request1.id
 })
 
+# request2: Marketing -> Dev (pending)
 Repo.insert!(%Card{
-  title: "CRM integration with email system",
-  description: "Sales team request - currently being worked on",
+  title: request2.title,
+  description: request2.description,
   position: 0,
-  column_id: in_progress.id,
+  column_id: dev_marketing_cols.backlog.id,
   request_id: request2.id
 })
 
+# Dev ↔ Sales Board - All requests between these two teams
+# request3: Sales -> Dev (in_progress)
 Repo.insert!(%Card{
-  title: "Employee portal improvements",
-  description: "HR team request - add time-off and document features",
-  position: 1,
-  column_id: backlog.id,
+  title: request3.title,
+  description: request3.description,
+  position: 0,
+  column_id: dev_sales_cols.in_progress.id,
   request_id: request3.id
 })
 
+# request4: Sales -> Dev (pending)
 Repo.insert!(%Card{
-  title: "Performance dashboard",
-  description: "Sales metrics dashboard",
+  title: request4.title,
+  description: request4.description,
   position: 0,
-  column_id: todo.id,
+  column_id: dev_sales_cols.backlog.id,
   request_id: request4.id
 })
 
+# request10: Sales -> Dev (pending)
 Repo.insert!(%Card{
-  title: "Bug fix: Login timeout issue",
-  description: "Session timeout fix - completed",
+  title: request10.title,
+  description: request10.description,
+  position: 1,
+  column_id: dev_sales_cols.backlog.id,
+  request_id: request10.id
+})
+
+# Dev ↔ HR Board - All requests between these two teams
+# request5: HR -> Dev (completed)
+Repo.insert!(%Card{
+  title: request5.title,
+  description: request5.description,
   position: 0,
-  column_id: done.id,
+  column_id: dev_hr_cols.done.id,
   request_id: request5.id
 })
 
+# request6: HR -> Dev (pending)
+Repo.insert!(%Card{
+  title: request6.title,
+  description: request6.description,
+  position: 0,
+  column_id: dev_hr_cols.todo.id,
+  request_id: request6.id
+})
+
+# request7: Dev -> HR (in_progress)
+Repo.insert!(%Card{
+  title: request7.title,
+  description: request7.description,
+  position: 0,
+  column_id: dev_hr_cols.in_progress.id,
+  request_id: request7.id
+})
+
+# request8: Dev -> HR (pending)
+Repo.insert!(%Card{
+  title: request8.title,
+  description: request8.description,
+  position: 1,
+  column_id: dev_hr_cols.backlog.id,
+  request_id: request8.id
+})
+
+# request11: Sales -> HR (in_progress)
+Repo.insert!(%Card{
+  title: request11.title,
+  description: request11.description,
+  position: 1,
+  column_id: dev_hr_cols.in_progress.id,
+  request_id: request11.id
+})
+
+# Marketing ↔ Sales Board - All requests between these two teams
+# request9: Marketing -> Sales (pending)
+Repo.insert!(%Card{
+  title: request9.title,
+  description: request9.description,
+  position: 0,
+  column_id: marketing_sales_cols.backlog.id,
+  request_id: request9.id
+})
+
 IO.puts("✅ Seed data created successfully!")
-IO.puts("\nSample users:")
+IO.puts("\n📊 Created #{Repo.aggregate(Request, :count)} requests with changes and comments")
+IO.puts("👥 Created #{Repo.aggregate(User, :count)} users across #{Repo.aggregate(Team, :count)} teams")
+IO.puts("📋 Created #{Repo.aggregate(Board, :count)} kanban boards with #{Repo.aggregate(Card, :count)} cards")
+IO.puts("\n👤 Sample users:")
 IO.puts("  Dev Team: dev@hermes.com")
 IO.puts("  Product Owner: po@hermes.com")
 IO.puts("  Marketing: marketing@hermes.com")
 IO.puts("  Sales: sales@hermes.com")
 IO.puts("  HR: hr@hermes.com")
+IO.puts("\n💡 Each request includes:")
+IO.puts("  - Complete field definitions")
+IO.puts("  - Change history tracking")
+IO.puts("  - Comments from team members")
+IO.puts("  - Requests as both requesting and assigned teams")
+IO.puts("\n📊 Kanban boards are organized by team pairs:")
+IO.puts("  - One board per team pair (e.g., 'Dev ↔ Marketing')")
+IO.puts("  - Shows all requests between those two teams")
+IO.puts("  - Filter by perspective: requests you created vs requests assigned to you")
 IO.puts("\nNote: This is MVP seed data. In production, implement proper authentication.")

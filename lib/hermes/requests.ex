@@ -31,7 +31,7 @@ defmodule Hermes.Requests do
 
   def get_request!(id) do
     Repo.get!(Request, id)
-    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by, :kanban_card])
+    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
   end
 
   def create_request(attrs \\ %{}, user_id \\ nil) do

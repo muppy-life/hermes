@@ -44,8 +44,81 @@ const Hooks = {
       }
 
       this.el.addEventListener('scroll', this.updateIndicators)
-      // Initial check
+
+      // Set initial scroll position to show previews of both "New" and "Completed" columns
+      // This creates visual hints that users can scroll in both directions
+      const newColumn = this.el.querySelector('[data-column-status="new"]')
+      const completedColumn = this.el.querySelector('[data-column-status="completed"]')
+
+      if (newColumn && completedColumn) {
+        const previewWidth = 60 // Amount to show as preview on each side
+
+        // Calculate the ideal scroll position:
+        // Show preview of New column on left, and ensure Completed column preview on right
+        const containerWidth = this.el.clientWidth
+        const totalScrollWidth = this.el.scrollWidth
+
+        // Position to show New preview on left
+        const scrollPosition = newColumn.offsetWidth - previewWidth + 32 // 32px for gap and margin
+
+        // Check if this position would also show the Completed column preview
+        const maxScroll = totalScrollWidth - containerWidth
+        const finalScrollPosition = Math.min(scrollPosition, maxScroll - previewWidth)
+
+        this.el.scrollLeft = finalScrollPosition
+      }
+
+      // Initial check for indicators after setting scroll position
       this.updateIndicators()
+
+      // Drag and drop functionality
+      let draggedCard = null
+
+      // Handle drag start
+      this.el.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('kanban-card')) {
+          draggedCard = e.target
+          e.target.style.opacity = '0.5'
+          e.dataTransfer.effectAllowed = 'move'
+        }
+      })
+
+      // Handle drag end
+      this.el.addEventListener('dragend', (e) => {
+        if (e.target.classList.contains('kanban-card')) {
+          e.target.style.opacity = '1'
+          draggedCard = null
+        }
+      })
+
+      // Handle drag over (allow drop)
+      this.el.addEventListener('dragover', (e) => {
+        e.preventDefault()
+        const column = e.target.closest('.kanban-cards')
+        if (column) {
+          e.dataTransfer.dropEffect = 'move'
+        }
+      })
+
+      // Handle drop
+      this.el.addEventListener('drop', (e) => {
+        e.preventDefault()
+
+        const targetColumn = e.target.closest('.kanban-cards')
+        if (targetColumn && draggedCard) {
+          const requestId = draggedCard.dataset.requestId
+          const targetColumnId = targetColumn.dataset.columnId
+          const targetStatus = targetColumn.dataset.columnStatus
+
+          // Send update to server
+          this.pushEvent('move_card', {
+            card_id: requestId,
+            column_id: targetColumnId,
+            position: 0,
+            new_status: targetStatus
+          })
+        }
+      })
     }
   }
 }

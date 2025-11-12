@@ -2,8 +2,8 @@
   Request Details
   <:subtitle><%= @request.title %></:subtitle>
   <:actions>
-    <.link navigate={~p"/requests"}>
-      <.button class="btn btn-ghost">Back to Requests</.button>
+    <.link navigate={@return_to}>
+      <.button class="btn btn-ghost">Back</.button>
     </.link>
     <.button phx-click="open_edit_modal" class="btn btn-primary">
       Edit Request

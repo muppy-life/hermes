@@ -5,10 +5,11 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
   <%= for board <- @boards do %>
-    <.link navigate={~p"/boards/#{board}"} class="block">
+    <% board_id = Map.get(board, :id) %>
+    <.link navigate={~p"/boards/#{board_id}"} class="block">
       <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-200">
         <h3 class="text-xl font-semibold mb-2"><%= board.name %></h3>
-        <p class="text-gray-600">Team: <%= board.team.name %></p>
+        <p class="text-gray-600">Teams: <%= board.team.name %> ↔ <%= board.team_b.name %></p>
         <div class="mt-4 text-blue-600 font-medium">
           View Board →
         </div>

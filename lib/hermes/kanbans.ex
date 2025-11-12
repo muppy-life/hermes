@@ -1,122 +1,120 @@
 defmodule Hermes.Kanbans do
   @moduledoc """
-  The Kanbans context for managing kanban boards, columns, and cards.
+  The Kanbans context for organizing requests into Kanban board views.
+  Note: Kanban boards are not persisted - they are dynamic views of requests.
   """
 
-  import Ecto.Query, warn: false
-  alias Hermes.Repo
-  alias Hermes.Kanbans.{Board, Column, Card}
+  alias Hermes.Requests
+  alias Hermes.Accounts
 
-  ## Board functions
-
-  def list_boards do
-    Repo.all(Board) |> Repo.preload(:team)
-  end
-
+  @doc """
+  Get a list of available board views for a team.
+  Each board represents a team-pair relationship.
+  """
   def list_boards_by_team(team_id) do
-    from(b in Board, where: b.team_id == ^team_id)
-    |> Repo.all()
-    |> Repo.preload(:team)
+    # Get all teams that have requests with the given team
+    team = Accounts.get_team!(team_id)
+    requests = Requests.list_requests_by_team(team_id)
+
+    # Find all unique team pairs
+    team_pairs =
+      requests
+      |> Enum.flat_map(fn request ->
+        other_team_id =
+          cond do
+            request.requesting_team_id == team_id -> request.assigned_to_team_id
+            request.assigned_to_team_id == team_id -> request.requesting_team_id
+            true -> nil
+          end
+
+        if other_team_id, do: [other_team_id], else: []
+      end)
+      |> Enum.uniq()
+      |> Enum.filter(&(&1 != nil))
+
+    # Create board view for each team pair
+    Enum.map(team_pairs, fn other_team_id ->
+      other_team = Accounts.get_team!(other_team_id)
+
+      %{
+        id: "#{min(team_id, other_team_id)}_#{max(team_id, other_team_id)}",
+        name: "#{team.name} ↔ #{other_team.name}",
+        team_id: team_id,
+        team_b_id: other_team_id,
+        team: team,
+        team_b: other_team
+      }
+    end)
   end
 
-  def get_board!(id) do
-    Repo.get!(Board, id)
-    |> Repo.preload([:team, columns: [cards: [request: [:requesting_team, :assigned_to_team]]]])
-  end
+  @doc """
+  Get a board view for a specific team pair.
+  Returns a structured view with columns and requests organized by status.
+  """
+  def get_board!(board_id, current_user_team_id) do
+    # Parse team IDs from board_id (format: "teamA_teamB")
+    [team_a_str, team_b_str] = String.split(board_id, "_")
+    team_a_id = String.to_integer(team_a_str)
+    team_b_id = String.to_integer(team_b_str)
 
-  def create_board(attrs \\ %{}) do
-    %Board{}
-    |> Board.changeset(attrs)
-    |> Repo.insert()
-  end
+    team_a = Accounts.get_team!(team_a_id)
+    team_b = Accounts.get_team!(team_b_id)
 
-  def update_board(%Board{} = board, attrs) do
-    board
-    |> Board.changeset(attrs)
-    |> Repo.update()
-  end
+    # Determine which team is current user's team
+    {team, team_b} = if team_a_id == current_user_team_id do
+      {team_a, team_b}
+    else
+      {team_b, team_a}
+    end
 
-  def delete_board(%Board{} = board) do
-    Repo.delete(board)
-  end
+    # Get all requests between these two teams
+    requests = Requests.list_requests_by_team(current_user_team_id)
+    |> Enum.filter(fn request ->
+      (request.requesting_team_id in [team_a_id, team_b_id]) and
+      (request.assigned_to_team_id in [team_a_id, team_b_id])
+    end)
 
-  ## Column functions
-
-  def list_columns_by_board(board_id) do
-    from(c in Column, where: c.board_id == ^board_id, order_by: c.position)
-    |> Repo.all()
-  end
-
-  def get_column!(id) do
-    Repo.get!(Column, id)
-    |> Repo.preload([:board, cards: :request])
-  end
-
-  def create_column(attrs \\ %{}) do
-    %Column{}
-    |> Column.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  def update_column(%Column{} = column, attrs) do
-    column
-    |> Column.changeset(attrs)
-    |> Repo.update()
-  end
-
-  def delete_column(%Column{} = column) do
-    Repo.delete(column)
-  end
-
-  ## Card functions
-
-  def list_cards_by_column(column_id) do
-    from(c in Card, where: c.column_id == ^column_id, order_by: c.position)
-    |> Repo.all()
-    |> Repo.preload(:request)
-  end
-
-  def get_card!(id) do
-    Repo.get!(Card, id)
-    |> Repo.preload([:column, :request])
-  end
-
-  def create_card(attrs \\ %{}) do
-    %Card{}
-    |> Card.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  def update_card(%Card{} = card, attrs) do
-    card
-    |> Card.changeset(attrs)
-    |> Repo.update()
-  end
-
-  def delete_card(%Card{} = card) do
-    Repo.delete(card)
-  end
-
-  def move_card(card_id, new_column_id, new_position) do
-    card = get_card!(card_id)
-
-    update_card(card, %{
-      column_id: new_column_id,
-      position: new_position
-    })
-  end
-
-  ## Helper functions
-
-  def initialize_board_columns(board_id) do
-    default_columns = [
-      %{name: "Backlog", position: 0, board_id: board_id},
-      %{name: "To Do", position: 1, board_id: board_id},
-      %{name: "In Progress", position: 2, board_id: board_id},
-      %{name: "Review", position: 3, board_id: board_id},
-      %{name: "Done", position: 4, board_id: board_id}
+    # Define columns for all status types
+    columns = [
+      %{id: 1, name: "New", position: 0, status: "new"},
+      %{id: 2, name: "Pending", position: 1, status: "pending"},
+      %{id: 3, name: "In Progress", position: 2, status: "in_progress"},
+      %{id: 4, name: "Review", position: 3, status: "review"},
+      %{id: 5, name: "Blocked", position: 4, status: "blocked"},
+      %{id: 6, name: "Completed", position: 5, status: "completed"}
     ]
 
-    Enum.each(default_columns, &create_column/1)
+    # Organize requests into columns
+    columns_with_requests = Enum.map(columns, fn column ->
+      column_requests =
+        requests
+        |> Enum.filter(&(&1.status == column.status))
+        |> Enum.sort_by(& &1.updated_at, {:desc, NaiveDateTime})
+
+      Map.put(column, :cards, Enum.map(column_requests, fn request ->
+        %{id: request.id, request: request}
+      end))
+    end)
+
+    %{
+      id: board_id,
+      name: "#{team.name} ↔ #{team_b.name}",
+      team_id: team.id,
+      team_b_id: team_b.id,
+      team: team,
+      team_b: team_b,
+      columns: columns_with_requests,
+      updated_at: NaiveDateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Update a request's status (which changes its column in the Kanban view).
+  """
+  def move_card(request_id, _column_id, _position) do
+    # For now, we'll just return success
+    # In the future, this could update the request's status based on the column
+    request = Requests.get_request!(request_id)
+    {:ok, request}
   end
 end

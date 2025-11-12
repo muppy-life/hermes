@@ -71,7 +71,6 @@ defmodule Hermes.Accounts do
   def is_product_owner?(%User{role: "admin"}), do: true
   def is_product_owner?(_), do: false
 
-  def can_access_team?(%User{role: role}, _team_id) when role in ["dev_team", "admin"], do: true
   def can_access_team?(%User{team_id: team_id}, team_id), do: true
   def can_access_team?(_, _), do: false
 end

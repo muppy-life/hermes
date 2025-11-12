@@ -1,13 +1,41 @@
 <div class="-mx-4 sm:-mx-6 lg:-mx-8">
-  <.header>
-    <%= @board.name %>
-    <:subtitle>Team: <%= @board.team.name %></:subtitle>
-    <:actions>
+  <!-- Custom header in a single row with equal spacing -->
+  <div class="grid grid-cols-3 items-center gap-4 mb-8">
+    <!-- Left: Board Title -->
+    <h1 class="text-2xl font-semibold"><%= @board.name %></h1>
+
+    <!-- Center: Filter Buttons -->
+    <div class="inline-flex gap-1 bg-base-200 rounded-lg p-1 justify-self-center">
+      <button
+        phx-click="set_filter"
+        phx-value-filter="all"
+        class={["px-3 py-1 text-xs rounded transition-all", @filter_perspective == :all && "bg-primary text-primary-content" || "hover:bg-base-300"]}
+      >
+        All Requests
+      </button>
+      <button
+        phx-click="set_filter"
+        phx-value-filter="created_by_us"
+        class={["px-3 py-1 text-xs rounded transition-all", @filter_perspective == :created_by_us && "bg-primary text-primary-content" || "hover:bg-base-300"]}
+      >
+        Created by Us
+      </button>
+      <button
+        phx-click="set_filter"
+        phx-value-filter="assigned_to_us"
+        class={["px-3 py-1 text-xs rounded transition-all", @filter_perspective == :assigned_to_us && "bg-primary text-primary-content" || "hover:bg-base-300"]}
+      >
+        Assigned to Us
+      </button>
+    </div>
+
+    <!-- Right: Back Button -->
+    <div class="justify-self-end">
       <.link navigate={~p"/boards"}>
         <.button>Back to Boards</.button>
       </.link>
-    </:actions>
-  </.header>
+    </div>
+  </div>
 
   <div class="kanban-board mt-8 h-[calc(100vh-12rem)] relative">
     <!-- Scroll indicator on left edge -->
@@ -30,22 +58,35 @@
 
     <div id="kanban-scroll-container" class="flex gap-4 overflow-x-auto pb-4 h-full" phx-hook="KanbanScroll">
     <%= for column <- @board.columns do %>
-      <div class="kanban-column bg-base-200 rounded-lg p-4 min-w-[300px] flex-shrink-0 flex flex-col h-full">
+      <%
+        # Add visual separation for New and Completed columns with distinctive backgrounds
+        column_classes = "kanban-column rounded-lg p-4 min-w-[300px] flex-1 flex flex-col h-full " <>
+          case column.status do
+            "new" -> "bg-info/10 border-l-4 border-l-info mr-6"
+            "completed" -> "bg-success/5 border-r-4 border-r-success ml-6"
+            _ -> "bg-base-200"
+          end
+      %>
+      <div class={column_classes} data-column-status={column.status}>
         <h3 class="font-semibold text-lg mb-4 flex-shrink-0"><%= column.name %></h3>
         <div
           id={"kanban-column-#{column.id}"}
-          class="kanban-cards space-y-2 overflow-y-auto flex-1"
+          class="kanban-cards space-y-2 overflow-y-auto flex-1 min-h-[100px]"
           data-column-id={column.id}
+          data-column-status={column.status}
         >
           <%= for card <- column.cards do %>
             <%= if card.request do %>
-              <.link navigate={~p"/requests/#{card.request.id}"} class="block">
-                <div
-                  class="kanban-card bg-base-100 rounded-lg shadow-md border border-base-300 p-4 cursor-pointer hover:shadow-xl hover:border-primary transition-all"
-                  data-card-id={card.id}
-                >
+              <div
+                draggable="true"
+                class="kanban-card bg-base-100 rounded-lg shadow-md border border-base-300 p-4 cursor-move hover:shadow-xl hover:border-primary transition-all"
+                data-card-id={card.id}
+                data-request-id={card.request.id}
+              >
                 <!-- Request Title -->
-                <div class="font-semibold text-base mb-3"><%= card.request.title %></div>
+                <.link navigate={~p"/requests/#{card.request.id}"} class="block">
+                  <div class="font-semibold text-base mb-3"><%= card.request.title %></div>
+                </.link>
 
                 <!-- Badges Row -->
                 <div class="flex items-center gap-2 flex-wrap mb-3">
@@ -72,8 +113,7 @@
                     Updated: <%= Calendar.strftime(card.request.updated_at, "%b %d, %Y %H:%M") %>
                   </div>
                 </div>
-                </div>
-              </.link>
+              </div>
             <% end %>
           <% end %>
         </div>

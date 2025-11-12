@@ -1,26 +1,66 @@
+<!-- CTA Section -->
+<div class="bg-gradient-to-r from-primary to-secondary rounded-lg shadow-lg p-6 mb-8">
+  <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="text-white">
+      <h2 class="text-2xl font-bold mb-2">Need something from another team?</h2>
+      <p class="text-primary-content/90">Create a new request to get started and track its progress.</p>
+    </div>
+    <.link navigate={~p"/requests/new"}>
+      <button class="btn btn-lg bg-white text-primary hover:bg-base-100 border-none shadow-md whitespace-nowrap">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Create New Request
+      </button>
+    </.link>
+  </div>
+</div>
+
 <div class="mt-0">
   <h2 class="text-2xl font-semibold mb-4">Statistics</h2>
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-    <div class="bg-blue-100 rounded-lg p-6">
-      <div class="text-3xl font-bold text-blue-900"><%= @stats.total_requests %></div>
-      <div class="text-blue-700 mt-1">Total Requests</div>
-    </div>
-    <div class="bg-yellow-100 rounded-lg p-6">
-      <div class="text-3xl font-bold text-yellow-900"><%= @stats.pending %></div>
-      <div class="text-yellow-700 mt-1">Pending</div>
-    </div>
-    <div class="bg-purple-100 rounded-lg p-6">
-      <div class="text-3xl font-bold text-purple-900"><%= @stats.in_progress %></div>
-      <div class="text-purple-700 mt-1">In Progress</div>
-    </div>
-    <div class="bg-green-100 rounded-lg p-6">
-      <div class="text-3xl font-bold text-green-900"><%= @stats.completed %></div>
-      <div class="text-green-700 mt-1">Completed</div>
-    </div>
-    <div class="bg-red-100 rounded-lg p-6">
-      <div class="text-3xl font-bold text-red-900"><%= @stats.blocked %></div>
-      <div class="text-red-700 mt-1">Blocked</div>
-    </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+    <.link navigate={~p"/requests"} class="block">
+      <div class="bg-blue-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-blue-900"><%= @stats.total_requests %></div>
+        <div class="text-blue-700 mt-1">Total</div>
+      </div>
+    </.link>
+    <.link navigate={~p"/requests?status=new&tab=new"} class="block">
+      <div class="bg-cyan-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-cyan-900"><%= @stats.new %></div>
+        <div class="text-cyan-700 mt-1">New</div>
+      </div>
+    </.link>
+    <.link navigate={~p"/requests?status=pending&tab=ongoing"} class="block">
+      <div class="bg-yellow-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-yellow-900"><%= @stats.pending %></div>
+        <div class="text-yellow-700 mt-1">Pending</div>
+      </div>
+    </.link>
+    <.link navigate={~p"/requests?status=in_progress&tab=ongoing"} class="block">
+      <div class="bg-purple-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-purple-900"><%= @stats.in_progress %></div>
+        <div class="text-purple-700 mt-1">In Progress</div>
+      </div>
+    </.link>
+    <.link navigate={~p"/requests?status=review&tab=ongoing"} class="block">
+      <div class="bg-indigo-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-indigo-900"><%= @stats.review %></div>
+        <div class="text-indigo-700 mt-1">Review</div>
+      </div>
+    </.link>
+    <.link navigate={~p"/requests?status=completed&tab=completed"} class="block">
+      <div class="bg-green-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-green-900"><%= @stats.completed %></div>
+        <div class="text-green-700 mt-1">Completed</div>
+      </div>
+    </.link>
+    <.link navigate={~p"/requests?status=blocked&tab=ongoing"} class="block">
+      <div class="bg-red-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-red-900"><%= @stats.blocked %></div>
+        <div class="text-red-700 mt-1">Blocked</div>
+      </div>
+    </.link>
   </div>
 </div>
 
@@ -75,25 +115,32 @@
     <%= if @boards != [] do %>
       <div class="space-y-4">
         <%= for board <- @boards do %>
-          <.link navigate={~p"/boards/#{board}"} class="block">
+          <.link navigate={~p"/boards/#{board.id}"} class="block">
             <div class="card bg-base-100 shadow-md border border-base-300 hover:shadow-lg transition-shadow mb-4">
               <div class="card-body p-4">
                 <h3 class="card-title text-base"><%= board.name %></h3>
-                <p class="text-sm opacity-70 mt-1">Team: <%= board.team.name %></p>
 
                 <!-- Task statistics -->
-                <div class="flex gap-3 mt-3 text-xs">
+                <div class="flex flex-wrap gap-3 mt-3 text-xs">
                   <span class="flex items-center gap-1">
                     <span class="font-semibold"><%= board.task_stats.total %></span>
                     <span class="opacity-60">total</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-cyan-700">
+                    <span class="font-semibold"><%= board.task_stats.new %></span>
+                    <span class="opacity-60">new</span>
                   </span>
                   <span class="flex items-center gap-1 text-yellow-700">
                     <span class="font-semibold"><%= board.task_stats.pending %></span>
                     <span class="opacity-60">pending</span>
                   </span>
-                  <span class="flex items-center gap-1 text-blue-700">
+                  <span class="flex items-center gap-1 text-purple-700">
                     <span class="font-semibold"><%= board.task_stats.in_progress %></span>
                     <span class="opacity-60">active</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-indigo-700">
+                    <span class="font-semibold"><%= board.task_stats.review %></span>
+                    <span class="opacity-60">review</span>
                   </span>
                   <span class="flex items-center gap-1 text-green-700">
                     <span class="font-semibold"><%= board.task_stats.completed %></span>
