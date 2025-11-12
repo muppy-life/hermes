@@ -65,6 +65,12 @@ defmodule HermesWeb.Layouts do
       <% end %>
       <div class="flex items-center">
         <ul class="flex flex-row items-center">
+          <li>
+            <.language_selector locale={assigns[:locale] || "en"} />
+          </li>
+          <li>
+            <.theme_toggle />
+          </li>
           <%= if @current_user do %>
             <li>
               <.link href={~p"/logout"} method="delete" class="btn btn-ghost">
@@ -72,12 +78,6 @@ defmodule HermesWeb.Layouts do
               </.link>
             </li>
           <% end %>
-          <li>
-            <.language_selector locale={assigns[:locale] || "en"} />
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
         </ul>
       </div>
     </header>
