@@ -28,6 +28,60 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 const Hooks = {
+  ScrollIndicator: {
+    mounted() {
+      this.updateIndicators = () => {
+        const topIndicator = this.el.querySelector('.scroll-indicator-top')
+        const bottomIndicator = this.el.querySelector('.scroll-indicator-bottom')
+        const scrollContent = this.el.querySelector('.scroll-content')
+
+        if (topIndicator && bottomIndicator && scrollContent) {
+          const isAtTop = scrollContent.scrollTop <= 5
+          const isAtBottom = scrollContent.scrollTop + scrollContent.clientHeight >= scrollContent.scrollHeight - 5
+
+          // Show top indicator only if not at top and there's content above
+          topIndicator.style.display = isAtTop ? 'none' : 'flex'
+
+          // Show bottom indicator only if not at bottom and there's content below
+          bottomIndicator.style.display = isAtBottom ? 'none' : 'flex'
+        }
+      }
+
+      const scrollContent = this.el.querySelector('.scroll-content')
+      if (scrollContent) {
+        scrollContent.addEventListener('scroll', this.updateIndicators)
+
+        // Observe content changes (for tab switching)
+        this.observer = new MutationObserver(() => {
+          setTimeout(() => this.updateIndicators(), 50)
+        })
+
+        this.observer.observe(scrollContent, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        })
+
+        // Initial check
+        setTimeout(() => this.updateIndicators(), 100)
+      }
+    },
+
+    updated() {
+      // Re-check indicators when the component updates (e.g., tab changes)
+      setTimeout(() => this.updateIndicators(), 50)
+    },
+
+    destroyed() {
+      const scrollContent = this.el.querySelector('.scroll-content')
+      if (scrollContent) {
+        scrollContent.removeEventListener('scroll', this.updateIndicators)
+      }
+      if (this.observer) {
+        this.observer.disconnect()
+      }
+    }
+  },
   KanbanScroll: {
     mounted() {
       this.updateIndicators = () => {

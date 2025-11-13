@@ -27,7 +27,7 @@
   <!-- Left Column: Main Content (3/4 width) -->
   <div class="w-3/4 space-y-4 pr-2">
   <!-- Current Problem Card -->
-  <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="height: calc((100vh - 14rem) / 2 - 0.5rem);">
+  <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);">
     <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">{gettext("Current Problem")}</h2>
 
     <div class="flex gap-4 flex-1 min-h-0">
@@ -56,17 +56,33 @@
       </div>
 
       <!-- Content Column -->
-      <div class="flex-1 pl-4 border-l border-base-300 overflow-y-auto">
-        <%= if @request.current_situation do %>
-          <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.current_situation %></p>
-        <% end %>
+      <div class="flex-1 pl-4 border-l border-base-300 relative" phx-hook="ScrollIndicator" id="current-problem-scroll">
+        <!-- Scroll Indicator - Top -->
+        <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
+
+        <div class="scroll-content overflow-y-auto h-full">
+          <%= if @request.current_situation do %>
+            <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.current_situation %></p>
+          <% end %>
+        </div>
+
+        <!-- Scroll Indicator - Bottom -->
+        <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Proposed Solution Card -->
   <%= if @request.goal_description || @request.expected_output do %>
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="height: calc((100vh - 14rem) / 2 - 0.5rem);">
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);">
       <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">{gettext("Proposed Solution")}</h2>
 
       <div class="flex gap-4 flex-1 min-h-0">
@@ -107,7 +123,7 @@
         </div>
 
         <!-- Content Column -->
-        <div class="flex-1 pl-4 border-l border-base-300 flex flex-col">
+        <div class="flex-1 pl-4 border-l border-base-300 flex flex-col min-h-0">
           <!-- Tabs -->
           <div class="tabs tabs-boxed mb-4 flex-shrink-0">
             <button
@@ -127,14 +143,30 @@
           </div>
 
           <!-- Tab Content -->
-          <div class="flex-1 overflow-y-auto">
-            <%= if @solution_tab == "goal" && @request.goal_description do %>
-              <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.goal_description %></p>
-            <% end %>
+          <div class="flex-1 min-h-0 relative" phx-hook="ScrollIndicator" id="proposed-solution-scroll">
+            <!-- Scroll Indicator - Top -->
+            <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+              </svg>
+            </div>
 
-            <%= if @solution_tab == "output" && @request.expected_output do %>
-              <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.expected_output %></p>
-            <% end %>
+            <div class="scroll-content overflow-y-auto h-full">
+              <%= if @solution_tab == "goal" && @request.goal_description do %>
+                <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.goal_description %></p>
+              <% end %>
+
+              <%= if @solution_tab == "output" && @request.expected_output do %>
+                <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.expected_output %></p>
+              <% end %>
+            </div>
+
+            <!-- Scroll Indicator - Bottom -->
+            <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -143,9 +175,28 @@
 
   <!-- Related Business Data Card -->
   <%= if @request.data_description && String.trim(@request.data_description) != "" do %>
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
-      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">{gettext("Related Business Data")}</h2>
-      <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.data_description %></p>
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);">
+      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">{gettext("Related Business Data")}</h2>
+
+      <div class="flex-1 min-h-0 relative" phx-hook="ScrollIndicator" id="business-data-scroll">
+        <!-- Scroll Indicator - Top -->
+        <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </div>
+
+        <div class="scroll-content overflow-y-auto h-full">
+          <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.data_description %></p>
+        </div>
+
+        <!-- Scroll Indicator - Bottom -->
+        <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
     </div>
   <% end %>
   </div>
