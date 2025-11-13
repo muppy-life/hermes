@@ -21,7 +21,7 @@ defmodule Hermes.MixProject do
   def application do
     [
       mod: {Hermes.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :inets, :ssl]
     ]
   end
 
@@ -45,6 +45,8 @@ defmodule Hermes.MixProject do
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
       {:oban, "~> 2.18"},
+      {:bumblebee, "~> 0.6.0"},
+      {:nx, "~> 0.9.0"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.1.0"},

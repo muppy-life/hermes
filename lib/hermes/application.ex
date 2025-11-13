@@ -13,8 +13,6 @@ defmodule Hermes.Application do
       {Oban, Application.fetch_env!(:hermes, Oban)},
       {DNSCluster, query: Application.get_env(:hermes, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Hermes.PubSub},
-      # Start a worker by calling: Hermes.Worker.start_link(arg)
-      # {Hermes.Worker, arg},
       # Start to serve requests, typically the last entry
       HermesWeb.Endpoint
     ]
@@ -22,7 +20,19 @@ defmodule Hermes.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Hermes.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    # Trigger background model loading after app starts
+    schedule_model_loading()
+
+    result
+  end
+
+  defp schedule_model_loading do
+    # Schedule model loading job to run immediately in the background
+    %{}
+    |> Hermes.Workers.ModelLoaderWorker.new(queue: :media)
+    |> Oban.insert()
   end
 
   # Tell Phoenix to update the endpoint configuration

@@ -44,11 +44,40 @@ defmodule Hermes.Requests do
     case result do
       {:ok, request} ->
         log_change(request.id, user_id, "created", %{changes: attrs})
+
+        # Trigger async title generation from goal description
+        trigger_title_summarization(request)
+
         {:ok, request}
 
       error ->
         error
     end
+  end
+
+  defp trigger_title_summarization(request) do
+    # Build text to summarize from request goal and context
+    text_to_summarize = build_summarization_text(request)
+
+    # Trigger async summarization job
+    %{
+      request_id: request.id,
+      text: text_to_summarize,
+      max_length: 60,  # Short title
+      min_length: 20,
+      field_to_update: "title"
+    }
+    |> Hermes.Workers.SummarizationWorker.new(queue: :media)
+    |> Oban.insert()
+  end
+
+  defp build_summarization_text(request) do
+    """
+    Request Type: #{Request.kind_label(request.kind)}
+    Goal: #{request.goal_description}
+    Current Situation: #{request.current_situation}
+    Expected Output: #{request.expected_output}
+    """
   end
 
   def update_request(%Request{} = request, attrs, user_id \\ nil) do

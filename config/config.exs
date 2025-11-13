@@ -71,6 +71,10 @@ config :hermes, HermesWeb.Gettext,
   default_locale: "en",
   locales: ~w(en es)
 
+# Configure Nx to use Binary backend (CPU-only, no compilation needed)
+# For better performance, you can later switch to EXLA.Backend after compiling it
+config :nx, :default_backend, Nx.BinaryBackend
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
