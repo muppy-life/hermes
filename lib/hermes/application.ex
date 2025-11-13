@@ -10,6 +10,7 @@ defmodule Hermes.Application do
     children = [
       HermesWeb.Telemetry,
       Hermes.Repo,
+      {Oban, Application.fetch_env!(:hermes, Oban)},
       {DNSCluster, query: Application.get_env(:hermes, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Hermes.PubSub},
       # Start a worker by calling: Hermes.Worker.start_link(arg)

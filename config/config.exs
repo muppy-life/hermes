@@ -11,6 +11,12 @@ config :hermes,
   ecto_repos: [Hermes.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Configure Oban
+config :hermes, Oban,
+  engine: Oban.Engines.Basic,
+  queues: [default: 10, events: 50, media: 20],
+  repo: Hermes.Repo
+
 # Configures the endpoint
 config :hermes, HermesWeb.Endpoint,
   url: [host: "localhost"],
