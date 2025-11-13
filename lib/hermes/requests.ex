@@ -36,16 +36,21 @@ defmodule Hermes.Requests do
   end
 
   def create_request(attrs \\ %{}, user_id \\ nil) do
+    # Generate fallback title from first 10 words of goal if title is missing
+    # This ensures request always has a title even if ML model never completes
+    attrs_with_title = ensure_title(attrs)
+
     result =
       %Request{}
-      |> Request.changeset(attrs)
+      |> Request.changeset(attrs_with_title)
       |> Repo.insert()
 
     case result do
       {:ok, request} ->
-        log_change(request.id, user_id, "created", %{changes: attrs})
+        log_change(request.id, user_id, "created", %{changes: attrs_with_title})
 
         # Trigger async title generation from goal description
+        # This will update the title with AI-generated summary when model is ready
         trigger_title_summarization(request)
 
         {:ok, request}
@@ -53,6 +58,32 @@ defmodule Hermes.Requests do
       error ->
         error
     end
+  end
+
+  defp ensure_title(attrs) do
+    # If title is already provided and not empty, use it
+    case Map.get(attrs, "title") || Map.get(attrs, :title) do
+      nil -> generate_fallback_title(attrs)
+      "" -> generate_fallback_title(attrs)
+      _title -> attrs
+    end
+  end
+
+  defp generate_fallback_title(attrs) do
+    goal = Map.get(attrs, "goal_description") || Map.get(attrs, :goal_description) || ""
+
+    # Take first 10 words from goal description
+    fallback_title =
+      goal
+      |> String.split()
+      |> Enum.take(10)
+      |> Enum.join(" ")
+      |> case do
+        "" -> "New Request"
+        title -> title
+      end
+
+    Map.put(attrs, "title", fallback_title)
   end
 
   defp trigger_title_summarization(request) do
