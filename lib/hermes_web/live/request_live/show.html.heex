@@ -182,14 +182,6 @@
       <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.expected_output %></p>
     </div>
   <% end %>
-
-  <!-- Legacy Description (if exists) -->
-  <%= if @request.description && @request.description != "" do %>
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
-      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">{gettext("Description")}</h2>
-      <p class="whitespace-pre-wrap text-base opacity-90"><%= @request.description %></p>
-    </div>
-  <% end %>
   </div>
 
   <!-- Right Column: History & Comments (1/4 width) -->
