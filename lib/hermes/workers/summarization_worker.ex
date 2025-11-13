@@ -21,7 +21,7 @@ defmodule Hermes.Workers.SummarizationWorker do
 
   use Oban.Worker,
     queue: :media,
-    max_attempts: 3,
+    max_attempts: 5,
     priority: 2
 
   require Logger
@@ -58,9 +58,11 @@ defmodule Hermes.Workers.SummarizationWorker do
           end
 
         {:error, :model_not_ready} ->
-          Logger.info("ML model not ready yet for request #{request_id}, will retry")
-          # Snooze job to retry in 30 seconds
-          {:snooze, 30}
+          # Progressive retry delay: more time for model to download (2GB+)
+          # Attempt 1: wait 60s, Attempt 2: wait 120s, Attempt 3: wait 180s
+          snooze_time = attempt * 60
+          Logger.info("ML model not ready yet for request #{request_id}, will retry in #{snooze_time}s (attempt #{attempt})")
+          {:snooze, snooze_time}
 
         {:error, reason} ->
           Logger.error("Summarization failed for request #{request_id}: #{inspect(reason)}")
