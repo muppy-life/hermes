@@ -1,6 +1,6 @@
 <.header>
-  {gettext("Request Details")}
-  <:subtitle><%= @request.title %></:subtitle>
+  <span class="text-2xl font-bold"><%= @request.title %></span>
+  <:subtitle>{gettext("Request Details")}</:subtitle>
   <:actions>
     <!-- Status Change Dropdown -->
     <div class="dropdown dropdown-end">
