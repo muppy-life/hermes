@@ -21,8 +21,14 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:comment_content, "")
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
+     |> assign(:solution_tab, "goal")
      |> assign(:teams, Accounts.list_teams())
      |> assign(:form, to_form(Requests.change_request(request)))}
+  end
+
+  @impl true
+  def handle_event("switch_solution_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, :solution_tab, tab)}
   end
 
   @impl true

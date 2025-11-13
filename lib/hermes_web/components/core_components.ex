@@ -315,13 +315,14 @@ defmodule HermesWeb.CoreComponents do
   @doc """
   Renders a header with title.
   """
+  attr :class, :string, default: nil
   slot :inner_block, required: true
   slot :subtitle
   slot :actions
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-4", "pb-2"]}>
+    <header class={[@actions != [] && "flex items-center justify-between gap-4", "pb-2", @class]}>
       <div>
         <h1 class="text-base font-semibold leading-6">
           {render_slot(@inner_block)}
