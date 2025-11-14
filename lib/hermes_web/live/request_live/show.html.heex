@@ -1,4 +1,4 @@
-<.header class="sticky top-0 z-10 bg-base-100 pt-4 -mt-4">
+<.header class="sticky top-0 z-10 bg-base-100 pt-4 pb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 shadow-sm">
   <div>
     <h1 class="text-2xl font-bold"><%= @request.title %></h1>
     <div class="flex gap-2 mt-2">
@@ -23,9 +23,9 @@
   </:actions>
 </.header>
 
-<div class="mt-8 flex gap-4 h-[calc(100vh-12rem)]">
+<div class="mt-4 flex gap-4 h-[calc(100vh-12rem)]">
   <!-- Left Column: Main Content (3/4 width) -->
-  <div class="w-3/4 space-y-4 pr-2">
+  <div class="w-3/4 space-y-4 pr-2 overflow-y-auto pb-4">
   <!-- Current Problem Card -->
   <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);">
     <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">{gettext("Current Problem")}</h2>
@@ -202,7 +202,7 @@
   </div>
 
   <!-- Right Column: History & Comments (1/4 width) -->
-  <div class="w-1/4 flex flex-col space-y-4">
+  <div class="w-1/4 flex flex-col gap-4 h-full pb-8">
     <!-- Change History -->
     <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-3 flex flex-col max-h-[40%]">
       <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300 flex-shrink-0">{gettext("History")}</h2>

@@ -35,7 +35,8 @@ defmodule HermesWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar bg-base-300 px-4 sm:px-6 lg:px-8 sticky top-0 z-50 justify-between">
+    <div class="flex flex-col min-h-screen bg-base-100 m-0 p-0">
+    <header class="navbar bg-base-300 px-4 py-0 sm:px-6 lg:px-8 fixed top-0 z-50 justify-between w-full m-0 min-h-[64px] h-[64px]">
       <div class="flex items-center gap-3">
         <a href={if @current_user, do: ~p"/dashboard", else: ~p"/"} class="flex items-center transition-transform hover:scale-110">
           <img src={~p"/images/logo_light_themes.png"} width="32" class="[[data-theme=dark]_&]:hidden" />
@@ -82,11 +83,29 @@ defmodule HermesWeb.Layouts do
       </div>
     </header>
 
-    <main class="px-4 py-8 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-7xl">
+    <main class="fixed top-[64px] bottom-[30px] left-0 right-0 overflow-auto bg-base-100">
+      <div class="mx-8 h-full">
         {render_slot(@inner_block)}
       </div>
     </main>
+
+    <footer class="fixed bottom-0 left-0 right-0 border-t border-base-300 bg-base-100 flex-shrink-0 z-40">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-[30px] flex items-center">
+        <div class="flex items-center justify-between gap-2 text-[10px] text-base-content/60 w-full">
+          <div class="flex items-center gap-2">
+            <span>© 2025 Muppy</span>
+            <span class="hidden sm:inline">•</span>
+            <a href="mailto:tech@muppy.com" class="hover:text-primary transition-colors">tech@muppy.com</a>
+          </div>
+          <div class="flex items-center gap-2">
+            <span>v0.1.0</span>
+            <span class="hidden sm:inline">•</span>
+            <span>Updated {Calendar.strftime(DateTime.utc_now(), "%b %d, %Y")}</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+    </div>
 
     <.flash_group flash={@flash} />
     """

@@ -1,22 +1,14 @@
-<!-- CTA Section -->
-<div class="bg-gradient-to-r from-primary to-secondary rounded-lg shadow-lg p-6 mb-8">
-  <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-    <div class="text-white">
-      <h2 class="text-2xl font-bold mb-2">{gettext("Need something from another team?")}</h2>
-      <p class="text-primary-content/90">{gettext("Create a new request to get started and track its progress.")}</p>
-    </div>
-    <.link navigate={~p"/backlog/new"}>
-      <button class="btn btn-lg bg-white text-primary hover:bg-base-100 border-none shadow-md whitespace-nowrap">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        {gettext("New Request")}
-      </button>
-    </.link>
-  </div>
-</div>
+<!-- CTA Floating Button -->
+<.link navigate={~p"/backlog/new"}>
+  <button class="btn btn-primary shadow-lg fixed bottom-[50px] right-8 z-50">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+    </svg>
+    {gettext("New Request")}
+  </button>
+</.link>
 
-<div class="mt-0">
+<div class="mt-6">
   <h2 class="text-2xl font-semibold mb-4">{gettext("Statistics")}</h2>
   <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
     <.link navigate={~p"/backlog"} class="block">
