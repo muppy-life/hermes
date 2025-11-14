@@ -20,6 +20,11 @@ if System.get_env("PHX_SERVER") do
   config :hermes, HermesWeb.Endpoint, server: true
 end
 
+# Configure Claude API key from environment variable
+if api_key = System.get_env("ANTHROPIC_API_KEY") do
+  config :hermes, :anthropic_api_key, api_key
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

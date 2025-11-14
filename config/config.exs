@@ -75,6 +75,10 @@ config :hermes, HermesWeb.Gettext,
 # For better performance, you can later switch to EXLA.Backend after compiling it
 config :nx, :default_backend, Nx.BinaryBackend
 
+# Configure Claude API
+# API key will be loaded from environment variable in runtime.exs
+config :hermes, :anthropic_api_key, nil
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
