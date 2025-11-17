@@ -90,3 +90,8 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Configure Claude API
+# Set ANTHROPIC_API_KEY environment variable before running the server:
+# export ANTHROPIC_API_KEY="your-api-key-here"
+config :hermes, :anthropic_api_key, System.get_env("ANTHROPIC_API_KEY")

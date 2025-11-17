@@ -174,6 +174,32 @@ const Hooks = {
         }
       })
     }
+  },
+  MermaidDiagram: {
+    mounted() {
+      this.renderDiagram()
+    },
+    updated() {
+      this.renderDiagram()
+    },
+    renderDiagram() {
+      // Use dynamic import to load mermaid
+      import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs').then(module => {
+        const mermaid = module.default
+        mermaid.initialize({ startOnLoad: false, theme: 'default' })
+
+        // Find all mermaid elements and render them
+        const elements = this.el.querySelectorAll('.mermaid')
+        elements.forEach((element, index) => {
+          const id = `mermaid-${Date.now()}-${index}`
+          mermaid.render(id, element.textContent).then(({ svg }) => {
+            element.innerHTML = svg
+          }).catch(error => {
+            console.error('Mermaid rendering error:', error)
+          })
+        })
+      })
+    }
   }
 }
 

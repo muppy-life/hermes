@@ -11,6 +11,14 @@ defmodule HermesWeb.RequestLive.Show do
     changes = Requests.list_request_changes(id)
     comments = Requests.list_request_comments(id)
 
+    # Subscribe to updates for this request
+    Phoenix.PubSub.subscribe(Hermes.PubSub, "request:#{id}")
+
+    # Trigger diagram generation if missing
+    if is_nil(request.solution_diagram) or request.solution_diagram == "" do
+      Requests.trigger_diagram_generation_for_request(id)
+    end
+
     {:ok,
      socket
      |> NavigationHistory.assign_return_path(default: ~p"/backlog")
@@ -120,6 +128,14 @@ defmodule HermesWeb.RequestLive.Show do
 
   def handle_event("update_comment", %{"content" => content}, socket) do
     {:noreply, assign(socket, :comment_content, content)}
+  end
+
+  @impl true
+  def handle_info({:diagram_generated, request_id}, socket) do
+    # Reload the request to get the updated diagram
+    updated_request = Requests.get_request!(request_id)
+
+    {:noreply, assign(socket, :request, updated_request)}
   end
 
   def handle_event("change_status", %{"status" => new_status}, socket) do

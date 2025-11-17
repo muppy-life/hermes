@@ -16,6 +16,7 @@ defmodule Hermes.Requests.Request do
     field :data_description, :string
     field :goal_target, Ecto.Enum, values: [:interface_view, :report_file, :alert_message]
     field :expected_output, :string
+    field :solution_diagram, :string
 
     belongs_to :requesting_team, Hermes.Accounts.Team
     belongs_to :assigned_to_team, Hermes.Accounts.Team
@@ -31,7 +32,7 @@ defmodule Hermes.Requests.Request do
       :title, :description, :priority, :status,
       :kind, :target_user_type, :current_situation,
       :goal_description, :data_description, :goal_target,
-      :expected_output, :requesting_team_id, :assigned_to_team_id, :created_by_id
+      :expected_output, :solution_diagram, :requesting_team_id, :assigned_to_team_id, :created_by_id
     ])
     |> validate_required([
       :kind, :priority, :target_user_type, :current_situation,

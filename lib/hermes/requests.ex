@@ -53,6 +53,10 @@ defmodule Hermes.Requests do
         # This will update the title with AI-generated summary when model is ready
         trigger_title_summarization(request)
 
+        # Trigger async diagram generation from goal and expected output
+        # This will create a visual representation of the solution flow
+        trigger_diagram_generation(request)
+
         {:ok, request}
 
       error ->
@@ -111,6 +115,23 @@ defmodule Hermes.Requests do
     """
   end
 
+  def trigger_diagram_generation(request) do
+    # Trigger async diagram generation job
+    %{request_id: request.id}
+    |> Hermes.Workers.DiagramGenerationWorker.new(queue: :default)
+    |> Oban.insert()
+  end
+
+  @doc """
+  Triggers diagram generation for a request by ID.
+  Used when viewing requests that don't have diagrams yet.
+  """
+  def trigger_diagram_generation_for_request(request_id) do
+    %{request_id: request_id}
+    |> Hermes.Workers.DiagramGenerationWorker.new(queue: :default)
+    |> Oban.insert()
+  end
+
   def update_request(%Request{} = request, attrs, user_id \\ nil) do
     changeset = Request.changeset(request, attrs)
     changes = changeset.changes
@@ -121,6 +142,11 @@ defmodule Hermes.Requests do
       {:ok, updated_request} ->
         if map_size(changes) > 0 do
           log_changes(updated_request.id, user_id, request, changes)
+        end
+
+        # Trigger diagram generation if solution_diagram is missing
+        if is_nil(updated_request.solution_diagram) or updated_request.solution_diagram == "" do
+          trigger_diagram_generation(updated_request)
         end
 
         {:ok, updated_request}

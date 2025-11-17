@@ -140,6 +140,13 @@
             >
               {gettext("Desired Output")}
             </button>
+            <button
+              class={["tab", @solution_tab == "diagram" && "tab-active"]}
+              phx-click="switch_solution_tab"
+              phx-value-tab="diagram"
+            >
+              {gettext("Solution Diagram")}
+            </button>
           </div>
 
           <!-- Tab Content -->
@@ -158,6 +165,25 @@
 
               <%= if @solution_tab == "output" && @request.expected_output do %>
                 <p class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90" style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"><%= @request.expected_output %></p>
+              <% end %>
+
+              <%= if @solution_tab == "diagram" do %>
+                <%= if @request.solution_diagram do %>
+                  <div phx-hook="MermaidDiagram" id="solution-diagram-container" class="bg-white rounded-lg p-4">
+                    <div class="mermaid">
+                      <%= @request.solution_diagram %>
+                    </div>
+                  </div>
+                <% else %>
+                  <div class="flex items-center justify-center h-full">
+                    <div class="text-center opacity-60">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 motion-safe:animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <p class="text-sm">{gettext("Diagram is being generated...")}</p>
+                    </div>
+                  </div>
+                <% end %>
               <% end %>
             </div>
 
