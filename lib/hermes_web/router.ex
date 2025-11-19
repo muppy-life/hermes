@@ -47,6 +47,13 @@ defmodule HermesWeb.Router do
       live "/boards", KanbanLive.Index, :index
       live "/boards/:id", KanbanLive.Board, :show
     end
+
+    # Admin routes - require admin access
+    live_session :admin,
+      on_mount: [{HermesWeb.Plugs.Auth, :ensure_admin}] do
+      live "/admin", Admin.DashboardLive.Index, :index
+      live "/admin/users", Admin.UserLive.Index, :index
+    end
   end
 
   # Other scopes may use custom stacks.

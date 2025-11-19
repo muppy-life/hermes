@@ -26,6 +26,7 @@ defmodule HermesWeb.Layouts do
 
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
+  attr :current_user, :map, default: nil, doc: "the current user"
 
   attr :current_scope, :map,
     default: nil,
@@ -61,6 +62,11 @@ defmodule HermesWeb.Layouts do
             <li>
               <a href={~p"/boards"} class="btn btn-ghost">{gettext("Boards")}</a>
             </li>
+            <%= if Hermes.Accounts.is_admin?(@current_user) do %>
+              <li>
+                <a href={~p"/admin"} class="btn btn-ghost">{gettext("Admin")}</a>
+              </li>
+            <% end %>
           </ul>
         </div>
       <% end %>

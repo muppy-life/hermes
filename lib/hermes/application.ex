@@ -13,6 +13,7 @@ defmodule Hermes.Application do
       {Oban, Application.fetch_env!(:hermes, Oban)},
       {DNSCluster, query: Application.get_env(:hermes, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Hermes.PubSub},
+      HermesWeb.Presence,
       # Start to serve requests, typically the last entry
       HermesWeb.Endpoint
     ]

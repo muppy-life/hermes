@@ -7,7 +7,6 @@ defmodule Hermes.Accounts.Team do
     field :description, :string
 
     has_many :users, Hermes.Accounts.User
-    has_many :kanban_boards, Hermes.Kanbans.Board
     has_many :requested_requests, Hermes.Requests.Request, foreign_key: :requesting_team_id
     has_many :assigned_requests, Hermes.Requests.Request, foreign_key: :assigned_to_team_id
 

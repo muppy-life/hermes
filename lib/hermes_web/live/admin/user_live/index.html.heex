@@ -1,0 +1,194 @@
+<.header>
+  User Management
+  <:subtitle>Manage system users and administrators</:subtitle>
+  <:actions>
+    <.button phx-click="open_new_modal">
+      <span class="mr-2">+</span> New User
+    </.button>
+  </:actions>
+</.header>
+
+<div class="mt-8">
+  <div class="overflow-x-auto">
+    <table class="table table-zebra w-full">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Team</th>
+          <th>System Admin</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for user <- @users do %>
+          <tr>
+            <td class="font-medium"><%= user.email %></td>
+            <td>
+              <span class={[
+                "badge",
+                case user.role do
+                  "admin" -> "badge-primary"
+                  "dev_team" -> "badge-secondary"
+                  "product_owner" -> "badge-accent"
+                  _ -> "badge-ghost"
+                end
+              ]}>
+                <%= humanize_role(user.role) %>
+              </span>
+            </td>
+            <td><%= if user.team, do: user.team.name, else: "-" %></td>
+            <td>
+              <%= if user.is_admin do %>
+                <span class="badge badge-success">Admin</span>
+              <% else %>
+                <span class="badge badge-ghost">-</span>
+              <% end %>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <button
+                  phx-click="open_edit_modal"
+                  phx-value-id={user.id}
+                  class="btn btn-sm btn-ghost"
+                >
+                  Edit
+                </button>
+                <button
+                  phx-click="open_delete_modal"
+                  phx-value-id={user.id}
+                  class="btn btn-sm btn-ghost text-error"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Form Modal (Create/Edit) -->
+<%= if @show_form_modal do %>
+  <div class="modal modal-open">
+    <div class="modal-box max-w-2xl">
+      <h3 class="font-bold text-lg mb-4">
+        <%= if @form_mode == :new, do: "Create New User", else: "Edit User" %>
+      </h3>
+
+      <.form
+        for={@form}
+        id="user-form"
+        phx-change="validate"
+        phx-submit="save"
+      >
+        <div class="space-y-4">
+          <.input
+            field={@form[:email]}
+            type="email"
+            label="Email"
+            required
+          />
+
+          <%= if @form_mode == :new do %>
+            <.input
+              field={@form[:password]}
+              type="password"
+              label="Password"
+              required
+            />
+          <% else %>
+            <.input
+              field={@form[:password]}
+              type="password"
+              label="Password (leave blank to keep current)"
+            />
+          <% end %>
+
+          <.input
+            field={@form[:role]}
+            type="select"
+            label="Role"
+            prompt="Choose a role"
+            options={[
+              {"Team Member", "team_member"},
+              {"Developer", "dev_team"},
+              {"Product Owner", "product_owner"},
+              {"Admin (Role)", "admin"}
+            ]}
+            required
+          />
+
+          <.input
+            field={@form[:team_id]}
+            type="select"
+            label="Team"
+            prompt="Choose a team"
+            options={Enum.map(@teams, &{&1.name, &1.id})}
+            required
+          />
+
+          <div class="form-control">
+            <label class="label cursor-pointer justify-start gap-4">
+              <input
+                type="checkbox"
+                name="user[is_admin]"
+                class="checkbox checkbox-primary"
+                checked={@form[:is_admin].value == true || @form[:is_admin].value == "true"}
+                value="true"
+              />
+              <div>
+                <span class="label-text font-medium">System Administrator</span>
+                <p class="text-sm text-gray-500 mt-1">
+                  System administrators have access to all admin panels and can manage users
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button
+            type="button"
+            phx-click="close_form_modal"
+            class="btn btn-ghost"
+          >
+            Cancel
+          </button>
+          <.button type="submit" phx-disable-with="Saving...">
+            <%= if @form_mode == :new, do: "Create User", else: "Save Changes" %>
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
+<!-- Delete Confirmation Modal -->
+<%= if @show_delete_modal do %>
+  <div class="modal modal-open">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Confirm Deletion</h3>
+      <p class="py-4">
+        Are you sure you want to delete the user <strong><%= @selected_user.email %></strong>?
+        This action cannot be undone.
+      </p>
+      <div class="modal-action">
+        <button
+          phx-click="close_delete_modal"
+          class="btn btn-ghost"
+        >
+          Cancel
+        </button>
+        <button
+          phx-click="confirm_delete"
+          class="btn btn-error"
+        >
+          Delete User
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>
