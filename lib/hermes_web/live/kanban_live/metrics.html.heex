@@ -1,0 +1,246 @@
+<div class="px-6 pt-6">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold"><%= @board.name %> - {gettext("Metrics")}</h1>
+      <p class="text-base-content/60 text-sm mt-1">{gettext("Analytics and insights for this board")}</p>
+    </div>
+    <.back_button navigate={~p"/boards/#{@board_id}"} />
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="card bg-primary text-primary-content">
+      <div class="card-body">
+        <h3 class="text-sm opacity-80">{gettext("Total Requests")}</h3>
+        <p class="text-4xl font-bold"><%= @total_requests %></p>
+      </div>
+    </div>
+
+    <div class="card bg-secondary text-secondary-content">
+      <div class="card-body">
+        <h3 class="text-sm opacity-80">{gettext("Avg Time to Complete")}</h3>
+        <p class="text-4xl font-bold"><%= @avg_time_to_complete %></p>
+      </div>
+    </div>
+
+    <div class="card bg-accent text-accent-content">
+      <div class="card-body">
+        <h3 class="text-sm opacity-80">{gettext("Priority Distribution")}</h3>
+        <p class="text-4xl font-bold"><%= length(@priority_distribution) %></p>
+        <div class="text-xs opacity-70">{gettext("priority levels")}</div>
+      </div>
+    </div>
+
+    <div class="card bg-info text-info-content">
+      <div class="card-body">
+        <h3 class="text-sm opacity-80">{gettext("Request Types")}</h3>
+        <p class="text-4xl font-bold"><%= length(@kind_distribution) %></p>
+        <div class="text-xs opacity-70">{gettext("different types")}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Priority Distribution -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Priority Distribution")}</h2>
+        <%= if length(@priority_distribution) > 0 do %>
+          <div class="space-y-3 mt-4">
+            <%= for item <- @priority_distribution do %>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="font-medium">
+                    <%= case item.priority do %>
+                      <% 4 -> %>🔴
+                      <% 3 -> %>🟠
+                      <% 2 -> %>🟡
+                      <% 1 -> %>🟢
+                      <% _ -> %>⚪
+                    <% end %>
+                    <%= item.label %>
+                  </span>
+                  <span><%= item.count %> (<%= item.percentage %>%)</span>
+                </div>
+                <progress class="progress progress-primary w-full" value={item.percentage} max="100"></progress>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-center py-8 text-base-content/60">{gettext("No data available")}</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Request Kind Distribution -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Request Type Distribution")}</h2>
+        <%= if length(@kind_distribution) > 0 do %>
+          <div class="space-y-3 mt-4">
+            <%= for item <- @kind_distribution do %>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="font-medium"><%= item.label %></span>
+                  <span><%= item.count %> (<%= item.percentage %>%)</span>
+                </div>
+                <progress class="progress progress-secondary w-full" value={item.percentage} max="100"></progress>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-center py-8 text-base-content/60">{gettext("No data available")}</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Status Distribution")}</h2>
+        <%= if length(@status_distribution) > 0 do %>
+          <div class="space-y-3 mt-4">
+            <%= for item <- @status_distribution do %>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="font-medium"><%= Phoenix.Naming.humanize(item.status) %></span>
+                  <span><%= item.count %> (<%= item.percentage %>%)</span>
+                </div>
+                <progress class="progress progress-accent w-full" value={item.percentage} max="100"></progress>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-center py-8 text-base-content/60">{gettext("No data available")}</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Average Time by Priority -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Avg Completion Time by Priority")}</h2>
+        <%= if length(@time_by_priority) > 0 do %>
+          <div class="overflow-x-auto mt-4">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>{gettext("Priority")}</th>
+                  <th>{gettext("Avg Time")}</th>
+                  <th>{gettext("Count")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for item <- @time_by_priority do %>
+                  <tr>
+                    <td>
+                      <%= case item.priority do %>
+                        <% 4 -> %>🔴
+                        <% 3 -> %>🟠
+                        <% 2 -> %>🟡
+                        <% 1 -> %>🟢
+                        <% _ -> %>⚪
+                      <% end %>
+                      <%= item.label %>
+                    </td>
+                    <td class="font-mono"><%= item.avg_time %></td>
+                    <td><%= item.count %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <p class="text-center py-8 text-base-content/60">{gettext("No completed requests yet")}</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Contributions -->
+  <div class="card bg-base-200 mb-8">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("Top Contributors")}</h2>
+      <%= if length(@user_contributions) > 0 do %>
+        <div class="overflow-x-auto mt-4">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{gettext("User")}</th>
+                <th>{gettext("Requests Created")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for {user, index} <- Enum.with_index(@user_contributions, 1) do %>
+                <tr>
+                  <td class="font-bold"><%= index %></td>
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="avatar">
+                        <div class="w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                          <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=#{user.user_id}"} alt={user.user_email} />
+                        </div>
+                      </div>
+                      <span><%= user.user_email %></span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold"><%= user.count %></span>
+                      <progress class="progress progress-primary w-32" value={user.count} max={Enum.max_by(@user_contributions, & &1.count).count}></progress>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="text-center py-8 text-base-content/60">{gettext("No contributions data available")}</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Recent Completions -->
+  <div class="card bg-base-200 mb-8">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("Recent Completions")}</h2>
+      <%= if length(@recent_completions) > 0 do %>
+        <div class="overflow-x-auto mt-4">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>{gettext("Request")}</th>
+                <th>{gettext("Priority")}</th>
+                <th>{gettext("Created By")}</th>
+                <th>{gettext("Time to Complete")}</th>
+                <th>{gettext("Completed At")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for request <- @recent_completions do %>
+                <tr>
+                  <td>
+                    <.link navigate={~p"/backlog/#{request.id}"} class="link link-primary">
+                      <%= request.title %>
+                    </.link>
+                  </td>
+                  <td>
+                    <.priority_badge priority={request.priority} size="sm" />
+                  </td>
+                  <td class="text-sm"><%= request.created_by.email %></td>
+                  <td class="font-mono text-sm"><%= request.completion_time %></td>
+                  <td class="text-sm"><%= Calendar.strftime(request.updated_at, "%b %d, %Y %H:%M") %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="text-center py-8 text-base-content/60">{gettext("No completed requests yet")}</p>
+      <% end %>
+    </div>
+  </div>
+</div>

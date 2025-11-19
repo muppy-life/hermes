@@ -34,7 +34,7 @@
                   _ -> "badge-ghost"
                 end
               ]}>
-                <%= humanize_role(user.role) %>
+                <%= Phoenix.Naming.humanize(user.role) %>
               </span>
             </td>
             <td><%= if user.team, do: user.team.name, else: "-" %></td>
