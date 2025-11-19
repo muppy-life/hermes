@@ -95,3 +95,7 @@ config :swoosh, :api_client, false
 # Set ANTHROPIC_API_KEY environment variable before running the server:
 # export ANTHROPIC_API_KEY="your-api-key-here"
 config :hermes, :anthropic_api_key, System.get_env("ANTHROPIC_API_KEY")
+
+# Feature flags
+config :hermes, :features,
+  solution_diagram_generation: false  # Set to true to enable AI-generated solution diagrams

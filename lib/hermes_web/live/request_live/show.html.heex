@@ -140,13 +140,15 @@
             >
               {gettext("Desired Output")}
             </button>
-            <button
-              class={["tab", @solution_tab == "diagram" && "tab-active"]}
-              phx-click="switch_solution_tab"
-              phx-value-tab="diagram"
-            >
-              {gettext("Solution Diagram")}
-            </button>
+            <%= if @diagram_feature_enabled do %>
+              <button
+                class={["tab", @solution_tab == "diagram" && "tab-active"]}
+                phx-click="switch_solution_tab"
+                phx-value-tab="diagram"
+              >
+                {gettext("Solution Diagram")}
+              </button>
+            <% end %>
           </div>
 
           <!-- Tab Content -->
@@ -167,7 +169,7 @@
                 <p class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90" style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"><%= @request.expected_output %></p>
               <% end %>
 
-              <%= if @solution_tab == "diagram" do %>
+              <%= if @diagram_feature_enabled && @solution_tab == "diagram" do %>
                 <%= if @request.solution_diagram do %>
                   <div phx-hook="MermaidDiagram" id="solution-diagram-container" class="bg-white rounded-lg p-4">
                     <div class="mermaid">

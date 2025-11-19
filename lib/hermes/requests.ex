@@ -116,10 +116,15 @@ defmodule Hermes.Requests do
   end
 
   def trigger_diagram_generation(request) do
-    # Trigger async diagram generation job
-    %{request_id: request.id}
-    |> Hermes.Workers.DiagramGenerationWorker.new(queue: :default)
-    |> Oban.insert()
+    # Only trigger if feature is enabled
+    if diagram_generation_enabled?() do
+      # Trigger async diagram generation job
+      %{request_id: request.id}
+      |> Hermes.Workers.DiagramGenerationWorker.new(queue: :default)
+      |> Oban.insert()
+    else
+      {:ok, :feature_disabled}
+    end
   end
 
   @doc """
@@ -127,9 +132,22 @@ defmodule Hermes.Requests do
   Used when viewing requests that don't have diagrams yet.
   """
   def trigger_diagram_generation_for_request(request_id) do
-    %{request_id: request_id}
-    |> Hermes.Workers.DiagramGenerationWorker.new(queue: :default)
-    |> Oban.insert()
+    # Only trigger if feature is enabled
+    if diagram_generation_enabled?() do
+      %{request_id: request_id}
+      |> Hermes.Workers.DiagramGenerationWorker.new(queue: :default)
+      |> Oban.insert()
+    else
+      {:ok, :feature_disabled}
+    end
+  end
+
+  @doc """
+  Checks if the solution diagram generation feature is enabled.
+  """
+  def diagram_generation_enabled? do
+    Application.get_env(:hermes, :features, [])
+    |> Keyword.get(:solution_diagram_generation, false)
   end
 
   def update_request(%Request{} = request, attrs, user_id \\ nil) do

@@ -14,8 +14,9 @@ defmodule HermesWeb.RequestLive.Show do
     # Subscribe to updates for this request
     Phoenix.PubSub.subscribe(Hermes.PubSub, "request:#{id}")
 
-    # Trigger diagram generation if missing
-    if is_nil(request.solution_diagram) or request.solution_diagram == "" do
+    # Trigger diagram generation if missing (only when feature is enabled)
+    if Requests.diagram_generation_enabled?() and
+       (is_nil(request.solution_diagram) or request.solution_diagram == "") do
       Requests.trigger_diagram_generation_for_request(id)
     end
 
@@ -30,6 +31,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:solution_tab, "goal")
+     |> assign(:diagram_feature_enabled, Requests.diagram_generation_enabled?())
      |> assign(:teams, Accounts.list_teams())
      |> assign(:form, to_form(Requests.change_request(request)))}
   end
