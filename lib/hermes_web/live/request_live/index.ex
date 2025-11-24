@@ -152,17 +152,4 @@ defmodule HermesWeb.RequestLive.Index do
     requests
     |> Enum.sort_by(&Map.get(&1, sort_by), sort_order)
   end
-
-  defp truncate_words(text, word_count) do
-    words = String.split(text, ~r/\s+/)
-
-    if length(words) <= word_count do
-      text
-    else
-      words
-      |> Enum.take(word_count)
-      |> Enum.join(" ")
-      |> Kernel.<>("...")
-    end
-  end
 end

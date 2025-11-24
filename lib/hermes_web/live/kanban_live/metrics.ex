@@ -1,8 +1,6 @@
 defmodule HermesWeb.KanbanLive.Metrics do
   use HermesWeb, :live_view
 
-  alias Hermes.Requests
-  alias Hermes.Accounts
   alias Hermes.Repo
   alias Hermes.Requests.Request
   import Ecto.Query
