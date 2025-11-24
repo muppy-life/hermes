@@ -25,7 +25,10 @@ defmodule Hermes.Requests do
   end
 
   def list_pending_requests do
-    from(r in Request, where: r.status == "pending", order_by: [desc: r.priority, desc: r.inserted_at])
+    from(r in Request,
+      where: r.status == "pending",
+      order_by: [desc: r.priority, desc: r.inserted_at]
+    )
     |> Repo.all()
     |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
   end
@@ -98,7 +101,8 @@ defmodule Hermes.Requests do
     %{
       request_id: request.id,
       text: text_to_summarize,
-      max_length: 60,  # Short title
+      # Short title
+      max_length: 60,
       min_length: 20,
       field_to_update: "title"
     }

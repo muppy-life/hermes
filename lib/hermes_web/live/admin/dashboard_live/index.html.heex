@@ -9,7 +9,7 @@
     <div class="card bg-primary text-primary-content">
       <div class="card-body">
         <h3 class="card-title text-sm opacity-80">Total Users</h3>
-        <p class="text-4xl font-bold"><%= @total_users %></p>
+        <p class="text-4xl font-bold">{@total_users}</p>
         <div class="text-xs opacity-70">Registered users in the system</div>
       </div>
     </div>
@@ -17,7 +17,7 @@
     <div class="card bg-secondary text-secondary-content">
       <div class="card-body">
         <h3 class="card-title text-sm opacity-80">Teams</h3>
-        <p class="text-4xl font-bold"><%= @total_teams %></p>
+        <p class="text-4xl font-bold">{@total_teams}</p>
         <div class="text-xs opacity-70">Active teams</div>
       </div>
     </div>
@@ -25,7 +25,7 @@
     <div class="card bg-accent text-accent-content">
       <div class="card-body">
         <h3 class="card-title text-sm opacity-80">Administrators</h3>
-        <p class="text-4xl font-bold"><%= @admin_users %></p>
+        <p class="text-4xl font-bold">{@admin_users}</p>
         <div class="text-xs opacity-70">System admins</div>
       </div>
     </div>
@@ -33,28 +33,39 @@
     <div class="card bg-info text-info-content">
       <div class="card-body">
         <h3 class="card-title text-sm opacity-80">Total Requests</h3>
-        <p class="text-4xl font-bold"><%= @total_requests %></p>
+        <p class="text-4xl font-bold">{@total_requests}</p>
         <div class="text-xs opacity-70">All requests in the system</div>
       </div>
     </div>
   </div>
-
-  <!-- Quick Actions -->
+  
+<!-- Quick Actions -->
   <div class="card bg-base-200">
     <div class="card-body">
       <h2 class="card-title">Quick Actions</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         <a href={~p"/admin/users"} class="btn btn-lg btn-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+            />
           </svg>
           Manage Users
         </a>
       </div>
     </div>
   </div>
-
-  <!-- User Activity (Real-time & Last 7 Days) -->
+  
+<!-- User Activity (Real-time & Last 7 Days) -->
   <div class="card bg-base-200">
     <div class="card-body">
       <div class="flex items-center justify-between">
@@ -62,10 +73,11 @@
         <div class="flex gap-2">
           <div class="badge badge-success gap-2">
             <span class="relative flex h-3 w-3">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75">
+              </span>
               <span class="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
             </span>
-            <%= @users |> Map.values() |> Enum.count(& &1.online) %> Online
+            {@users |> Map.values() |> Enum.count(& &1.online)} Online
           </div>
           <div class="badge badge-ghost">
             Last 7 Days
@@ -75,8 +87,19 @@
 
       <%= if map_size(@users) == 0 do %>
         <div class="text-center py-8 text-base-content/60">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-12 w-12 mx-auto mb-2 opacity-50"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+            />
           </svg>
           <p>No recent user activity</p>
         </div>
@@ -102,11 +125,14 @@
                     <div class="flex items-center gap-3">
                       <div class="avatar">
                         <div class="w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                          <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=#{user.id}"} alt={user.email} />
+                          <img
+                            src={"https://api.dicebear.com/7.x/avataaars/svg?seed=#{user.id}"}
+                            alt={user.email}
+                          />
                         </div>
                       </div>
                       <div>
-                        <div class="font-bold"><%= user.email %></div>
+                        <div class="font-bold">{user.email}</div>
                       </div>
                     </div>
                   </td>
@@ -120,16 +146,27 @@
                         _ -> "badge-ghost"
                       end
                     ]}>
-                      <%= Phoenix.Naming.humanize(user.role) %>
+                      {Phoenix.Naming.humanize(user.role)}
                     </span>
                   </td>
                   <td>
                     <%= if user.current_view do %>
                       <div class="flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-base-content/60"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
                         </svg>
-                        <span class="text-sm"><%= user.current_view %></span>
+                        <span class="text-sm">{user.current_view}</span>
                       </div>
                     <% else %>
                       <span class="text-sm text-base-content/40">-</span>
@@ -139,20 +176,23 @@
                     <%= if user.online do %>
                       <span class="flex items-center gap-2">
                         <span class="relative flex h-2 w-2">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75">
+                          </span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-success">
+                          </span>
                         </span>
                         <span class="text-success font-medium">Online</span>
                       </span>
                     <% else %>
                       <span class="flex items-center gap-2">
-                        <span class="relative flex h-2 w-2 bg-base-content/30 rounded-full"></span>
+                        <span class="relative flex h-2 w-2 bg-base-content/30 rounded-full">
+                        </span>
                         <span class="text-base-content/60">Offline</span>
                       </span>
                     <% end %>
                   </td>
                   <td class="text-sm text-base-content/80">
-                    <%= format_last_seen(user.last_seen_at) %>
+                    {format_last_seen(user.last_seen_at)}
                   </td>
                 </tr>
               <% end %>

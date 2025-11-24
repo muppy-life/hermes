@@ -1,8 +1,16 @@
 <div class="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
   <div class="w-full max-w-md space-y-8">
     <div class="text-center">
-      <img src={~p"/images/logo_light_themes.png"} width="154" class="mx-auto [[data-theme=dark]_&]:hidden" />
-      <img src={~p"/images/logo_dark_themes.png"} width="154" class="mx-auto hidden [[data-theme=dark]_&]:block dark:[[data-theme=system]_&]:block" />
+      <img
+        src={~p"/images/logo_light_themes.png"}
+        width="154"
+        class="mx-auto [[data-theme=dark]_&]:hidden"
+      />
+      <img
+        src={~p"/images/logo_dark_themes.png"}
+        width="154"
+        class="mx-auto hidden [[data-theme=dark]_&]:block dark:[[data-theme=system]_&]:block"
+      />
       <h2 class="text-3xl font-bold tracking-tight">
         {gettext("Hermes")}
       </h2>
@@ -69,7 +77,9 @@
           </div>
           <div class="flex justify-between items-center">
             <span class="font-medium">{gettext("Marketing Team:")}</span>
-            <code class="text-xs bg-base-200 px-2 py-1 rounded">marketing@hermes.com / marketing123</code>
+            <code class="text-xs bg-base-200 px-2 py-1 rounded">
+              marketing@hermes.com / marketing123
+            </code>
           </div>
           <div class="flex justify-between items-center">
             <span class="font-medium">{gettext("Sales Team:")}</span>
@@ -81,7 +91,9 @@
           </div>
         </div>
         <p class="mt-4 text-xs opacity-60">
-          {gettext("Note: This is an MVP with simplified authentication for demonstration purposes.")}
+          {gettext(
+            "Note: This is an MVP with simplified authentication for demonstration purposes."
+          )}
         </p>
       </div>
     <% end %>

@@ -10,9 +10,10 @@ defmodule HermesWeb.AuthLive.Login do
       # Show demo accounts only in dev/test environments
       show_demo_accounts = Application.get_env(:hermes, :env) in [:dev, :test]
 
-      socket = socket
-      |> assign(:page_title, gettext("Login"))
-      |> assign(:show_demo_accounts, show_demo_accounts)
+      socket =
+        socket
+        |> assign(:page_title, gettext("Login"))
+        |> assign(:show_demo_accounts, show_demo_accounts)
 
       {:ok, socket}
     end

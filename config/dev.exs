@@ -98,4 +98,5 @@ config :hermes, :anthropic_api_key, System.get_env("ANTHROPIC_API_KEY")
 
 # Feature flags
 config :hermes, :features,
-  solution_diagram_generation: false  # Set to true to enable AI-generated solution diagrams
+  # Set to true to enable AI-generated solution diagrams
+  solution_diagram_generation: false

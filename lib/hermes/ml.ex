@@ -88,10 +88,12 @@ defmodule Hermes.ML do
   end
 
   defp extract_summary(%{results: [%{text: text}]}), do: text
+
   defp extract_summary(%{results: results}) when is_list(results) do
     results
     |> Enum.map(& &1.text)
     |> Enum.join(" ")
   end
+
   defp extract_summary(_), do: "Summary unavailable"
 end

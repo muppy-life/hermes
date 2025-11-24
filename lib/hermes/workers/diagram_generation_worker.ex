@@ -38,7 +38,11 @@ defmodule Hermes.Workers.DiagramGenerationWorker do
       prompt = build_diagram_prompt(request)
 
       # Generate the diagram using Claude API
-      case Claude.ask(prompt, model: "claude-sonnet-4-20250514", max_tokens: 2048, system: diagram_system_prompt()) do
+      case Claude.ask(prompt,
+             model: "claude-sonnet-4-20250514",
+             max_tokens: 2048,
+             system: diagram_system_prompt()
+           ) do
         {:ok, diagram} ->
           # Clean up the diagram
           cleaned_diagram = clean_diagram(diagram)
@@ -58,7 +62,10 @@ defmodule Hermes.Workers.DiagramGenerationWorker do
               :ok
 
             {:error, reason} ->
-              Logger.error("Failed to store diagram for request #{request_id}: #{inspect(reason)}")
+              Logger.error(
+                "Failed to store diagram for request #{request_id}: #{inspect(reason)}"
+              )
+
               {:error, reason}
           end
 

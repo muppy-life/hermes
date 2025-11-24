@@ -1,6 +1,6 @@
 <.header class="sticky top-0 z-10 bg-base-100 pt-4 pb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 shadow-sm">
   <div>
-    <h1 class="text-2xl font-bold"><%= @request.title %></h1>
+    <h1 class="text-2xl font-bold">{@request.title}</h1>
     <div class="flex gap-2 mt-2">
       <%= if @request.kind do %>
         <.kind_badge kind={@request.kind} size="md" />
@@ -18,7 +18,7 @@
     </.button>
     <%= if @can_set_deadline do %>
       <.button phx-click="open_deadline_modal" class="btn btn-accent h-10 min-h-10">
-        <%= if @request.deadline, do: gettext("Change Deadline"), else: gettext("Set Deadline") %>
+        {if @request.deadline, do: gettext("Change Deadline"), else: gettext("Set Deadline")}
       </.button>
     <% end %>
     <.button phx-click="open_delete_modal" class="btn btn-error h-10 min-h-10">
@@ -34,223 +34,355 @@
 <div class="mt-4 flex gap-4 h-[calc(100vh-12rem)]">
   <!-- Left Column: Main Content (3/4 width) -->
   <div class="w-3/4 space-y-4 pr-2 overflow-y-auto pb-4">
-  <!-- Current Problem Card -->
-  <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);">
-    <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">{gettext("Current Problem")}</h2>
-
-    <div class="flex gap-4 flex-1 min-h-0">
-      <!-- Metadata Column -->
-      <div class="w-1/4 space-y-4 flex-shrink-0">
-        <div>
-          <label class="label">
-            <span class="label-text font-semibold text-sm">{gettext("Requesting Team")}</span>
-          </label>
-          <p class="text-sm"><%= @request.requesting_team.name %></p>
-        </div>
-
-        <div>
-          <label class="label">
-            <span class="label-text font-semibold text-sm">{gettext("Reported By")}</span>
-          </label>
-          <p class="text-sm"><%= @request.created_by.email %></p>
-        </div>
-
-        <div>
-          <label class="label">
-            <span class="label-text font-semibold text-sm">{gettext("Reported At")}</span>
-          </label>
-          <p class="text-sm"><%= Calendar.strftime(@request.inserted_at, "%B %d, %Y at %I:%M %p") %></p>
-        </div>
-
-        <%= if @request.deadline do %>
-          <div>
-            <label class="label">
-              <span class="label-text font-semibold text-sm">{gettext("Deadline")}</span>
-            </label>
-            <p class="text-sm font-medium text-warning"><%= Calendar.strftime(@request.deadline, "%B %d, %Y") %></p>
-          </div>
-        <% end %>
-      </div>
-
-      <!-- Content Column -->
-      <div class="flex-1 pl-4 border-l border-base-300 relative" phx-hook="ScrollIndicator" id="current-problem-scroll">
-        <!-- Scroll Indicator - Top -->
-        <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-          </svg>
-        </div>
-
-        <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
-          <%= if @request.current_situation do %>
-            <p class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90" style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"><%= @request.current_situation %></p>
-          <% end %>
-        </div>
-
-        <!-- Scroll Indicator - Bottom -->
-        <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Proposed Solution Card -->
-  <%= if @request.goal_description || @request.expected_output do %>
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);">
-      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">{gettext("Proposed Solution")}</h2>
+    <!-- Current Problem Card -->
+    <div
+      class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col"
+      style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);"
+    >
+      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">
+        {gettext("Current Problem")}
+      </h2>
 
       <div class="flex gap-4 flex-1 min-h-0">
         <!-- Metadata Column -->
         <div class="w-1/4 space-y-4 flex-shrink-0">
           <div>
             <label class="label">
-              <span class="label-text font-semibold text-sm">{gettext("Assigned To")}</span>
+              <span class="label-text font-semibold text-sm">{gettext("Requesting Team")}</span>
+            </label>
+            <p class="text-sm">{@request.requesting_team.name}</p>
+          </div>
+
+          <div>
+            <label class="label">
+              <span class="label-text font-semibold text-sm">{gettext("Reported By")}</span>
+            </label>
+            <p class="text-sm">{@request.created_by.email}</p>
+          </div>
+
+          <div>
+            <label class="label">
+              <span class="label-text font-semibold text-sm">{gettext("Reported At")}</span>
             </label>
             <p class="text-sm">
-              <%= if @request.assigned_to_team do %>
-                <%= @request.assigned_to_team.name %>
-              <% else %>
-                <span class="opacity-60">{gettext("Not assigned yet")}</span>
-              <% end %>
+              {Calendar.strftime(@request.inserted_at, "%B %d, %Y at %I:%M %p")}
             </p>
           </div>
 
-          <%= if @request.target_user_type do %>
+          <%= if @request.deadline do %>
             <div>
               <label class="label">
-                <span class="label-text font-semibold text-sm">{gettext("Target User")}</span>
+                <span class="label-text font-semibold text-sm">{gettext("Deadline")}</span>
               </label>
-              <p class="text-sm"><%= Hermes.Requests.Request.target_user_label(@request.target_user_type) %></p>
-            </div>
-          <% end %>
-
-          <%= if @request.goal_target do %>
-            <div>
-              <label class="label">
-                <span class="label-text font-semibold text-sm">{gettext("Output Type")}</span>
-              </label>
-              <span class="badge badge-md badge-info truncate max-w-full">
-                <%= Hermes.Requests.Request.goal_target_label(@request.goal_target) %>
-              </span>
+              <p class="text-sm font-medium text-warning">
+                {Calendar.strftime(@request.deadline, "%B %d, %Y")}
+              </p>
             </div>
           <% end %>
         </div>
+        
+<!-- Content Column -->
+        <div
+          class="flex-1 pl-4 border-l border-base-300 relative"
+          phx-hook="ScrollIndicator"
+          id="current-problem-scroll"
+        >
+          <!-- Scroll Indicator - Top -->
+          <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 15l7-7 7 7"
+              />
+            </svg>
+          </div>
 
-        <!-- Content Column -->
-        <div class="flex-1 pl-4 border-l border-base-300 flex flex-col min-h-0">
-          <!-- Tabs -->
-          <div class="tabs tabs-boxed mb-4 flex-shrink-0">
-            <button
-              class={["tab", @solution_tab == "goal" && "tab-active"]}
-              phx-click="switch_solution_tab"
-              phx-value-tab="goal"
-            >
-              {gettext("Goal")}
-            </button>
-            <button
-              class={["tab", @solution_tab == "output" && "tab-active"]}
-              phx-click="switch_solution_tab"
-              phx-value-tab="output"
-            >
-              {gettext("Desired Output")}
-            </button>
-            <%= if @diagram_feature_enabled do %>
-              <button
-                class={["tab", @solution_tab == "diagram" && "tab-active"]}
-                phx-click="switch_solution_tab"
-                phx-value-tab="diagram"
+          <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
+            <%= if @request.current_situation do %>
+              <p
+                class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
+                style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
               >
-                {gettext("Solution Diagram")}
-              </button>
+                {@request.current_situation}
+              </p>
             <% end %>
           </div>
-
-          <!-- Tab Content -->
-          <div class="flex-1 min-h-0 relative" phx-hook="ScrollIndicator" id="proposed-solution-scroll">
-            <!-- Scroll Indicator - Top -->
-            <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-              </svg>
-            </div>
-
-            <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
-              <%= if @solution_tab == "goal" && @request.goal_description do %>
-                <p class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90" style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"><%= @request.goal_description %></p>
-              <% end %>
-
-              <%= if @solution_tab == "output" && @request.expected_output do %>
-                <p class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90" style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"><%= @request.expected_output %></p>
-              <% end %>
-
-              <%= if @diagram_feature_enabled && @solution_tab == "diagram" do %>
-                <%= if @request.solution_diagram do %>
-                  <div phx-hook="MermaidDiagram" id="solution-diagram-container" class="bg-white rounded-lg p-4">
-                    <div class="mermaid">
-                      <%= @request.solution_diagram %>
-                    </div>
-                  </div>
-                <% else %>
-                  <div class="flex items-center justify-center h-full">
-                    <div class="text-center opacity-60">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 motion-safe:animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <p class="text-sm">{gettext("Diagram is being generated...")}</p>
-                    </div>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-
-            <!-- Scroll Indicator - Bottom -->
-            <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+          
+<!-- Scroll Indicator - Bottom -->
+          <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
           </div>
         </div>
       </div>
     </div>
-  <% end %>
+    
+<!-- Proposed Solution Card -->
+    <%= if @request.goal_description || @request.expected_output do %>
+      <div
+        class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col"
+        style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);"
+      >
+        <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">
+          {gettext("Proposed Solution")}
+        </h2>
 
-  <!-- Related Business Data Card -->
-  <%= if @request.data_description && String.trim(@request.data_description) != "" do %>
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col" style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);">
-      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">{gettext("Related Business Data")}</h2>
+        <div class="flex gap-4 flex-1 min-h-0">
+          <!-- Metadata Column -->
+          <div class="w-1/4 space-y-4 flex-shrink-0">
+            <div>
+              <label class="label">
+                <span class="label-text font-semibold text-sm">{gettext("Assigned To")}</span>
+              </label>
+              <p class="text-sm">
+                <%= if @request.assigned_to_team do %>
+                  {@request.assigned_to_team.name}
+                <% else %>
+                  <span class="opacity-60">{gettext("Not assigned yet")}</span>
+                <% end %>
+              </p>
+            </div>
 
-      <div class="flex-1 min-h-0 relative" phx-hook="ScrollIndicator" id="business-data-scroll">
-        <!-- Scroll Indicator - Top -->
-        <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-          </svg>
-        </div>
+            <%= if @request.target_user_type do %>
+              <div>
+                <label class="label">
+                  <span class="label-text font-semibold text-sm">{gettext("Target User")}</span>
+                </label>
+                <p class="text-sm">
+                  {Hermes.Requests.Request.target_user_label(@request.target_user_type)}
+                </p>
+              </div>
+            <% end %>
 
-        <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
-          <p class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90" style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"><%= @request.data_description %></p>
-        </div>
+            <%= if @request.goal_target do %>
+              <div>
+                <label class="label">
+                  <span class="label-text font-semibold text-sm">{gettext("Output Type")}</span>
+                </label>
+                <span class="badge badge-md badge-info truncate max-w-full">
+                  {Hermes.Requests.Request.goal_target_label(@request.goal_target)}
+                </span>
+              </div>
+            <% end %>
+          </div>
+          
+<!-- Content Column -->
+          <div class="flex-1 pl-4 border-l border-base-300 flex flex-col min-h-0">
+            <!-- Tabs -->
+            <div class="tabs tabs-boxed mb-4 flex-shrink-0">
+              <button
+                class={["tab", @solution_tab == "goal" && "tab-active"]}
+                phx-click="switch_solution_tab"
+                phx-value-tab="goal"
+              >
+                {gettext("Goal")}
+              </button>
+              <button
+                class={["tab", @solution_tab == "output" && "tab-active"]}
+                phx-click="switch_solution_tab"
+                phx-value-tab="output"
+              >
+                {gettext("Desired Output")}
+              </button>
+              <%= if @diagram_feature_enabled do %>
+                <button
+                  class={["tab", @solution_tab == "diagram" && "tab-active"]}
+                  phx-click="switch_solution_tab"
+                  phx-value-tab="diagram"
+                >
+                  {gettext("Solution Diagram")}
+                </button>
+              <% end %>
+            </div>
+            
+<!-- Tab Content -->
+            <div
+              class="flex-1 min-h-0 relative"
+              phx-hook="ScrollIndicator"
+              id="proposed-solution-scroll"
+            >
+              <!-- Scroll Indicator - Top -->
+              <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 15l7-7 7 7"
+                  />
+                </svg>
+              </div>
 
-        <!-- Scroll Indicator - Bottom -->
-        <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
+              <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
+                <%= if @solution_tab == "goal" && @request.goal_description do %>
+                  <p
+                    class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
+                    style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
+                  >
+                    {@request.goal_description}
+                  </p>
+                <% end %>
+
+                <%= if @solution_tab == "output" && @request.expected_output do %>
+                  <p
+                    class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
+                    style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
+                  >
+                    {@request.expected_output}
+                  </p>
+                <% end %>
+
+                <%= if @diagram_feature_enabled && @solution_tab == "diagram" do %>
+                  <%= if @request.solution_diagram do %>
+                    <div
+                      phx-hook="MermaidDiagram"
+                      id="solution-diagram-container"
+                      class="bg-white rounded-lg p-4"
+                    >
+                      <div class="mermaid">
+                        {@request.solution_diagram}
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="flex items-center justify-center h-full">
+                      <div class="text-center opacity-60">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-12 w-12 mx-auto mb-2 motion-safe:animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                        <p class="text-sm">{gettext("Diagram is being generated...")}</p>
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+              
+<!-- Scroll Indicator - Bottom -->
+              <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  <% end %>
-  </div>
+    <% end %>
+    
+<!-- Related Business Data Card -->
+    <%= if @request.data_description && String.trim(@request.data_description) != "" do %>
+      <div
+        class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col"
+        style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);"
+      >
+        <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">
+          {gettext("Related Business Data")}
+        </h2>
 
-  <!-- Right Column: History & Comments (1/4 width) -->
+        <div class="flex-1 min-h-0 relative" phx-hook="ScrollIndicator" id="business-data-scroll">
+          <!-- Scroll Indicator - Top -->
+          <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 15l7-7 7 7"
+              />
+            </svg>
+          </div>
+
+          <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
+            <p
+              class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
+              style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
+            >
+              {@request.data_description}
+            </p>
+          </div>
+          
+<!-- Scroll Indicator - Bottom -->
+          <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  
+<!-- Right Column: History & Comments (1/4 width) -->
   <div class="w-1/4 flex flex-col gap-4 h-full pb-8">
     <!-- Change History -->
     <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-3 flex flex-col max-h-[40%]">
-      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300 flex-shrink-0">{gettext("History")}</h2>
+      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300 flex-shrink-0">
+        {gettext("History")}
+      </h2>
 
       <%= if Enum.empty?(@changes) do %>
         <p class="text-xs opacity-60">{gettext("No changes yet.")}</p>
@@ -260,10 +392,12 @@
             <div class="p-2 bg-base-200 rounded text-xs">
               <div class="flex items-center justify-between mb-1">
                 <span class="font-semibold truncate">
-                  <%= if change.user, do: String.split(change.user.email, "@") |> List.first(), else: gettext("System") %>
+                  {if change.user,
+                    do: String.split(change.user.email, "@") |> List.first(),
+                    else: gettext("System")}
                 </span>
                 <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
-                  <%= Calendar.strftime(change.inserted_at, "%b %d, %H:%M") %>
+                  {Calendar.strftime(change.inserted_at, "%b %d, %H:%M")}
                 </span>
               </div>
 
@@ -271,15 +405,19 @@
                 <p class="text-[10px] opacity-70">{gettext("Created request")}</p>
               <% else %>
                 <div class="text-[10px]">
-                  <div class="font-medium mb-1"><%= humanize_field(change.field) %></div>
+                  <div class="font-medium mb-1">{humanize_field(change.field)}</div>
                   <div class="space-y-0.5">
                     <div>
-                      <span class="opacity-60">{gettext("From:")} </span>
-                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]"><%= format_change_value(change.old_value) %></span>
+                      <span class="opacity-60">{gettext("From:")}</span>
+                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
+                        {format_change_value(change.old_value)}
+                      </span>
                     </div>
                     <div>
-                      <span class="opacity-60">{gettext("To:")} </span>
-                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]"><%= format_change_value(change.new_value) %></span>
+                      <span class="opacity-60">{gettext("To:")}</span>
+                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
+                        {format_change_value(change.new_value)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -289,12 +427,14 @@
         </div>
       <% end %>
     </div>
-
-    <!-- Comments Chat -->
+    
+<!-- Comments Chat -->
     <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-3 flex flex-col flex-1">
-      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300 flex-shrink-0">{gettext("Comments")}</h2>
-
-      <!-- Comments List -->
+      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300 flex-shrink-0">
+        {gettext("Comments")}
+      </h2>
+      
+<!-- Comments List -->
       <div class="flex-1 overflow-y-auto space-y-2 mb-3">
         <%= if Enum.empty?(@comments) do %>
           <p class="text-xs opacity-60">{gettext("No comments yet.")}</p>
@@ -303,19 +443,19 @@
             <div class="p-2 bg-base-200 rounded">
               <div class="flex items-start justify-between mb-1">
                 <span class="font-semibold text-xs truncate">
-                  <%= String.split(comment.user.email, "@") |> List.first() %>
+                  {String.split(comment.user.email, "@") |> List.first()}
                 </span>
                 <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
-                  <%= Calendar.strftime(comment.inserted_at, "%b %d, %H:%M") %>
+                  {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
                 </span>
               </div>
-              <p class="text-xs whitespace-pre-wrap"><%= comment.content %></p>
+              <p class="text-xs whitespace-pre-wrap">{comment.content}</p>
             </div>
           <% end %>
         <% end %>
       </div>
-
-      <!-- Comment Input -->
+      
+<!-- Comment Input -->
       <form phx-submit="add_comment" class="flex-shrink-0">
         <textarea
           name="content"
@@ -367,9 +507,21 @@
             ]}
           />
 
-          <.input field={@form[:current_situation]} type="textarea" label={gettext("Current Situation")} />
-          <.input field={@form[:goal_description]} type="textarea" label={gettext("Goal Description")} />
-          <.input field={@form[:data_description]} type="textarea" label={gettext("Related Business Data (optional)")} />
+          <.input
+            field={@form[:current_situation]}
+            type="textarea"
+            label={gettext("Current Situation")}
+          />
+          <.input
+            field={@form[:goal_description]}
+            type="textarea"
+            label={gettext("Goal Description")}
+          />
+          <.input
+            field={@form[:data_description]}
+            type="textarea"
+            label={gettext("Related Business Data (optional)")}
+          />
 
           <.input
             field={@form[:goal_target]}
@@ -383,21 +535,35 @@
             ]}
           />
 
-          <.input field={@form[:expected_output]} type="textarea" label={gettext("Expected Output")} />
+          <.input
+            field={@form[:expected_output]}
+            type="textarea"
+            label={gettext("Expected Output")}
+          />
 
           <.input
             field={@form[:priority]}
             type="select"
             label={gettext("Priority")}
             prompt={gettext("Choose a priority")}
-            options={[{gettext("Low"), 1}, {gettext("Normal"), 2}, {gettext("Important"), 3}, {gettext("Critical"), 4}]}
+            options={[
+              {gettext("Low"), 1},
+              {gettext("Normal"), 2},
+              {gettext("Important"), 3},
+              {gettext("Critical"), 4}
+            ]}
           />
           <.input
             field={@form[:status]}
             type="select"
             label={gettext("Status")}
             prompt={gettext("Choose a status")}
-            options={[{gettext("Pending"), "pending"}, {gettext("In Progress"), "in_progress"}, {gettext("Completed"), "completed"}, {gettext("Blocked"), "blocked"}]}
+            options={[
+              {gettext("Pending"), "pending"},
+              {gettext("In Progress"), "in_progress"},
+              {gettext("Completed"), "completed"},
+              {gettext("Blocked"), "blocked"}
+            ]}
           />
           <.input
             field={@form[:assigned_to_team_id]}
@@ -409,8 +575,12 @@
         </div>
 
         <div class="modal-action">
-          <button type="button" phx-click="close_edit_modal" class="btn btn-ghost">{gettext("Cancel")}</button>
-          <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>{gettext("Save Changes")}</button>
+          <button type="button" phx-click="close_edit_modal" class="btn btn-ghost">
+            {gettext("Cancel")}
+          </button>
+          <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+            {gettext("Save Changes")}
+          </button>
         </div>
       </.form>
     </div>
@@ -422,10 +592,16 @@
   <div class="modal modal-open">
     <div class="modal-box">
       <h3 class="font-bold text-lg">{gettext("Confirm Delete")}</h3>
-      <p class="py-4">{gettext("Are you sure you want to delete this request? This action cannot be undone.")}</p>
+      <p class="py-4">
+        {gettext("Are you sure you want to delete this request? This action cannot be undone.")}
+      </p>
       <div class="modal-action">
-        <button type="button" phx-click="close_delete_modal" class="btn btn-ghost">{gettext("Cancel")}</button>
-        <button type="button" phx-click="confirm_delete" class="btn btn-error">{gettext("Delete")}</button>
+        <button type="button" phx-click="close_delete_modal" class="btn btn-ghost">
+          {gettext("Cancel")}
+        </button>
+        <button type="button" phx-click="confirm_delete" class="btn btn-error">
+          {gettext("Delete")}
+        </button>
       </div>
     </div>
   </div>
@@ -433,37 +609,36 @@
 
 <!-- Deadline Modal -->
 <%= if @show_deadline_modal do %>
-  <%
-    # Calendar calculations
-    today = Date.utc_today()
-    selected_date = @selected_date
-    first_day = Date.beginning_of_month(selected_date)
-    last_day = Date.end_of_month(selected_date)
+  <% # Calendar calculations
+  today = Date.utc_today()
+  selected_date = @selected_date
+  first_day = Date.beginning_of_month(selected_date)
+  last_day = Date.end_of_month(selected_date)
 
-    # Get day of week for first day (1 = Monday, 7 = Sunday)
-    first_weekday = Date.day_of_week(first_day)
+  # Get day of week for first day (1 = Monday, 7 = Sunday)
+  first_weekday = Date.day_of_week(first_day)
 
-    # Calculate previous and next month
-    prev_month = Date.add(first_day, -1)
-    next_month = Date.add(last_day, 1)
+  # Calculate previous and next month
+  prev_month = Date.add(first_day, -1)
+  next_month = Date.add(last_day, 1)
 
-    # Generate all days in the month
-    days = Enum.map(1..last_day.day, fn day ->
+  # Generate all days in the month
+  days =
+    Enum.map(1..last_day.day, fn day ->
       Date.new!(selected_date.year, selected_date.month, day)
     end)
 
-    # Add padding days from previous month
-    padding_days = if first_weekday > 1, do: first_weekday - 1, else: 0
+  # Add padding days from previous month
+  padding_days = if first_weekday > 1, do: first_weekday - 1, else: 0
 
-    # Month name
-    month_name = Calendar.strftime(selected_date, "%B %Y")
-  %>
+  # Month name
+  month_name = Calendar.strftime(selected_date, "%B %Y") %>
 
   <div class="modal modal-open">
     <div class="modal-box max-w-md">
       <h3 class="font-bold text-lg mb-4">{gettext("Set Deadline")}</h3>
-
-      <!-- Calendar Header -->
+      
+<!-- Calendar Header -->
       <div class="flex items-center justify-between mb-4">
         <button
           type="button"
@@ -474,7 +649,7 @@
           <.icon name="hero-chevron-left" class="size-5" />
         </button>
 
-        <h4 class="font-semibold text-base"><%= month_name %></h4>
+        <h4 class="font-semibold text-base">{month_name}</h4>
 
         <button
           type="button"
@@ -485,36 +660,37 @@
           <.icon name="hero-chevron-right" class="size-5" />
         </button>
       </div>
-
-      <!-- Calendar Grid -->
+      
+<!-- Calendar Grid -->
       <div class="grid grid-cols-7 gap-1 mb-4">
         <!-- Day headers -->
         <%= for day_name <- ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] do %>
           <div class="text-center text-xs font-semibold text-base-content/60 py-2">
-            <%= day_name %>
+            {day_name}
           </div>
         <% end %>
-
-        <!-- Empty cells for padding -->
+        
+<!-- Empty cells for padding -->
         <%= for _ <- 1..padding_days do %>
           <div></div>
         <% end %>
-
-        <!-- Day buttons -->
+        
+<!-- Day buttons -->
         <%= for day <- days do %>
-          <%
-            is_today = Date.compare(day, today) == :eq
-            is_selected = Date.compare(day, selected_date) == :eq
-            is_past = Date.compare(day, today) == :lt
+          <% is_today = Date.compare(day, today) == :eq
+          is_selected = Date.compare(day, selected_date) == :eq
+          is_past = Date.compare(day, today) == :lt
 
-            button_classes = [
+          button_classes =
+            [
               "btn btn-sm w-full aspect-square p-0 text-sm",
               is_selected && "btn-primary",
               !is_selected && !is_past && "btn-ghost hover:btn-outline",
               is_today && !is_selected && "border border-primary",
               is_past && !is_selected && "btn-disabled opacity-30"
-            ] |> Enum.filter(& &1) |> Enum.join(" ")
-          %>
+            ]
+            |> Enum.filter(& &1)
+            |> Enum.join(" ") %>
 
           <button
             type="button"
@@ -523,19 +699,23 @@
             class={button_classes}
             disabled={is_past}
           >
-            <%= day.day %>
+            {day.day}
           </button>
         <% end %>
       </div>
 
       <div class="alert alert-info text-sm mb-4">
         <.icon name="hero-information-circle" class="size-5" />
-        <span>{gettext("Selected:")} <%= Calendar.strftime(selected_date, "%B %d, %Y") %></span>
+        <span>{gettext("Selected:")} {Calendar.strftime(selected_date, "%B %d, %Y")}</span>
       </div>
 
       <div class="modal-action">
-        <button type="button" phx-click="close_deadline_modal" class="btn btn-ghost">{gettext("Cancel")}</button>
-        <button type="button" phx-click="save_deadline" class="btn btn-primary">{gettext("Set Deadline")}</button>
+        <button type="button" phx-click="close_deadline_modal" class="btn btn-ghost">
+          {gettext("Cancel")}
+        </button>
+        <button type="button" phx-click="save_deadline" class="btn btn-primary">
+          {gettext("Set Deadline")}
+        </button>
       </div>
     </div>
   </div>

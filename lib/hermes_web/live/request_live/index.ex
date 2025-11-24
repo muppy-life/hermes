@@ -33,11 +33,13 @@ defmodule HermesWeb.RequestLive.Index do
   end
 
   defp safe_to_atom(nil, default), do: default
+
   defp safe_to_atom(value, default) when is_binary(value) do
     String.to_existing_atom(value)
   rescue
     ArgumentError -> default
   end
+
   defp safe_to_atom(_, default), do: default
 
   @impl true
@@ -54,15 +56,24 @@ defmodule HermesWeb.RequestLive.Index do
 
   def handle_event("sort", %{"by" => field}, socket) do
     field_atom = String.to_existing_atom(field)
-    sort_order = if socket.assigns.sort_by == field_atom and socket.assigns.sort_order == :asc, do: :desc, else: :asc
+
+    sort_order =
+      if socket.assigns.sort_by == field_atom and socket.assigns.sort_order == :asc,
+        do: :desc,
+        else: :asc
 
     {:noreply,
      push_patch(socket,
-       to: ~p"/backlog?#{build_params(socket, sort_by: field, sort_order: Atom.to_string(sort_order))}"
+       to:
+         ~p"/backlog?#{build_params(socket, sort_by: field, sort_order: Atom.to_string(sort_order))}"
      )}
   end
 
-  def handle_event("apply_filters", %{"status" => status, "priority" => priority, "team" => team}, socket) do
+  def handle_event(
+        "apply_filters",
+        %{"status" => status, "priority" => priority, "team" => team},
+        socket
+      ) do
     {:noreply,
      push_patch(socket,
        to: ~p"/backlog?#{build_params(socket, status: status, priority: priority, team: team)}"
@@ -72,7 +83,8 @@ defmodule HermesWeb.RequestLive.Index do
   def handle_event("clear_filters", _params, socket) do
     {:noreply,
      push_patch(socket,
-       to: ~p"/backlog?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}&tab=#{socket.assigns.active_tab}"
+       to:
+         ~p"/backlog?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}&tab=#{socket.assigns.active_tab}"
      )}
   end
 
@@ -107,15 +119,18 @@ defmodule HermesWeb.RequestLive.Index do
     filtered_requests = apply_filters(all_requests, socket.assigns)
 
     # Split into three categories
-    new_requests = filtered_requests
+    new_requests =
+      filtered_requests
       |> Enum.filter(&(&1.status == "new"))
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
-    ongoing_requests = filtered_requests
+    ongoing_requests =
+      filtered_requests
       |> Enum.filter(&(&1.status in ["pending", "in_progress", "review", "blocked"]))
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
-    completed_requests = filtered_requests
+    completed_requests =
+      filtered_requests
       |> Enum.filter(&(&1.status == "completed"))
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
@@ -137,15 +152,21 @@ defmodule HermesWeb.RequestLive.Index do
   defp filter_by_status(requests, status), do: Enum.filter(requests, &(&1.status == status))
 
   defp filter_by_priority(requests, "all"), do: requests
+
   defp filter_by_priority(requests, priority) do
     priority_int = String.to_integer(priority)
     Enum.filter(requests, &(&1.priority == priority_int))
   end
 
   defp filter_by_team(requests, "all"), do: requests
+
   defp filter_by_team(requests, team_id) do
     team_int = String.to_integer(team_id)
-    Enum.filter(requests, &(&1.requesting_team_id == team_int or &1.assigned_to_team_id == team_int))
+
+    Enum.filter(
+      requests,
+      &(&1.requesting_team_id == team_int or &1.assigned_to_team_id == team_int)
+    )
   end
 
   defp apply_sorting(requests, sort_by, sort_order) do

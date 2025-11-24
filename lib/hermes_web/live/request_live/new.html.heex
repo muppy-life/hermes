@@ -1,6 +1,8 @@
 <.header>
   {gettext("New Request")}
-  <:subtitle>{gettext("Step %{current} of %{total}", current: @current_step, total: 7)}</:subtitle>
+  <:subtitle>
+    {gettext("Step %{current} of %{total}", current: @current_step, total: 7)}
+  </:subtitle>
 </.header>
 
 <!-- Progress Bar -->
@@ -16,16 +18,24 @@
       {7, gettext("Output")}
     ] do %>
       <div class={"flex-1 text-center text-xs font-medium #{if step == @current_step, do: "text-primary", else: (if step < @current_step, do: "text-success", else: "opacity-50")}"}>
-        <%= label %>
+        {label}
       </div>
     <% end %>
   </div>
   <div class="w-full bg-base-300 rounded-full h-2.5">
-    <div class="bg-primary h-2.5 rounded-full transition-all duration-300" style={"width: #{(@current_step / 7 * 100)}%"}></div>
+    <div
+      class="bg-primary h-2.5 rounded-full transition-all duration-300"
+      style={"width: #{(@current_step / 7 * 100)}%"}
+    >
+    </div>
   </div>
 </div>
 
-<.form for={@form} id="request-form" phx-submit={if @current_step == 7, do: "save", else: "next_step"}>
+<.form
+  for={@form}
+  id="request-form"
+  phx-submit={if @current_step == 7, do: "save", else: "next_step"}
+>
   <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
       <!-- Step 1: Kind of Request -->
@@ -40,17 +50,25 @@
             {"improvement", gettext("Improvement suggestion"), gettext("Suggest an enhancement to existing features")}
           ] do %>
             <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
-              <input type="radio" name="request[kind]" value={value} class="radio radio-primary" checked={@form_data["kind"] == value} phx-click="next_step" phx-value-kind={value} />
+              <input
+                type="radio"
+                name="request[kind]"
+                value={value}
+                class="radio radio-primary"
+                checked={@form_data["kind"] == value}
+                phx-click="next_step"
+                phx-value-kind={value}
+              />
               <div class="flex-1">
-                <span class="label-text font-semibold text-base"><%= label %></span>
-                <p class="text-sm opacity-60 mt-1"><%= description %></p>
+                <span class="label-text font-semibold text-base">{label}</span>
+                <p class="text-sm opacity-60 mt-1">{description}</p>
               </div>
             </label>
           <% end %>
         </div>
       <% end %>
-
-      <!-- Step 2: Priority -->
+      
+<!-- Step 2: Priority -->
       <%= if @current_step == 2 do %>
         <h2 class="card-title text-2xl mb-4">{gettext("Priority Level")}</h2>
         <p class="mb-6 opacity-70">{gettext("How urgent is this request?")}</p>
@@ -63,17 +81,25 @@
             {1, gettext("Low"), gettext("Nice to have, if there are spare resources")}
           ] do %>
             <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
-              <input type="radio" name="request[priority]" value={value} class="radio radio-primary" checked={to_string(@form_data["priority"]) == to_string(value)} phx-click="next_step" phx-value-priority={value} />
+              <input
+                type="radio"
+                name="request[priority]"
+                value={value}
+                class="radio radio-primary"
+                checked={to_string(@form_data["priority"]) == to_string(value)}
+                phx-click="next_step"
+                phx-value-priority={value}
+              />
               <div class="flex-1">
-                <span class="label-text font-semibold text-base"><%= label %></span>
-                <p class="text-sm opacity-60 mt-1"><%= description %></p>
+                <span class="label-text font-semibold text-base">{label}</span>
+                <p class="text-sm opacity-60 mt-1">{description}</p>
               </div>
             </label>
           <% end %>
         </div>
       <% end %>
-
-      <!-- Step 3: Target User -->
+      
+<!-- Step 3: Target User -->
       <%= if @current_step == 3 do %>
         <h2 class="card-title text-2xl mb-4">{gettext("Target User")}</h2>
         <p class="mb-6 opacity-70">{gettext("Who is the final user of this request?")}</p>
@@ -84,17 +110,25 @@
             {"external", gettext("External user"), gettext("Client or external provider")}
           ] do %>
             <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
-              <input type="radio" name="request[target_user_type]" value={value} class="radio radio-primary" checked={@form_data["target_user_type"] == value} phx-click="next_step" phx-value-target_user_type={value} />
+              <input
+                type="radio"
+                name="request[target_user_type]"
+                value={value}
+                class="radio radio-primary"
+                checked={@form_data["target_user_type"] == value}
+                phx-click="next_step"
+                phx-value-target_user_type={value}
+              />
               <div class="flex-1">
-                <span class="label-text font-semibold text-base"><%= label %></span>
-                <p class="text-sm opacity-60 mt-1"><%= description %></p>
+                <span class="label-text font-semibold text-base">{label}</span>
+                <p class="text-sm opacity-60 mt-1">{description}</p>
               </div>
             </label>
           <% end %>
         </div>
       <% end %>
-
-      <!-- Step 4: Current Situation -->
+      
+<!-- Step 4: Current Situation -->
       <%= if @current_step == 4 do %>
         <div class="space-y-4">
           <div>
@@ -104,22 +138,30 @@
 
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-semibold">{gettext("What is the current situation?")}</span>
+              <span class="label-text font-semibold">
+                {gettext("What is the current situation?")}
+              </span>
             </label>
             <textarea
               name="request[current_situation]"
               class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
-              placeholder={gettext("Describe the current state, what's happening now, what problems exist...")}
+              placeholder={
+                gettext(
+                  "Describe the current state, what's happening now, what problems exist..."
+                )
+              }
               required
             ><%= @form_data["current_situation"] %></textarea>
             <label class="label">
-              <span class="label-text-alt opacity-60">{gettext("Be as detailed as possible")}</span>
+              <span class="label-text-alt opacity-60">
+                {gettext("Be as detailed as possible")}
+              </span>
             </label>
           </div>
         </div>
       <% end %>
-
-      <!-- Step 5: Goal Description -->
+      
+<!-- Step 5: Goal Description -->
       <%= if @current_step == 5 do %>
         <div class="space-y-4">
           <div>
@@ -129,7 +171,9 @@
 
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-semibold">{gettext("Describe the desired outcome")}</span>
+              <span class="label-text font-semibold">
+                {gettext("Describe the desired outcome")}
+              </span>
             </label>
             <textarea
               name="request[goal_description]"
@@ -138,13 +182,15 @@
               required
             ><%= @form_data["goal_description"] %></textarea>
             <label class="label">
-              <span class="label-text-alt opacity-60">{gettext("Explain the desired end state")}</span>
+              <span class="label-text-alt opacity-60">
+                {gettext("Explain the desired end state")}
+              </span>
             </label>
           </div>
         </div>
       <% end %>
-
-      <!-- Step 6: Related Business Data -->
+      
+<!-- Step 6: Related Business Data -->
       <%= if @current_step == 6 do %>
         <div class="space-y-4">
           <div>
@@ -154,22 +200,30 @@
 
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-semibold">{gettext("Describe the data types and sources")}</span>
+              <span class="label-text font-semibold">
+                {gettext("Describe the data types and sources")}
+              </span>
               <span class="label-text-alt badge badge-ghost">{gettext("Optional")}</span>
             </label>
             <textarea
               name="request[data_description]"
               class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
-              placeholder={gettext("What data will be used or affected? Where does it come from? Leave empty if not applicable...")}
+              placeholder={
+                gettext(
+                  "What data will be used or affected? Where does it come from? Leave empty if not applicable..."
+                )
+              }
             ><%= @form_data["data_description"] %></textarea>
             <label class="label">
-              <span class="label-text-alt opacity-60">{gettext("Include data sources, formats, and any relevant details (optional)")}</span>
+              <span class="label-text-alt opacity-60">
+                {gettext("Include data sources, formats, and any relevant details (optional)")}
+              </span>
             </label>
           </div>
         </div>
       <% end %>
-
-      <!-- Step 7: Final Output -->
+      
+<!-- Step 7: Final Output -->
       <%= if @current_step == 7 do %>
         <div class="space-y-6">
           <div>
@@ -188,10 +242,17 @@
                 {"alert_message", gettext("Alert / Message / Communication"), gettext("A notification, email, or message")}
               ] do %>
                 <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-lg p-4 hover:bg-base-200 transition-colors">
-                  <input type="radio" name="request[goal_target]" value={value} class="radio radio-primary" checked={@form_data["goal_target"] == value} required />
+                  <input
+                    type="radio"
+                    name="request[goal_target]"
+                    value={value}
+                    class="radio radio-primary"
+                    checked={@form_data["goal_target"] == value}
+                    required
+                  />
                   <div class="flex-1">
-                    <span class="label-text font-semibold text-base"><%= label %></span>
-                    <p class="text-sm opacity-60 mt-1"><%= description %></p>
+                    <span class="label-text font-semibold text-base">{label}</span>
+                    <p class="text-sm opacity-60 mt-1">{description}</p>
                   </div>
                 </label>
               <% end %>
@@ -200,24 +261,30 @@
 
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-semibold text-lg">{gettext("Expected Output Details")}</span>
+              <span class="label-text font-semibold text-lg">
+                {gettext("Expected Output Details")}
+              </span>
             </label>
             <textarea
               name="request[expected_output]"
               class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
-              placeholder={gettext("Describe in detail what the final output should look like or contain...")}
+              placeholder={
+                gettext("Describe in detail what the final output should look like or contain...")
+              }
               required
             ><%= @form_data["expected_output"] %></textarea>
             <label class="label">
-              <span class="label-text-alt opacity-60">{gettext("Provide specific details about the expected result")}</span>
+              <span class="label-text-alt opacity-60">
+                {gettext("Provide specific details about the expected result")}
+              </span>
             </label>
           </div>
         </div>
       <% end %>
     </div>
   </div>
-
-  <!-- Navigation Buttons -->
+  
+<!-- Navigation Buttons -->
   <div class="mt-6 flex items-center justify-between">
     <div>
       <%= if @current_step > 1 do %>

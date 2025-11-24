@@ -30,18 +30,43 @@ defmodule Hermes.Requests.Request do
   def changeset(request, attrs) do
     request
     |> cast(attrs, [
-      :title, :description, :priority, :status, :deadline,
-      :kind, :target_user_type, :current_situation,
-      :goal_description, :data_description, :goal_target,
-      :expected_output, :solution_diagram, :requesting_team_id, :assigned_to_team_id, :created_by_id
+      :title,
+      :description,
+      :priority,
+      :status,
+      :deadline,
+      :kind,
+      :target_user_type,
+      :current_situation,
+      :goal_description,
+      :data_description,
+      :goal_target,
+      :expected_output,
+      :solution_diagram,
+      :requesting_team_id,
+      :assigned_to_team_id,
+      :created_by_id
     ])
     |> validate_required([
-      :kind, :priority, :target_user_type, :current_situation,
-      :goal_description, :goal_target, :expected_output,
-      :requesting_team_id, :created_by_id
+      :kind,
+      :priority,
+      :target_user_type,
+      :current_situation,
+      :goal_description,
+      :goal_target,
+      :expected_output,
+      :requesting_team_id,
+      :created_by_id
     ])
     |> validate_inclusion(:priority, 1..4)
-    |> validate_inclusion(:status, ["new", "pending", "in_progress", "review", "completed", "blocked"])
+    |> validate_inclusion(:status, [
+      "new",
+      "pending",
+      "in_progress",
+      "review",
+      "completed",
+      "blocked"
+    ])
   end
 
   def priority_label(priority) do

@@ -20,14 +20,25 @@
       type="select"
       label="Priority"
       prompt="Choose a priority"
-      options={[{"1 - Lowest", 1}, {"2 - Low", 2}, {"3 - Medium", 3}, {"4 - High", 4}, {"5 - Highest", 5}]}
+      options={[
+        {"1 - Lowest", 1},
+        {"2 - Low", 2},
+        {"3 - Medium", 3},
+        {"4 - High", 4},
+        {"5 - Highest", 5}
+      ]}
     />
     <.input
       field={@form[:status]}
       type="select"
       label="Status"
       prompt="Choose a status"
-      options={[{"Pending", "pending"}, {"In Progress", "in_progress"}, {"Completed", "completed"}, {"Blocked", "blocked"}]}
+      options={[
+        {"Pending", "pending"},
+        {"In Progress", "in_progress"},
+        {"Completed", "completed"},
+        {"Blocked", "blocked"}
+      ]}
     />
     <.input
       field={@form[:requesting_team_id]}

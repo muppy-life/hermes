@@ -1,7 +1,13 @@
 <!-- CTA Floating Button -->
 <.link navigate={~p"/backlog/new"}>
   <button class="btn btn-primary shadow-lg fixed bottom-[50px] right-8 z-50">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
     </svg>
     {gettext("New Request")}
@@ -13,43 +19,43 @@
   <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
     <.link navigate={~p"/backlog"} class="block">
       <div class="bg-blue-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
-        <div class="text-3xl font-bold text-blue-900"><%= @stats.total_requests %></div>
+        <div class="text-3xl font-bold text-blue-900">{@stats.total_requests}</div>
         <div class="text-blue-700 mt-1">{gettext("Total")}</div>
       </div>
     </.link>
     <.link navigate={~p"/backlog?status=new&tab=new"} class="block">
       <div class="bg-cyan-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
-        <div class="text-3xl font-bold text-cyan-900"><%= @stats.new %></div>
+        <div class="text-3xl font-bold text-cyan-900">{@stats.new}</div>
         <div class="text-cyan-700 mt-1">{gettext("New")}</div>
       </div>
     </.link>
     <.link navigate={~p"/backlog?status=pending&tab=ongoing"} class="block">
       <div class="bg-yellow-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
-        <div class="text-3xl font-bold text-yellow-900"><%= @stats.pending %></div>
+        <div class="text-3xl font-bold text-yellow-900">{@stats.pending}</div>
         <div class="text-yellow-700 mt-1">{gettext("Pending")}</div>
       </div>
     </.link>
     <.link navigate={~p"/backlog?status=in_progress&tab=ongoing"} class="block">
       <div class="bg-purple-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
-        <div class="text-3xl font-bold text-purple-900"><%= @stats.in_progress %></div>
+        <div class="text-3xl font-bold text-purple-900">{@stats.in_progress}</div>
         <div class="text-purple-700 mt-1">{gettext("In Progress")}</div>
       </div>
     </.link>
     <.link navigate={~p"/backlog?status=review&tab=ongoing"} class="block">
       <div class="bg-indigo-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
-        <div class="text-3xl font-bold text-indigo-900"><%= @stats.review %></div>
+        <div class="text-3xl font-bold text-indigo-900">{@stats.review}</div>
         <div class="text-indigo-700 mt-1">{gettext("Review")}</div>
       </div>
     </.link>
     <.link navigate={~p"/backlog?status=completed&tab=completed"} class="block">
       <div class="bg-green-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
-        <div class="text-3xl font-bold text-green-900"><%= @stats.completed %></div>
+        <div class="text-3xl font-bold text-green-900">{@stats.completed}</div>
         <div class="text-green-700 mt-1">{gettext("Completed")}</div>
       </div>
     </.link>
     <.link navigate={~p"/backlog?status=blocked&tab=ongoing"} class="block">
       <div class="bg-red-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
-        <div class="text-3xl font-bold text-red-900"><%= @stats.blocked %></div>
+        <div class="text-3xl font-bold text-red-900">{@stats.blocked}</div>
         <div class="text-red-700 mt-1">{gettext("Blocked")}</div>
       </div>
     </.link>
@@ -72,28 +78,31 @@
               <div class="card-body p-4">
                 <div class="flex justify-between items-start">
                   <div class="flex-1">
-                    <h3 class="card-title text-base"><%= request.title %></h3>
+                    <h3 class="card-title text-base">{request.title}</h3>
                     <p class="text-sm opacity-70 mt-1">
                       <%= if String.length(request.description) > 100 do %>
-                        <%= String.slice(request.description, 0..100) %>...
+                        {String.slice(request.description, 0..100)}...
                       <% else %>
-                        <%= request.description %>
+                        {request.description}
                       <% end %>
                     </p>
                     <div class="flex items-center gap-4 mt-2 text-xs">
                       <div class="flex items-center gap-2">
                         <span class="opacity-60">{gettext("From:")}</span>
-                        <span class="font-medium"><%= request.requesting_team.name %></span>
+                        <span class="font-medium">{request.requesting_team.name}</span>
                       </div>
                       <%= if request.assigned_to_team do %>
                         <div class="flex items-center gap-2">
                           <span class="opacity-60">{gettext("To:")}</span>
-                          <span class="font-medium"><%= request.assigned_to_team.name %></span>
+                          <span class="font-medium">{request.assigned_to_team.name}</span>
                         </div>
                       <% end %>
                     </div>
                     <p class="text-xs opacity-50 mt-2">
-                      {gettext("Updated")} <%= Calendar.strftime(request.updated_at, "%b %d, %Y at %I:%M %p") %>
+                      {gettext("Updated")} {Calendar.strftime(
+                        request.updated_at,
+                        "%b %d, %Y at %I:%M %p"
+                      )}
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-2 ml-4">
@@ -127,42 +136,45 @@
           <.link navigate={~p"/boards/#{board.id}"} class="block">
             <div class="card bg-base-100 shadow-md border border-base-300 hover:shadow-lg transition-shadow">
               <div class="card-body p-4">
-                <h3 class="card-title text-base"><%= board.name %></h3>
-
-                <!-- Task statistics -->
+                <h3 class="card-title text-base">{board.name}</h3>
+                
+<!-- Task statistics -->
                 <div class="flex flex-wrap gap-3 mt-3 text-xs">
                   <span class="flex items-center gap-1">
-                    <span class="font-semibold"><%= board.task_stats.total %></span>
+                    <span class="font-semibold">{board.task_stats.total}</span>
                     <span class="opacity-60">{gettext("total")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-cyan-700">
-                    <span class="font-semibold"><%= board.task_stats.new %></span>
+                    <span class="font-semibold">{board.task_stats.new}</span>
                     <span class="opacity-60">{gettext("new")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-yellow-700">
-                    <span class="font-semibold"><%= board.task_stats.pending %></span>
+                    <span class="font-semibold">{board.task_stats.pending}</span>
                     <span class="opacity-60">{gettext("pending")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-purple-700">
-                    <span class="font-semibold"><%= board.task_stats.in_progress %></span>
+                    <span class="font-semibold">{board.task_stats.in_progress}</span>
                     <span class="opacity-60">{gettext("active")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-indigo-700">
-                    <span class="font-semibold"><%= board.task_stats.review %></span>
+                    <span class="font-semibold">{board.task_stats.review}</span>
                     <span class="opacity-60">{gettext("review")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-green-700">
-                    <span class="font-semibold"><%= board.task_stats.completed %></span>
+                    <span class="font-semibold">{board.task_stats.completed}</span>
                     <span class="opacity-60">{gettext("done")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-red-700">
-                    <span class="font-semibold"><%= board.task_stats.blocked %></span>
+                    <span class="font-semibold">{board.task_stats.blocked}</span>
                     <span class="opacity-60">{gettext("blocked")}</span>
                   </span>
                 </div>
 
                 <p class="text-xs opacity-50 mt-3">
-                  {gettext("Updated")} <%= Calendar.strftime(board.updated_at, "%b %d, %Y at %I:%M %p") %>
+                  {gettext("Updated")} {Calendar.strftime(
+                    board.updated_at,
+                    "%b %d, %Y at %I:%M %p"
+                  )}
                 </p>
               </div>
             </div>

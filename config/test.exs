@@ -42,7 +42,8 @@ config :phoenix_live_view,
 
 # Feature flags
 config :hermes, :features,
-  solution_diagram_generation: false  # Disabled in tests to avoid API calls
+  # Disabled in tests to avoid API calls
+  solution_diagram_generation: false
 
 # Disable Oban during tests
 config :hermes, Oban, testing: :inline

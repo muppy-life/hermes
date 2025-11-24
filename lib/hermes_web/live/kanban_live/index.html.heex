@@ -7,25 +7,25 @@
   <%= for board <- @boards do %>
     <% board_id = Map.get(board, :id) %>
     <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-200">
-      <h3 class="text-xl font-semibold mb-4"><%= board.name %></h3>
-
-      <!-- Status Summary -->
+      <h3 class="text-xl font-semibold mb-4">{board.name}</h3>
+      
+<!-- Status Summary -->
       <div class="grid grid-cols-3 gap-2 mb-4">
         <div class="bg-info/10 rounded-lg p-2 text-center">
           <div class="text-xs text-info/70 font-medium">{gettext("New")}</div>
-          <div class="text-lg font-bold text-info"><%= board.stats.new %></div>
+          <div class="text-lg font-bold text-info">{board.stats.new}</div>
         </div>
         <div class="bg-warning/10 rounded-lg p-2 text-center">
           <div class="text-xs text-warning/70 font-medium">{gettext("In Progress")}</div>
-          <div class="text-lg font-bold text-warning"><%= board.stats.in_progress %></div>
+          <div class="text-lg font-bold text-warning">{board.stats.in_progress}</div>
         </div>
         <div class="bg-success/10 rounded-lg p-2 text-center">
           <div class="text-xs text-success/70 font-medium">{gettext("Done")}</div>
-          <div class="text-lg font-bold text-success"><%= board.stats.completed %></div>
+          <div class="text-lg font-bold text-success">{board.stats.completed}</div>
         </div>
       </div>
-
-      <!-- Action Buttons -->
+      
+<!-- Action Buttons -->
       <div class="flex items-center gap-2">
         <.link navigate={~p"/boards/#{board_id}"} class="btn btn-primary btn-sm flex-1">
           <.icon name="hero-queue-list" class="size-4" />

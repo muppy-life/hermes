@@ -61,40 +61,67 @@ defmodule Hermes.Kanbans do
     team_b = Accounts.get_team!(team_b_id)
 
     # Determine which team is current user's team
-    {team, team_b} = if team_a_id == current_user_team_id do
-      {team_a, team_b}
-    else
-      {team_b, team_a}
-    end
+    {team, team_b} =
+      if team_a_id == current_user_team_id do
+        {team_a, team_b}
+      else
+        {team_b, team_a}
+      end
 
     # Get all requests between these two teams
-    requests = Requests.list_requests_by_team(current_user_team_id)
-    |> Enum.filter(fn request ->
-      (request.requesting_team_id in [team_a_id, team_b_id]) and
-      (request.assigned_to_team_id in [team_a_id, team_b_id])
-    end)
+    requests =
+      Requests.list_requests_by_team(current_user_team_id)
+      |> Enum.filter(fn request ->
+        request.requesting_team_id in [team_a_id, team_b_id] and
+          request.assigned_to_team_id in [team_a_id, team_b_id]
+      end)
 
     # Define columns for all status types
     columns = [
       %{id: 1, name: Gettext.gettext(HermesWeb.Gettext, "New"), position: 0, status: "new"},
-      %{id: 2, name: Gettext.gettext(HermesWeb.Gettext, "Pending"), position: 1, status: "pending"},
-      %{id: 3, name: Gettext.gettext(HermesWeb.Gettext, "In Progress"), position: 2, status: "in_progress"},
+      %{
+        id: 2,
+        name: Gettext.gettext(HermesWeb.Gettext, "Pending"),
+        position: 1,
+        status: "pending"
+      },
+      %{
+        id: 3,
+        name: Gettext.gettext(HermesWeb.Gettext, "In Progress"),
+        position: 2,
+        status: "in_progress"
+      },
       %{id: 4, name: Gettext.gettext(HermesWeb.Gettext, "Review"), position: 3, status: "review"},
-      %{id: 5, name: Gettext.gettext(HermesWeb.Gettext, "Blocked"), position: 4, status: "blocked"},
-      %{id: 6, name: Gettext.gettext(HermesWeb.Gettext, "Completed"), position: 5, status: "completed"}
+      %{
+        id: 5,
+        name: Gettext.gettext(HermesWeb.Gettext, "Blocked"),
+        position: 4,
+        status: "blocked"
+      },
+      %{
+        id: 6,
+        name: Gettext.gettext(HermesWeb.Gettext, "Completed"),
+        position: 5,
+        status: "completed"
+      }
     ]
 
     # Organize requests into columns
-    columns_with_requests = Enum.map(columns, fn column ->
-      column_requests =
-        requests
-        |> Enum.filter(&(&1.status == column.status))
-        |> Enum.sort_by(& &1.updated_at, {:desc, NaiveDateTime})
+    columns_with_requests =
+      Enum.map(columns, fn column ->
+        column_requests =
+          requests
+          |> Enum.filter(&(&1.status == column.status))
+          |> Enum.sort_by(& &1.updated_at, {:desc, NaiveDateTime})
 
-      Map.put(column, :cards, Enum.map(column_requests, fn request ->
-        %{id: request.id, request: request}
-      end))
-    end)
+        Map.put(
+          column,
+          :cards,
+          Enum.map(column_requests, fn request ->
+            %{id: request.id, request: request}
+          end)
+        )
+      end)
 
     %{
       id: board_id,

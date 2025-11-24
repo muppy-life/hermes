@@ -14,6 +14,7 @@ defmodule HermesWeb.Plugs.Locale do
 
     if locale in @supported_locales do
       Gettext.put_locale(HermesWeb.Gettext, locale)
+
       conn
       |> put_session(:locale, locale)
       |> Plug.Conn.assign(:locale, locale)

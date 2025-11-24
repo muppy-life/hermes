@@ -56,7 +56,10 @@ defmodule HermesWeb.Plugs.Auth do
       not Accounts.is_admin?(socket.assigns.current_user) ->
         socket =
           socket
-          |> Phoenix.LiveView.put_flash(:error, "You must be an administrator to access this page.")
+          |> Phoenix.LiveView.put_flash(
+            :error,
+            "You must be an administrator to access this page."
+          )
           |> Phoenix.LiveView.redirect(to: "/dashboard")
 
         {:halt, socket}

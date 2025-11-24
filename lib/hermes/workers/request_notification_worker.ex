@@ -62,7 +62,10 @@ defmodule Hermes.Workers.RequestNotificationWorker do
   end
 
   defp send_notification(request, "assigned", %{"team_id" => team_id}) do
-    Logger.info("Sending assignment notification for request: #{request.title} to team #{team_id}")
+    Logger.info(
+      "Sending assignment notification for request: #{request.title} to team #{team_id}"
+    )
+
     # TODO: Implement actual notification logic
     :ok
   end

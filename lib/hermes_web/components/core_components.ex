@@ -134,7 +134,10 @@ defmodule HermesWeb.CoreComponents do
     assigns =
       assigns
       |> assign_new(:inner_block, fn -> [] end)
-      |> assign(:btn_class, ["btn btn-ghost", assigns[:class]] |> Enum.reject(&is_nil/1) |> Enum.join(" "))
+      |> assign(
+        :btn_class,
+        ["btn btn-ghost", assigns[:class]] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
+      )
 
     ~H"""
     <.link navigate={@navigate}>
@@ -518,12 +521,15 @@ defmodule HermesWeb.CoreComponents do
 
   def priority_badge(assigns) do
     ~H"""
-    <span class={[
-      "badge whitespace-nowrap",
-      priority_size_class(@size),
-      priority_color_class(@priority)
-    ]} {@rest}>
-      <%= priority_label(@priority) %>
+    <span
+      class={[
+        "badge whitespace-nowrap",
+        priority_size_class(@size),
+        priority_color_class(@priority)
+      ]}
+      {@rest}
+    >
+      {priority_label(@priority)}
     </span>
     """
   end
@@ -596,12 +602,15 @@ defmodule HermesWeb.CoreComponents do
 
   def status_badge(assigns) do
     ~H"""
-    <span class={[
-      "badge whitespace-nowrap",
-      status_size_class(@size),
-      status_color_class(@status)
-    ]} {@rest}>
-      <%= status_label(@status) %>
+    <span
+      class={[
+        "badge whitespace-nowrap",
+        status_size_class(@size),
+        status_color_class(@status)
+      ]}
+      {@rest}
+    >
+      {status_label(@status)}
     </span>
     """
   end
@@ -651,12 +660,15 @@ defmodule HermesWeb.CoreComponents do
 
   def kind_badge(assigns) do
     ~H"""
-    <span class={[
-      "badge whitespace-nowrap",
-      kind_size_class(@size),
-      kind_color_class(@kind)
-    ]} {@rest}>
-      <%= kind_label(@kind) %>
+    <span
+      class={[
+        "badge whitespace-nowrap",
+        kind_size_class(@size),
+        kind_color_class(@kind)
+      ]}
+      {@rest}
+    >
+      {kind_label(@kind)}
     </span>
     """
   end
@@ -710,13 +722,16 @@ defmodule HermesWeb.CoreComponents do
 
   def deadline_badge(assigns) do
     ~H"""
-    <span class={[
-      "badge whitespace-nowrap",
-      deadline_size_class(@size),
-      deadline_color_class(@deadline)
-    ]} {@rest}>
+    <span
+      class={[
+        "badge whitespace-nowrap",
+        deadline_size_class(@size),
+        deadline_color_class(@deadline)
+      ]}
+      {@rest}
+    >
       <.icon name="hero-calendar" class="size-4 mr-1" />
-      <%= format_deadline(@deadline) %>
+      {format_deadline(@deadline)}
     </span>
     """
   end
@@ -777,47 +792,66 @@ defmodule HermesWeb.CoreComponents do
     <div class="bg-base-100 shadow-sm border border-base-300 rounded-lg p-3 mt-2 sticky top-12 z-10">
       <div class="flex items-center justify-between gap-3">
         <form phx-change="apply_filters" class="flex-1">
-          <div class={["grid grid-cols-1 gap-3", if(@show_status, do: "md:grid-cols-4", else: "md:grid-cols-3")]}>
+          <div class={[
+            "grid grid-cols-1 gap-3",
+            if(@show_status, do: "md:grid-cols-4", else: "md:grid-cols-3")
+          ]}>
             <!-- Status Filter -->
             <%= if @show_status do %>
               <select class="select select-bordered select-sm" name="status">
-                <option value="all" selected={@filter_status == "all"}>{gettext("All Statuses")}</option>
+                <option value="all" selected={@filter_status == "all"}>
+                  {gettext("All Statuses")}
+                </option>
                 <option value="new" selected={@filter_status == "new"}>{gettext("New")}</option>
-                <option value="pending" selected={@filter_status == "pending"}>{gettext("Pending")}</option>
-                <option value="in_progress" selected={@filter_status == "in_progress"}>{gettext("In Progress")}</option>
-                <option value="review" selected={@filter_status == "review"}>{gettext("Review")}</option>
-                <option value="completed" selected={@filter_status == "completed"}>{gettext("Completed")}</option>
-                <option value="blocked" selected={@filter_status == "blocked"}>{gettext("Blocked")}</option>
+                <option value="pending" selected={@filter_status == "pending"}>
+                  {gettext("Pending")}
+                </option>
+                <option value="in_progress" selected={@filter_status == "in_progress"}>
+                  {gettext("In Progress")}
+                </option>
+                <option value="review" selected={@filter_status == "review"}>
+                  {gettext("Review")}
+                </option>
+                <option value="completed" selected={@filter_status == "completed"}>
+                  {gettext("Completed")}
+                </option>
+                <option value="blocked" selected={@filter_status == "blocked"}>
+                  {gettext("Blocked")}
+                </option>
               </select>
             <% end %>
-
-            <!-- Priority Filter -->
+            
+    <!-- Priority Filter -->
             <select class="select select-bordered select-sm" name="priority">
-              <option value="all" selected={@filter_priority == "all"}>{gettext("All Priorities")}</option>
+              <option value="all" selected={@filter_priority == "all"}>
+                {gettext("All Priorities")}
+              </option>
               <option value="4" selected={@filter_priority == "4"}>{gettext("Critical")}</option>
               <option value="3" selected={@filter_priority == "3"}>{gettext("Important")}</option>
               <option value="2" selected={@filter_priority == "2"}>{gettext("Normal")}</option>
               <option value="1" selected={@filter_priority == "1"}>{gettext("Low")}</option>
             </select>
-
-            <!-- Team Filter -->
+            
+    <!-- Team Filter -->
             <select class="select select-bordered select-sm" name="team">
               <option value="all" selected={@filter_team == "all"}>{gettext("All Teams")}</option>
               <%= for team <- @teams do %>
-                <option value={team.id} selected={@filter_team == to_string(team.id)}><%= team.name %></option>
+                <option value={team.id} selected={@filter_team == to_string(team.id)}>
+                  {team.name}
+                </option>
               <% end %>
             </select>
-
-            <!-- Clear Filters Button -->
+            
+    <!-- Clear Filters Button -->
             <button type="button" phx-click="clear_filters" class="btn btn-outline btn-sm">
               {gettext("Clear")}
             </button>
           </div>
         </form>
-
-        <!-- Item Count -->
+        
+    <!-- Item Count -->
         <div class="text-sm opacity-70 whitespace-nowrap">
-          <%= @total_count %> {gettext("items")}
+          {@total_count} {gettext("items")}
         </div>
       </div>
     </div>

@@ -123,19 +123,23 @@ defmodule HermesWeb.KanbanLive.Metrics do
   end
 
   defp calculate_avg_time_to_complete(request_ids) do
-    completed_requests = from(r in Request,
-      where: r.id in ^request_ids and r.status == "completed" and not is_nil(r.updated_at) and not is_nil(r.inserted_at),
-      select: %{
-        inserted_at: r.inserted_at,
-        updated_at: r.updated_at
-      }
-    )
-    |> Repo.all()
+    completed_requests =
+      from(r in Request,
+        where:
+          r.id in ^request_ids and r.status == "completed" and not is_nil(r.updated_at) and
+            not is_nil(r.inserted_at),
+        select: %{
+          inserted_at: r.inserted_at,
+          updated_at: r.updated_at
+        }
+      )
+      |> Repo.all()
 
     if length(completed_requests) > 0 do
-      total_seconds = Enum.reduce(completed_requests, 0, fn req, acc ->
-        acc + DateTime.diff(req.updated_at, req.inserted_at, :second)
-      end)
+      total_seconds =
+        Enum.reduce(completed_requests, 0, fn req, acc ->
+          acc + DateTime.diff(req.updated_at, req.inserted_at, :second)
+        end)
 
       avg_seconds = div(total_seconds, length(completed_requests))
       format_duration(avg_seconds)
@@ -146,7 +150,9 @@ defmodule HermesWeb.KanbanLive.Metrics do
 
   defp calculate_time_by_priority(request_ids) do
     from(r in Request,
-      where: r.id in ^request_ids and r.status == "completed" and not is_nil(r.updated_at) and not is_nil(r.inserted_at),
+      where:
+        r.id in ^request_ids and r.status == "completed" and not is_nil(r.updated_at) and
+          not is_nil(r.inserted_at),
       select: %{
         priority: r.priority,
         inserted_at: r.inserted_at,
@@ -156,9 +162,10 @@ defmodule HermesWeb.KanbanLive.Metrics do
     |> Repo.all()
     |> Enum.group_by(& &1.priority)
     |> Enum.map(fn {priority, requests} ->
-      total_seconds = Enum.reduce(requests, 0, fn req, acc ->
-        acc + DateTime.diff(req.updated_at, req.inserted_at, :second)
-      end)
+      total_seconds =
+        Enum.reduce(requests, 0, fn req, acc ->
+          acc + DateTime.diff(req.updated_at, req.inserted_at, :second)
+        end)
 
       avg_seconds = if length(requests) > 0, do: div(total_seconds, length(requests)), else: 0
 

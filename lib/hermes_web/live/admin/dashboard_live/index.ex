@@ -20,7 +20,10 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
 
   @impl true
   def handle_info(
-        %Phoenix.Socket.Broadcast{event: "presence_diff", payload: %{joins: joins, leaves: leaves}},
+        %Phoenix.Socket.Broadcast{
+          event: "presence_diff",
+          payload: %{joins: joins, leaves: leaves}
+        },
         socket
       ) do
     # Get current users map
@@ -150,7 +153,6 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
       _ -> 0
     end
   end
-
 
   defp format_last_seen(nil), do: "Never"
 

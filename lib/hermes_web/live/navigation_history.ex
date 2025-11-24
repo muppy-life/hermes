@@ -27,6 +27,7 @@ defmodule HermesWeb.NavigationHistory do
         case get_connect_params(socket) do
           %{"_live_referer" => referer} when is_binary(referer) and referer != "undefined" ->
             extract_path_from_referer(referer)
+
           _ ->
             # Fallback to default
             default
@@ -51,11 +52,15 @@ defmodule HermesWeb.NavigationHistory do
   """
   def extract_path_from_referer(referer) when is_binary(referer) do
     case URI.parse(referer) do
-      %URI{path: path, query: nil} when is_binary(path) -> path
+      %URI{path: path, query: nil} when is_binary(path) ->
+        path
+
       %URI{path: path, query: query} when is_binary(path) and is_binary(query) ->
         path <> "?" <> query
+
       %URI{path: path} when is_binary(path) ->
         path
+
       _ ->
         "/"
     end

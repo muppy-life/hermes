@@ -48,26 +48,31 @@ defmodule Hermes.Workers.ModelLoaderWorker do
   defp load_model do
     Logger.info("Loading mT5 multilingual summarization model...")
 
-    {:ok, model_info} = Bumblebee.load_model(
-      {:hf, "csebuetnlp/mT5_multilingual_XLSum"},
-      module: Bumblebee.Text.T5,
-      architecture: :for_conditional_generation
-    )
+    {:ok, model_info} =
+      Bumblebee.load_model(
+        {:hf, "csebuetnlp/mT5_multilingual_XLSum"},
+        module: Bumblebee.Text.T5,
+        architecture: :for_conditional_generation
+      )
 
     {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, "csebuetnlp/mT5_multilingual_XLSum"})
-    {:ok, generation_config} = Bumblebee.load_generation_config({:hf, "csebuetnlp/mT5_multilingual_XLSum"})
 
-    serving = Bumblebee.Text.generation(model_info, tokenizer, generation_config,
-      compile: [batch_size: 1, sequence_length: 512],
-      preallocate_params: true
-    )
+    {:ok, generation_config} =
+      Bumblebee.load_generation_config({:hf, "csebuetnlp/mT5_multilingual_XLSum"})
+
+    serving =
+      Bumblebee.Text.generation(model_info, tokenizer, generation_config,
+        compile: [batch_size: 1, sequence_length: 512],
+        preallocate_params: true
+      )
 
     # Start the serving process
-    {:ok, _pid} = Nx.Serving.start_link(
-      serving: serving,
-      name: Hermes.Summarizer,
-      batch_timeout: 100
-    )
+    {:ok, _pid} =
+      Nx.Serving.start_link(
+        serving: serving,
+        name: Hermes.Summarizer,
+        batch_timeout: 100
+      )
 
     Logger.info("ML model loaded successfully and now serving requests")
     :ok

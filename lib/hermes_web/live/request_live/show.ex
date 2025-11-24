@@ -16,7 +16,7 @@ defmodule HermesWeb.RequestLive.Show do
 
     # Trigger diagram generation if missing (only when feature is enabled)
     if Requests.diagram_generation_enabled?() and
-       (is_nil(request.solution_diagram) or request.solution_diagram == "") do
+         (is_nil(request.solution_diagram) or request.solution_diagram == "") do
       Requests.trigger_diagram_generation_for_request(id)
     end
 
@@ -123,6 +123,7 @@ defmodule HermesWeb.RequestLive.Show do
     case Date.from_iso8601(date_string) do
       {:ok, date} ->
         {:noreply, assign(socket, :selected_date, date)}
+
       {:error, _} ->
         {:noreply, socket}
     end
@@ -225,8 +226,10 @@ defmodule HermesWeb.RequestLive.Show do
 
   defp format_change_value(nil), do: "(empty)"
   defp format_change_value(""), do: "(empty)"
+
   defp format_change_value(value) when byte_size(value) > 50 do
     String.slice(value, 0..47) <> "..."
   end
+
   defp format_change_value(value), do: value
 end

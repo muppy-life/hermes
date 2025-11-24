@@ -35,7 +35,9 @@ defmodule Hermes.Workers.SummarizationWorker do
     min_length = args["min_length"]
     field_to_update = args["field_to_update"] || "description"
 
-    Logger.info("Starting summarization for request #{request_id}, updating field: #{field_to_update} (attempt #{attempt})")
+    Logger.info(
+      "Starting summarization for request #{request_id}, updating field: #{field_to_update} (attempt #{attempt})"
+    )
 
     try do
       request = Requests.get_request!(request_id)
@@ -53,7 +55,10 @@ defmodule Hermes.Workers.SummarizationWorker do
               :ok
 
             {:error, reason} ->
-              Logger.error("Failed to store summary for request #{request_id}: #{inspect(reason)}")
+              Logger.error(
+                "Failed to store summary for request #{request_id}: #{inspect(reason)}"
+              )
+
               {:error, reason}
           end
 
@@ -61,7 +66,11 @@ defmodule Hermes.Workers.SummarizationWorker do
           # Progressive retry delay: more time for model to download (2GB+)
           # Attempt 1: wait 60s, Attempt 2: wait 120s, Attempt 3: wait 180s
           snooze_time = attempt * 60
-          Logger.info("ML model not ready yet for request #{request_id}, will retry in #{snooze_time}s (attempt #{attempt})")
+
+          Logger.info(
+            "ML model not ready yet for request #{request_id}, will retry in #{snooze_time}s (attempt #{attempt})"
+          )
+
           {:snooze, snooze_time}
 
         {:error, reason} ->
