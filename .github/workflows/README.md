@@ -26,8 +26,9 @@ The CI pipeline runs on every push to `main` or `develop` branches and on all pu
 
 2. **Assets**
    - Runs on: Ubuntu Latest
-   - Node.js: 20
-   - Builds frontend assets
+   - Elixir: 1.15.7 / OTP: 26.1
+   - Builds frontend assets using Phoenix built-in tools (esbuild, tailwind)
+   - Runs `mix assets.build` to compile CSS and JS
    - Ensures assets compile successfully
 
 3. **Security**
