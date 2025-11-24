@@ -5,24 +5,31 @@ Hermes is a demand management application built with Elixir, Phoenix, and LiveVi
 ## Features
 
 ### Core Functionality
-- **Request Management**: Teams can submit requests with detailed descriptions, priorities, and status tracking
+- **Multi-Step Request Form**: Structured request submission with problem classification, user targeting, and goal definition
+- **Request Management**: Comprehensive request tracking with detailed descriptions, priorities, status, and deadlines
+- **Deadline Management**: Set and track request deadlines with visual urgency indicators (only assignable by the assigned team)
 - **Kanban Boards**: Visualize work progress across different teams with customizable kanban boards
+- **Analytics & Metrics**: Real-time team performance metrics, completion rates, and workload distribution
 - **Role-Based Access Control**:
   - Dev team members can see all boards and requests
   - Team members can only see their own team's board and related requests
   - Product owners can prioritize and manage requests
-- **Dashboard**: Overview of requests, statistics, and quick access to boards
-- **Priority System**: 5-level priority system (1-5, where 5 is highest)
-- **Status Tracking**: Track requests through pending, in_progress, completed, and blocked states
+- **Dashboard**: Overview of requests, statistics, recent activity, and quick access to boards
+- **Priority System**: 4-level priority system (1-4: Low, Normal, Important, Critical)
+- **Status Tracking**: Track requests through new, pending, in_progress, review, completed, and blocked states
+- **AI-Powered Features**: ML model integration for intelligent request summarization and diagram generation
 
 ## Technology Stack
 
-- **Elixir**: Functional programming language
-- **Phoenix Framework**: Web framework
-- **Phoenix LiveView**: Real-time UI updates without JavaScript
-- **PostgreSQL**: Database
-- **Tailwind CSS**: Styling
-- **Tidewave**: Elixir utility library
+- **Elixir 1.15+**: Functional programming language
+- **Phoenix Framework 1.8**: Web framework
+- **Phoenix LiveView 1.1**: Real-time UI updates without JavaScript
+- **PostgreSQL 14+**: Database
+- **Tailwind CSS 4.1**: Styling with DaisyUI components
+- **Oban 2.18**: Background job processing
+- **Bumblebee 0.6**: ML model integration (mT5 multilingual summarization)
+- **Nx 0.9**: Numerical computing for ML features
+- **GitHub Actions**: CI/CD pipeline with automated testing and code quality checks
 
 ## Prerequisites
 
@@ -145,10 +152,20 @@ lib/
 - `team_id`: Reference to team
 
 ### Requests
-- `title`: Request title
-- `description`: Detailed description
-- `priority`: Priority level (1-5)
-- `status`: Current status (pending, in_progress, completed, blocked)
+- `title`: Request title (auto-generated from form data)
+- `description`: Detailed description (auto-generated from form data)
+- `priority`: Priority level (1-4: Low, Normal, Important, Critical)
+- `status`: Current status (new, pending, in_progress, review, completed, blocked)
+- `deadline`: Optional deadline date (only settable by assigned team)
+- **Multi-step form fields:**
+  - `kind`: Request type (problem, new_need, improvement)
+  - `target_user_type`: User type (internal, external)
+  - `current_situation`: Description of current situation
+  - `goal_description`: Description of desired goal
+  - `data_description`: Data involved in the request
+  - `goal_target`: Output type (interface_view, report_file, alert_message)
+  - `expected_output`: Description of expected result
+  - `solution_diagram`: Optional diagram URL
 - `requesting_team_id`: Team making the request
 - `assigned_to_team_id`: Team assigned to handle the request
 - `created_by_id`: User who created the request
@@ -171,12 +188,14 @@ lib/
 
 ## Routes
 
-- `/` - Dashboard
-- `/requests` - View all requests
-- `/requests/new` - Create new request
+- `/` - Dashboard with recent requests and quick stats
+- `/requests` - Backlog view (all requests organized by status)
+- `/requests/new` - Create new request (multi-step form)
+- `/requests/:id` - View request details (with deadline management)
 - `/requests/:id/edit` - Edit request
 - `/boards` - View all kanban boards
-- `/boards/:id` - View specific kanban board
+- `/boards/:id` - View specific kanban board with analytics
+- `/admin` - Admin dashboard (dev team only) with user activity tracking
 
 ## Future Enhancements
 
@@ -195,17 +214,21 @@ This is an MVP. Consider these enhancements for production:
    - File attachments
 
 3. **Request Features**
+   - ✅ Request deadlines with visual indicators (completed)
    - Request approval workflow
-   - Email notifications
+   - Email notifications for deadline approaching/overdue
    - Request templates
    - Time tracking
    - Request history/audit log
+   - Deadline reminder notifications
 
 4. **Reporting & Analytics**
-   - Team performance metrics
-   - Request completion rates
+   - ✅ Team performance metrics (completed)
+   - ✅ Request completion rates (completed)
+   - ✅ Kanban board analytics (completed)
    - Time-to-completion analytics
    - Custom reports
+   - Export functionality
 
 5. **UI/UX**
    - Dark mode
@@ -249,11 +272,29 @@ The `scripts/db.sh` script provides convenient PostgreSQL management:
 mix test
 ```
 
-### Code Formatting
+### Code Quality & CI/CD
+
+The project includes a comprehensive CI/CD pipeline with automated code quality checks:
 
 ```bash
-mix format
+# Run all pre-commit checks (recommended before committing)
+mix precommit
+
+# Individual quality checks
+mix format              # Format code
+mix credo --strict      # Static code analysis
+mix dialyzer           # Type checking
+mix sobelow --config   # Security analysis
+mix deps.audit         # Check for vulnerable dependencies
 ```
+
+The GitHub Actions CI pipeline automatically runs on every push and pull request with parallel jobs for:
+- Testing (with PostgreSQL)
+- Asset compilation
+- Security auditing (Sobelow, mix_audit)
+- Type checking (Dialyzer)
+
+See `.github/workflows/README.md` for detailed CI/CD documentation.
 
 ### Database Operations
 
