@@ -12,15 +12,11 @@
 
 alias Hermes.Repo
 alias Hermes.Accounts.{Team, User}
-alias Hermes.Kanbans.{Board, Column, Card}
 alias Hermes.Requests.{Request, RequestChange, RequestComment}
 
 # Clear existing data (optional - comment out if you want to keep existing data)
 Repo.delete_all(RequestComment)
 Repo.delete_all(RequestChange)
-Repo.delete_all(Card)
-Repo.delete_all(Column)
-Repo.delete_all(Board)
 Repo.delete_all(Request)
 Repo.delete_all(User)
 Repo.delete_all(Team)
@@ -415,181 +411,9 @@ request11 = SeedHelper.create_request_with_history(
   ]
 )
 
-# Create kanban boards for team pairs
-# Each board represents collaboration between two teams
-
-# Dev <-> Marketing Board
-dev_marketing_board = Repo.insert!(%Board{
-  name: "Dev ↔ Marketing",
-  team_id: dev_team.id,
-  team_b_id: marketing_team.id
-})
-
-# Dev <-> Sales Board
-dev_sales_board = Repo.insert!(%Board{
-  name: "Dev ↔ Sales",
-  team_id: dev_team.id,
-  team_b_id: sales_team.id
-})
-
-# Dev <-> HR Board
-dev_hr_board = Repo.insert!(%Board{
-  name: "Dev ↔ HR",
-  team_id: dev_team.id,
-  team_b_id: hr_team.id
-})
-
-# Marketing <-> Sales Board
-marketing_sales_board = Repo.insert!(%Board{
-  name: "Marketing ↔ Sales",
-  team_id: marketing_team.id,
-  team_b_id: sales_team.id
-})
-
-# Helper function to create standard columns for a board
-defmodule BoardHelper do
-  def create_columns(board_id) do
-    backlog = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
-      name: "Backlog",
-      position: 0,
-      board_id: board_id
-    })
-
-    todo = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
-      name: "To Do",
-      position: 1,
-      board_id: board_id
-    })
-
-    in_progress = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
-      name: "In Progress",
-      position: 2,
-      board_id: board_id
-    })
-
-    done = Hermes.Repo.insert!(%Hermes.Kanbans.Column{
-      name: "Done",
-      position: 3,
-      board_id: board_id
-    })
-
-    %{backlog: backlog, todo: todo, in_progress: in_progress, done: done}
-  end
-end
-
-# Create columns for all team-pair boards
-dev_marketing_cols = BoardHelper.create_columns(dev_marketing_board.id)
-dev_sales_cols = BoardHelper.create_columns(dev_sales_board.id)
-dev_hr_cols = BoardHelper.create_columns(dev_hr_board.id)
-marketing_sales_cols = BoardHelper.create_columns(marketing_sales_board.id)
-
-# Dev ↔ Marketing Board - All requests between these two teams
-# request1: Marketing -> Dev (in_progress)
-Repo.insert!(%Card{
-  title: request1.title,
-  description: request1.description,
-  position: 0,
-  column_id: dev_marketing_cols.in_progress.id,
-  request_id: request1.id
-})
-
-# request2: Marketing -> Dev (pending)
-Repo.insert!(%Card{
-  title: request2.title,
-  description: request2.description,
-  position: 0,
-  column_id: dev_marketing_cols.backlog.id,
-  request_id: request2.id
-})
-
-# Dev ↔ Sales Board - All requests between these two teams
-# request3: Sales -> Dev (in_progress)
-Repo.insert!(%Card{
-  title: request3.title,
-  description: request3.description,
-  position: 0,
-  column_id: dev_sales_cols.in_progress.id,
-  request_id: request3.id
-})
-
-# request4: Sales -> Dev (pending)
-Repo.insert!(%Card{
-  title: request4.title,
-  description: request4.description,
-  position: 0,
-  column_id: dev_sales_cols.backlog.id,
-  request_id: request4.id
-})
-
-# request10: Sales -> Dev (pending)
-Repo.insert!(%Card{
-  title: request10.title,
-  description: request10.description,
-  position: 1,
-  column_id: dev_sales_cols.backlog.id,
-  request_id: request10.id
-})
-
-# Dev ↔ HR Board - All requests between these two teams
-# request5: HR -> Dev (completed)
-Repo.insert!(%Card{
-  title: request5.title,
-  description: request5.description,
-  position: 0,
-  column_id: dev_hr_cols.done.id,
-  request_id: request5.id
-})
-
-# request6: HR -> Dev (pending)
-Repo.insert!(%Card{
-  title: request6.title,
-  description: request6.description,
-  position: 0,
-  column_id: dev_hr_cols.todo.id,
-  request_id: request6.id
-})
-
-# request7: Dev -> HR (in_progress)
-Repo.insert!(%Card{
-  title: request7.title,
-  description: request7.description,
-  position: 0,
-  column_id: dev_hr_cols.in_progress.id,
-  request_id: request7.id
-})
-
-# request8: Dev -> HR (pending)
-Repo.insert!(%Card{
-  title: request8.title,
-  description: request8.description,
-  position: 1,
-  column_id: dev_hr_cols.backlog.id,
-  request_id: request8.id
-})
-
-# request11: Sales -> HR (in_progress)
-Repo.insert!(%Card{
-  title: request11.title,
-  description: request11.description,
-  position: 1,
-  column_id: dev_hr_cols.in_progress.id,
-  request_id: request11.id
-})
-
-# Marketing ↔ Sales Board - All requests between these two teams
-# request9: Marketing -> Sales (pending)
-Repo.insert!(%Card{
-  title: request9.title,
-  description: request9.description,
-  position: 0,
-  column_id: marketing_sales_cols.backlog.id,
-  request_id: request9.id
-})
-
 IO.puts("✅ Seed data created successfully!")
 IO.puts("\n📊 Created #{Repo.aggregate(Request, :count)} requests with changes and comments")
 IO.puts("👥 Created #{Repo.aggregate(User, :count)} users across #{Repo.aggregate(Team, :count)} teams")
-IO.puts("📋 Created #{Repo.aggregate(Board, :count)} kanban boards with #{Repo.aggregate(Card, :count)} cards")
 IO.puts("\n👤 Sample users:")
 IO.puts("  Dev Team: dev@hermes.com")
 IO.puts("  Product Owner: po@hermes.com")

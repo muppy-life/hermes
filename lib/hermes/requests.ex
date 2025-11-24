@@ -193,7 +193,7 @@ defmodule Hermes.Requests do
     |> Repo.preload(:user)
   end
 
-  defp log_change(request_id, user_id, action, attrs \\ %{}) do
+  defp log_change(request_id, user_id, action, attrs) do
     %RequestChange{}
     |> RequestChange.changeset(
       Map.merge(attrs, %{

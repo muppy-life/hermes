@@ -4,7 +4,7 @@ defmodule HermesWeb.NavigationHistory do
   Stores the previous path in assigns for use in back navigation.
   """
 
-  import Phoenix.Component, only: [assign: 2, assign: 3]
+  import Phoenix.Component, only: [assign: 3]
   import Phoenix.LiveView, only: [get_connect_params: 1, connected?: 1]
 
   @doc """

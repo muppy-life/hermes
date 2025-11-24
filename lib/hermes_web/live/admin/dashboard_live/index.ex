@@ -151,19 +151,6 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
     end
   end
 
-  defp format_time_ago(timestamp) when is_integer(timestamp) do
-    now = System.system_time(:second)
-    diff = now - timestamp
-
-    cond do
-      diff < 60 -> "Just now"
-      diff < 3600 -> "#{div(diff, 60)} minutes ago"
-      diff < 86400 -> "#{div(diff, 3600)} hours ago"
-      true -> "#{div(diff, 86400)} days ago"
-    end
-  end
-
-  defp format_time_ago(_), do: "Unknown"
 
   defp format_last_seen(nil), do: "Never"
 

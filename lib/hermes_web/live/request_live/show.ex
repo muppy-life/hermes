@@ -132,14 +132,6 @@ defmodule HermesWeb.RequestLive.Show do
     {:noreply, assign(socket, :comment_content, content)}
   end
 
-  @impl true
-  def handle_info({:diagram_generated, request_id}, socket) do
-    # Reload the request to get the updated diagram
-    updated_request = Requests.get_request!(request_id)
-
-    {:noreply, assign(socket, :request, updated_request)}
-  end
-
   def handle_event("change_status", %{"status" => new_status}, socket) do
     current_user = socket.assigns[:current_user]
     user_id = if current_user, do: current_user.id, else: nil
@@ -161,6 +153,14 @@ defmodule HermesWeb.RequestLive.Show do
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update status"))}
     end
+  end
+
+  @impl true
+  def handle_info({:diagram_generated, request_id}, socket) do
+    # Reload the request to get the updated diagram
+    updated_request = Requests.get_request!(request_id)
+
+    {:noreply, assign(socket, :request, updated_request)}
   end
 
   defp humanize_field(field) when is_binary(field) do

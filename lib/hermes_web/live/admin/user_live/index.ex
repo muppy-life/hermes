@@ -137,10 +137,4 @@ defmodule HermesWeb.Admin.UserLive.Index do
   defp list_users do
     Accounts.list_users()
   end
-
-  defp humanize_role("team_member"), do: "Team Member"
-  defp humanize_role("dev_team"), do: "Developer"
-  defp humanize_role("product_owner"), do: "Product Owner"
-  defp humanize_role("admin"), do: "Admin"
-  defp humanize_role(_), do: "Unknown"
 end
