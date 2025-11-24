@@ -25,7 +25,9 @@ The CI pipeline runs on every push to `main` or `develop` branches and on all pu
      - Run tests
 
 2. **Assets**
-   - Builds frontend assets using Node.js
+   - Runs on: Ubuntu Latest
+   - Node.js: 20
+   - Builds frontend assets
    - Ensures assets compile successfully
 
 3. **Security**
