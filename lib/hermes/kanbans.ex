@@ -4,8 +4,8 @@ defmodule Hermes.Kanbans do
   Note: Kanban boards are not persisted - they are dynamic views of requests.
   """
 
-  alias Hermes.Requests
   alias Hermes.Accounts
+  alias Hermes.Requests
 
   @doc """
   Get a list of available board views for a team.

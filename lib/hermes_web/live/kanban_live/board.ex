@@ -1,8 +1,8 @@
 defmodule HermesWeb.KanbanLive.Board do
   use HermesWeb, :live_view
 
-  alias Hermes.Kanbans
   alias Hermes.Accounts
+  alias Hermes.Kanbans
   alias Hermes.Requests
   alias HermesWeb.NavigationHistory
 

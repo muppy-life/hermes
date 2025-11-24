@@ -163,8 +163,8 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
     cond do
       diff < 60 -> "Just now"
       diff < 3600 -> "#{div(diff, 60)}m ago"
-      diff < 86400 -> "#{div(diff, 3600)}h ago"
-      diff < 604_800 -> "#{div(diff, 86400)}d ago"
+      diff < 86_400 -> "#{div(diff, 3600)}h ago"
+      diff < 604_800 -> "#{div(diff, 86_400)}d ago"
       true -> Calendar.strftime(datetime, "%b %d")
     end
   end

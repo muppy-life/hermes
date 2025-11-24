@@ -4,8 +4,8 @@ defmodule Hermes.Accounts do
   """
 
   import Ecto.Query, warn: false
+  alias Hermes.Accounts.{Team, User}
   alias Hermes.Repo
-  alias Hermes.Accounts.{User, Team}
 
   ## Team functions
 

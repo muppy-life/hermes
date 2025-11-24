@@ -1,8 +1,8 @@
 defmodule HermesWeb.DashboardLive do
   use HermesWeb, :live_view
 
-  alias Hermes.Requests
   alias Hermes.Kanbans
+  alias Hermes.Requests
 
   @impl true
   def mount(_params, _session, socket) do

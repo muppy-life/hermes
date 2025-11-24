@@ -1,8 +1,8 @@
 defmodule HermesWeb.RequestLive.New do
   use HermesWeb, :live_view
 
-  alias Hermes.Requests
   alias Hermes.Accounts
+  alias Hermes.Requests
 
   @impl true
   def mount(params, _session, socket) do

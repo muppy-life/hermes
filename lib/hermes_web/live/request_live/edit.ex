@@ -1,8 +1,8 @@
 defmodule HermesWeb.RequestLive.Edit do
   use HermesWeb, :live_view
 
-  alias Hermes.Requests
   alias Hermes.Accounts
+  alias Hermes.Requests
   alias HermesWeb.NavigationHistory
 
   @impl true

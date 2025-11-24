@@ -196,8 +196,8 @@ defmodule HermesWeb.KanbanLive.Metrics do
   defp format_duration(seconds) do
     cond do
       seconds < 3600 -> "#{div(seconds, 60)}m"
-      seconds < 86400 -> "#{Float.round(seconds / 3600, 1)}h"
-      true -> "#{Float.round(seconds / 86400, 1)}d"
+      seconds < 86_400 -> "#{Float.round(seconds / 3600, 1)}h"
+      true -> "#{Float.round(seconds / 86_400, 1)}d"
     end
   end
 end

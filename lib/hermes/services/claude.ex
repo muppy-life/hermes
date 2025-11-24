@@ -146,8 +146,7 @@ defmodule Hermes.Services.Claude do
   defp extract_text_from_response(%{"content" => content}) when is_list(content) do
     content
     |> Enum.filter(fn block -> block["type"] == "text" end)
-    |> Enum.map(fn block -> block["text"] end)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn block -> block["text"] end)
   end
 
   defp extract_text_from_response(_), do: ""
