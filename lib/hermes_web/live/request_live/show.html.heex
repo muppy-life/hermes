@@ -7,12 +7,20 @@
       <% end %>
       <.status_badge status={@request.status} size="md" />
       <.priority_badge priority={@request.priority} size="md" />
+      <%= if @request.deadline do %>
+        <.deadline_badge deadline={@request.deadline} size="md" />
+      <% end %>
     </div>
   </div>
   <:actions>
     <.button phx-click="open_edit_modal" class="btn btn-primary h-10 min-h-10">
       {gettext("Edit Request")}
     </.button>
+    <%= if @can_set_deadline do %>
+      <.button phx-click="open_deadline_modal" class="btn btn-accent h-10 min-h-10">
+        <%= if @request.deadline, do: gettext("Change Deadline"), else: gettext("Set Deadline") %>
+      </.button>
+    <% end %>
     <.button phx-click="open_delete_modal" class="btn btn-error h-10 min-h-10">
       {gettext("Delete Request")}
     </.button>
@@ -53,6 +61,15 @@
           </label>
           <p class="text-sm"><%= Calendar.strftime(@request.inserted_at, "%B %d, %Y at %I:%M %p") %></p>
         </div>
+
+        <%= if @request.deadline do %>
+          <div>
+            <label class="label">
+              <span class="label-text font-semibold text-sm">{gettext("Deadline")}</span>
+            </label>
+            <p class="text-sm font-medium text-warning"><%= Calendar.strftime(@request.deadline, "%B %d, %Y") %></p>
+          </div>
+        <% end %>
       </div>
 
       <!-- Content Column -->
@@ -409,6 +426,116 @@
       <div class="modal-action">
         <button type="button" phx-click="close_delete_modal" class="btn btn-ghost">{gettext("Cancel")}</button>
         <button type="button" phx-click="confirm_delete" class="btn btn-error">{gettext("Delete")}</button>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Deadline Modal -->
+<%= if @show_deadline_modal do %>
+  <%
+    # Calendar calculations
+    today = Date.utc_today()
+    selected_date = @selected_date
+    first_day = Date.beginning_of_month(selected_date)
+    last_day = Date.end_of_month(selected_date)
+
+    # Get day of week for first day (1 = Monday, 7 = Sunday)
+    first_weekday = Date.day_of_week(first_day)
+
+    # Calculate previous and next month
+    prev_month = Date.add(first_day, -1)
+    next_month = Date.add(last_day, 1)
+
+    # Generate all days in the month
+    days = Enum.map(1..last_day.day, fn day ->
+      Date.new!(selected_date.year, selected_date.month, day)
+    end)
+
+    # Add padding days from previous month
+    padding_days = if first_weekday > 1, do: first_weekday - 1, else: 0
+
+    # Month name
+    month_name = Calendar.strftime(selected_date, "%B %Y")
+  %>
+
+  <div class="modal modal-open">
+    <div class="modal-box max-w-md">
+      <h3 class="font-bold text-lg mb-4">{gettext("Set Deadline")}</h3>
+
+      <!-- Calendar Header -->
+      <div class="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          phx-click="update_selected_date"
+          phx-value-date={Date.to_iso8601(prev_month)}
+          class="btn btn-sm btn-circle btn-ghost"
+        >
+          <.icon name="hero-chevron-left" class="size-5" />
+        </button>
+
+        <h4 class="font-semibold text-base"><%= month_name %></h4>
+
+        <button
+          type="button"
+          phx-click="update_selected_date"
+          phx-value-date={Date.to_iso8601(next_month)}
+          class="btn btn-sm btn-circle btn-ghost"
+        >
+          <.icon name="hero-chevron-right" class="size-5" />
+        </button>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div class="grid grid-cols-7 gap-1 mb-4">
+        <!-- Day headers -->
+        <%= for day_name <- ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] do %>
+          <div class="text-center text-xs font-semibold text-base-content/60 py-2">
+            <%= day_name %>
+          </div>
+        <% end %>
+
+        <!-- Empty cells for padding -->
+        <%= for _ <- 1..padding_days do %>
+          <div></div>
+        <% end %>
+
+        <!-- Day buttons -->
+        <%= for day <- days do %>
+          <%
+            is_today = Date.compare(day, today) == :eq
+            is_selected = Date.compare(day, selected_date) == :eq
+            is_past = Date.compare(day, today) == :lt
+
+            button_classes = [
+              "btn btn-sm w-full aspect-square p-0 text-sm",
+              is_selected && "btn-primary",
+              !is_selected && !is_past && "btn-ghost hover:btn-outline",
+              is_today && !is_selected && "border border-primary",
+              is_past && !is_selected && "btn-disabled opacity-30"
+            ] |> Enum.filter(& &1) |> Enum.join(" ")
+          %>
+
+          <button
+            type="button"
+            phx-click="update_selected_date"
+            phx-value-date={Date.to_iso8601(day)}
+            class={button_classes}
+            disabled={is_past}
+          >
+            <%= day.day %>
+          </button>
+        <% end %>
+      </div>
+
+      <div class="alert alert-info text-sm mb-4">
+        <.icon name="hero-information-circle" class="size-5" />
+        <span>{gettext("Selected:")} <%= Calendar.strftime(selected_date, "%B %d, %Y") %></span>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" phx-click="close_deadline_modal" class="btn btn-ghost">{gettext("Cancel")}</button>
+        <button type="button" phx-click="save_deadline" class="btn btn-primary">{gettext("Set Deadline")}</button>
       </div>
     </div>
   </div>

@@ -697,6 +697,61 @@ defmodule HermesWeb.CoreComponents do
   end
 
   @doc """
+  Renders a deadline badge with the due date.
+
+  ## Examples
+
+      <.deadline_badge deadline={~D[2025-12-31]} />
+      <.deadline_badge deadline={~D[2025-12-31]} size="sm" />
+  """
+  attr :deadline, :any, required: true, doc: "deadline date"
+  attr :size, :string, default: "md", values: ["sm", "md", "lg"], doc: "badge size"
+  attr :rest, :global, doc: "arbitrary HTML attributes"
+
+  def deadline_badge(assigns) do
+    ~H"""
+    <span class={[
+      "badge whitespace-nowrap",
+      deadline_size_class(@size),
+      deadline_color_class(@deadline)
+    ]} {@rest}>
+      <.icon name="hero-calendar" class="size-4 mr-1" />
+      <%= format_deadline(@deadline) %>
+    </span>
+    """
+  end
+
+  defp format_deadline(deadline) when is_struct(deadline, Date) do
+    Calendar.strftime(deadline, "%b %d, %Y")
+  end
+
+  defp format_deadline(_), do: "No deadline"
+
+  defp deadline_color_class(deadline) when is_struct(deadline, Date) do
+    today = Date.utc_today()
+    days_until = Date.diff(deadline, today)
+
+    cond do
+      days_until < 0 -> "bg-red-500 text-white border-red-600"
+      days_until == 0 -> "bg-orange-500 text-white border-orange-600"
+      days_until <= 3 -> "bg-orange-300 text-orange-900 border-orange-400"
+      days_until <= 7 -> "bg-yellow-300 text-yellow-900 border-yellow-400"
+      true -> "bg-purple-200 text-purple-900 border-purple-300"
+    end
+  end
+
+  defp deadline_color_class(_), do: "badge-ghost"
+
+  defp deadline_size_class(size) do
+    case size do
+      "sm" -> "badge-sm text-xs"
+      "md" -> "badge-md text-sm"
+      "lg" -> "badge-lg text-base"
+      _ -> "badge-md text-sm"
+    end
+  end
+
+  @doc """
   Renders a filter bar for requests.
 
   ## Examples

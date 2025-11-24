@@ -20,6 +20,9 @@ defmodule HermesWeb.RequestLive.Show do
       Requests.trigger_diagram_generation_for_request(id)
     end
 
+    current_user = socket.assigns[:current_user]
+    can_set_deadline = request.assigned_to_team_id == current_user.team_id
+
     {:ok,
      socket
      |> NavigationHistory.assign_return_path(default: ~p"/backlog")
@@ -30,6 +33,9 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:comment_content, "")
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
+     |> assign(:show_deadline_modal, false)
+     |> assign(:selected_date, request.deadline || Date.utc_today())
+     |> assign(:can_set_deadline, can_set_deadline)
      |> assign(:solution_tab, "goal")
      |> assign(:diagram_feature_enabled, Requests.diagram_generation_enabled?())
      |> assign(:teams, Accounts.list_teams())
@@ -102,6 +108,52 @@ defmodule HermesWeb.RequestLive.Show do
          socket
          |> assign(:show_delete_modal, false)
          |> put_flash(:error, "Failed to delete request")}
+    end
+  end
+
+  def handle_event("open_deadline_modal", _params, socket) do
+    {:noreply, assign(socket, :show_deadline_modal, true)}
+  end
+
+  def handle_event("close_deadline_modal", _params, socket) do
+    {:noreply, assign(socket, :show_deadline_modal, false)}
+  end
+
+  def handle_event("update_selected_date", %{"date" => date_string}, socket) do
+    case Date.from_iso8601(date_string) do
+      {:ok, date} ->
+        {:noreply, assign(socket, :selected_date, date)}
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("save_deadline", _params, socket) do
+    request = socket.assigns.request
+    selected_date = socket.assigns.selected_date
+    current_user = socket.assigns[:current_user]
+
+    # Verify user is from assigned team
+    if request.assigned_to_team_id != current_user.team_id do
+      {:noreply,
+       socket
+       |> assign(:show_deadline_modal, false)
+       |> put_flash(:error, "Only the assigned team can set the deadline")}
+    else
+      case Requests.update_request(request, %{deadline: selected_date}, current_user.id) do
+        {:ok, updated_request} ->
+          {:noreply,
+           socket
+           |> assign(:request, updated_request)
+           |> assign(:show_deadline_modal, false)
+           |> put_flash(:info, "Deadline set successfully")}
+
+        {:error, _changeset} ->
+          {:noreply,
+           socket
+           |> assign(:show_deadline_modal, false)
+           |> put_flash(:error, "Failed to set deadline")}
+      end
     end
   end
 

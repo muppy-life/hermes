@@ -99,6 +99,9 @@
                   <div class="flex flex-col items-end gap-2 ml-4">
                     <.priority_badge priority={request.priority} size="sm" />
                     <.status_badge status={request.status} size="sm" />
+                    <%= if request.deadline do %>
+                      <.deadline_badge deadline={request.deadline} size="sm" />
+                    <% end %>
                   </div>
                 </div>
               </div>

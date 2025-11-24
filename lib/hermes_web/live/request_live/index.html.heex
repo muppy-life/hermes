@@ -68,7 +68,7 @@
       </div>
     <% else %>
       <!-- Table Headers -->
-      <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_150px_150px_120px] gap-3 text-sm font-semibold">
+      <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_150px_150px_120px_140px] gap-3 text-sm font-semibold">
         <div class="opacity-70">#</div>
         <button phx-click="sort" phx-value-by="kind" class="flex items-center gap-1 hover:text-primary text-left">
           {gettext("Type")}
@@ -106,6 +106,12 @@
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
+        <button phx-click="sort" phx-value-by="deadline" class="flex items-center gap-1 hover:text-primary text-left">
+          {gettext("Deadline")}
+          <%= if @sort_by == :deadline do %>
+            <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+          <% end %>
+        </button>
       </div>
 
       <!-- Card-style Rows -->
@@ -116,7 +122,7 @@
             phx-click="view_request"
             phx-value-id={request.id}
           >
-            <div class="grid grid-cols-[60px_100px_300px_120px_150px_150px_120px] gap-3 items-center">
+            <div class="grid grid-cols-[60px_100px_300px_120px_150px_150px_120px_140px] gap-3 items-center">
               <div class="opacity-60 text-sm"><%= index %></div>
               <div><.kind_badge kind={request.kind} size="sm" /></div>
               <div class="font-medium relative group w-[300px]">
@@ -129,6 +135,13 @@
               <div class="text-sm truncate"><%= request.requesting_team.name %></div>
               <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: gettext("Unassigned") %></div>
               <div class="text-sm opacity-70"><%= Calendar.strftime(request.updated_at, "%b %d, %Y") %></div>
+              <div>
+                <%= if request.deadline do %>
+                  <.deadline_badge deadline={request.deadline} size="sm" />
+                <% else %>
+                  <span class="text-sm opacity-50">-</span>
+                <% end %>
+              </div>
             </div>
           </div>
         <% end %>
@@ -144,7 +157,7 @@
       </div>
     <% else %>
       <!-- Table Headers -->
-      <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px] gap-3 text-sm font-semibold">
+      <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px_140px] gap-3 text-sm font-semibold">
         <div class="opacity-70">#</div>
         <button phx-click="sort" phx-value-by="kind" class="flex items-center gap-1 hover:text-primary text-left">
           {gettext("Type")}
@@ -188,6 +201,12 @@
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
+        <button phx-click="sort" phx-value-by="deadline" class="flex items-center gap-1 hover:text-primary text-left">
+          {gettext("Deadline")}
+          <%= if @sort_by == :deadline do %>
+            <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+          <% end %>
+        </button>
       </div>
 
       <!-- Card-style Rows -->
@@ -198,7 +217,7 @@
             phx-click="view_request"
             phx-value-id={request.id}
           >
-            <div class="grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px] gap-3 items-center">
+            <div class="grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px_140px] gap-3 items-center">
               <div class="opacity-60 text-sm"><%= index %></div>
               <div><.kind_badge kind={request.kind} size="sm" /></div>
               <div class="font-medium relative group w-[300px]">
@@ -212,6 +231,13 @@
               <div class="text-sm truncate"><%= request.requesting_team.name %></div>
               <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: gettext("Unassigned") %></div>
               <div class="text-sm opacity-70"><%= Calendar.strftime(request.updated_at, "%b %d, %Y") %></div>
+              <div>
+                <%= if request.deadline do %>
+                  <.deadline_badge deadline={request.deadline} size="sm" />
+                <% else %>
+                  <span class="text-sm opacity-50">-</span>
+                <% end %>
+              </div>
             </div>
           </div>
         <% end %>
@@ -227,7 +253,7 @@
       </div>
     <% else %>
       <!-- Table Headers -->
-      <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_150px_150px_120px] gap-3 text-sm font-semibold">
+      <div class="sticky top-0 z-10 bg-base-200 rounded-t-lg border border-base-300 px-4 py-2 grid grid-cols-[60px_100px_300px_120px_150px_150px_120px_140px] gap-3 text-sm font-semibold">
         <div class="opacity-70">#</div>
         <button phx-click="sort" phx-value-by="kind" class="flex items-center gap-1 hover:text-primary text-left">
           {gettext("Type")}
@@ -265,6 +291,12 @@
             <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
           <% end %>
         </button>
+        <button phx-click="sort" phx-value-by="deadline" class="flex items-center gap-1 hover:text-primary text-left">
+          {gettext("Deadline")}
+          <%= if @sort_by == :deadline do %>
+            <span class="text-xs"><%= if @sort_order == :asc, do: "↑", else: "↓" %></span>
+          <% end %>
+        </button>
       </div>
 
       <!-- Card-style Rows -->
@@ -275,7 +307,7 @@
             phx-click="view_request"
             phx-value-id={request.id}
           >
-            <div class="grid grid-cols-[60px_100px_300px_120px_150px_150px_120px] gap-3 items-center">
+            <div class="grid grid-cols-[60px_100px_300px_120px_150px_150px_120px_140px] gap-3 items-center">
               <div class="opacity-60 text-sm"><%= index %></div>
               <div><.kind_badge kind={request.kind} size="sm" /></div>
               <div class="font-medium relative group w-[300px]">
@@ -288,6 +320,13 @@
               <div class="text-sm truncate"><%= request.requesting_team.name %></div>
               <div class="text-sm truncate"><%= if request.assigned_to_team, do: request.assigned_to_team.name, else: gettext("Unassigned") %></div>
               <div class="text-sm opacity-70"><%= Calendar.strftime(request.updated_at, "%b %d, %Y") %></div>
+              <div>
+                <%= if request.deadline do %>
+                  <.deadline_badge deadline={request.deadline} size="sm" />
+                <% else %>
+                  <span class="text-sm opacity-50">-</span>
+                <% end %>
+              </div>
             </div>
           </div>
         <% end %>
