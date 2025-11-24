@@ -65,10 +65,16 @@ jobs:
       - name: Check formatting
         run: mix format --check-formatted
 
+      - name: Setup test database
+        run: mix ecto.create && mix ecto.migrate
+        env:
+          MIX_ENV: test
+          DB_PORT: "5432"
+
       - name: Run tests
         run: mix test
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hermes_test
+          DB_PORT: "5432"
 
       - name: Run Credo (static analysis)
         run: mix credo --strict
