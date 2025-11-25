@@ -126,6 +126,9 @@ jobs:
     needs: [build-and-push, deploy-infrastructure]
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -156,15 +159,30 @@ jobs:
         env:
           ASSETS_BUCKET: ${{ needs.deploy-infrastructure.outputs.assets_bucket }}
         run: |
+          # Also copy static files from source (images, favicon, etc.)
+          # These aren't included in the digest output
+          cp -r $GITHUB_WORKSPACE/priv/static/images ./static/ 2>/dev/null || true
+          cp $GITHUB_WORKSPACE/priv/static/favicon.ico ./static/ 2>/dev/null || true
+          cp $GITHUB_WORKSPACE/priv/static/robots.txt ./static/ 2>/dev/null || true
+
+          # List what we're uploading
+          echo "Static files to upload:"
+          ls -la ./static/
+
+          # Remove any .DS_Store files before uploading
+          find ./static -name ".DS_Store" -delete
+
           # Sync assets to S3 with appropriate cache headers
           # Fingerprinted assets get long cache (1 year)
           aws s3 sync ./static/assets s3://$ASSETS_BUCKET/assets \
             --cache-control "public, max-age=31536000, immutable" \
+            --exclude ".DS_Store" \
             --delete
 
           # Other static files get shorter cache (1 day)
           aws s3 sync ./static s3://$ASSETS_BUCKET \
             --exclude "assets/*" \
+            --exclude ".DS_Store" \
             --cache-control "public, max-age=86400" \
             --delete
 
