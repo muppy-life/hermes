@@ -18,6 +18,12 @@ defmodule HermesWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Health check endpoint for ALB/deployment checks
+  scope "/health", HermesWeb do
+    pipe_through :api
+    get "/", HealthController, :index
+  end
+
   # Public routes
   scope "/", HermesWeb do
     pipe_through :browser
