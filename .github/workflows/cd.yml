@@ -153,9 +153,11 @@ jobs:
                 \"docker pull ${{ needs.build-and-push.outputs.image }}\",
                 \"docker stop hermes || true\",
                 \"docker rm hermes || true\",
+                \"cat > /opt/hermes/.env << 'ENVEOF'\nDATABASE_URL=${{ secrets.DATABASE_URL }}\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\nPHX_HOST=${{ secrets.PHX_HOST }}\nPORT=4000\nMIX_ENV=prod\nENVEOF\",
                 \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env ${{ needs.build-and-push.outputs.image }}\",
-                \"sleep 10\",
-                \"curl -f http://localhost:4000/health || exit 1\"
+                \"sleep 15\",
+                \"docker logs hermes 2>&1 | tail -50 || true\",
+                \"curl -f http://localhost:4000/health || (docker logs hermes 2>&1 | tail -100 && exit 1)\"
               ]" \
               --query 'Command.CommandId' \
               --output text)
