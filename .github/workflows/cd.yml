@@ -104,14 +104,14 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
 
-      - name: Get EC2 Instance IPs
-        id: get-ips
+      - name: Get EC2 Instance IDs
+        id: get-instances
         run: |
-          terraform output -json ec2_private_ips > ec2_ips.json
-          echo "ec2_ips=$(cat ec2_ips.json)" >> $GITHUB_OUTPUT
+          terraform output -json ec2_instance_ids > ec2_ids.json
+          echo "ec2_ids=$(cat ec2_ids.json)" >> $GITHUB_OUTPUT
 
     outputs:
-      ec2_ips: ${{ steps.get-ips.outputs.ec2_ips }}
+      ec2_ids: ${{ steps.get-instances.outputs.ec2_ids }}
 
   deploy-application:
     name: Deploy Application to EC2
@@ -129,49 +129,69 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $(echo '${{ needs.deploy-infrastructure.outputs.ec2_ips }}' | jq -r '.[]' | head -1) >> ~/.ssh/known_hosts
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Deploy to EC2 instances
+      - name: Deploy to EC2 instances via SSM
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE: ${{ needs.build-and-push.outputs.image }}
         run: |
-          IPS=$(echo '${{ needs.deploy-infrastructure.outputs.ec2_ips }}' | jq -r '.[]')
+          INSTANCE_IDS=$(echo '${{ needs.deploy-infrastructure.outputs.ec2_ids }}' | jq -r '.[]')
 
-          for IP in $IPS; do
-            echo "Deploying to $IP..."
+          for INSTANCE_ID in $INSTANCE_IDS; do
+            echo "Deploying to $INSTANCE_ID..."
 
-            # Connect to instance and pull new image
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ec2-user@$IP << 'EOF'
-              # Login to ECR
-              aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
-                docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            # Send command via SSM
+            COMMAND_ID=$(aws ssm send-command \
+              --instance-ids "$INSTANCE_ID" \
+              --document-name "AWS-RunShellScript" \
+              --parameters commands="[
+                \"aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}\",
+                \"docker pull ${{ needs.build-and-push.outputs.image }}\",
+                \"docker stop hermes || true\",
+                \"docker rm hermes || true\",
+                \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env ${{ needs.build-and-push.outputs.image }}\",
+                \"sleep 10\",
+                \"curl -f http://localhost:4000/health || exit 1\"
+              ]" \
+              --query 'Command.CommandId' \
+              --output text)
 
-              # Pull new image
-              cd /opt/hermes
-              docker-compose pull
+            echo "Command ID: $COMMAND_ID"
 
-              # Run migrations
-              docker-compose run --rm app /app/bin/hermes eval "Hermes.Release.migrate"
+            # Wait for command to complete
+            aws ssm wait command-executed \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" || true
 
-              # Restart service
-              sudo systemctl restart hermes
+            # Get command status
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query 'Status' \
+              --output text)
 
-              # Wait for health check
-              sleep 30
-              curl -f http://localhost:4000/health || exit 1
+            echo "Command status: $STATUS"
 
-              echo "Deployment to $IP completed successfully"
-          EOF
+            if [ "$STATUS" != "Success" ]; then
+              echo "Command output:"
+              aws ssm get-command-invocation \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query 'StandardOutputContent' \
+                --output text
+              echo "Command errors:"
+              aws ssm get-command-invocation \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query 'StandardErrorContent' \
+                --output text
+              exit 1
+            fi
+
+            echo "Deployment to $INSTANCE_ID completed successfully"
           done
 
   notify:

@@ -109,6 +109,34 @@ resource "aws_iam_role_policy" "ec2_cloudwatch" {
   })
 }
 
+# Attach SSM managed policy for Systems Manager access
+resource "aws_iam_role_policy_attachment" "ec2_ssm" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# IAM Policy for ECR access (to pull Docker images)
+resource "aws_iam_role_policy" "ec2_ecr" {
+  name = "${var.environment}-ec2-ecr-policy"
+  role = aws_iam_role.ec2.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # IAM Instance Profile
 resource "aws_iam_instance_profile" "ec2" {
   name = "${var.environment}-ec2-profile"
