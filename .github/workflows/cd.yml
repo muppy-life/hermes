@@ -153,7 +153,7 @@ jobs:
                 \"docker pull ${{ needs.build-and-push.outputs.image }}\",
                 \"docker stop hermes || true\",
                 \"docker rm hermes || true\",
-                \"cat > /opt/hermes/.env << 'ENVEOF'\nDATABASE_URL=${{ secrets.DATABASE_URL }}\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\nPHX_HOST=${{ secrets.PHX_HOST }}\nPORT=4000\nMIX_ENV=prod\nENVEOF\",
+                \"printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\\nPHX_HOST=${{ secrets.PHX_HOST }}\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\n' > /opt/hermes/.env\",
                 \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env ${{ needs.build-and-push.outputs.image }}\",
                 \"sleep 15\",
                 \"docker logs hermes 2>&1 | tail -50 || true\",

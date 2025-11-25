@@ -31,8 +31,9 @@ COPY priv priv
 COPY lib lib
 COPY assets assets
 
-# Compile assets
+# Compile assets and digest static files
 RUN mix assets.build
+RUN mix phx.digest
 
 # Compile the release
 RUN mix compile

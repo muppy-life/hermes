@@ -23,6 +23,7 @@ DATABASE_URL=${database_url}
 SECRET_KEY_BASE=${secret_key_base}
 ANTHROPIC_API_KEY=${anthropic_api_key}
 PHX_HOST=${phx_host}
+PHX_SERVER=true
 PORT=4000
 MIX_ENV=prod
 EOF
