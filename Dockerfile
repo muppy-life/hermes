@@ -1,6 +1,6 @@
 # Build stage
 # Using Debian-based image for better Tailwind v4 compatibility
-FROM hexpm/elixir:1.18.1-erlang-27.2.4-debian-bookworm-20250113 AS build
+FROM hexpm/elixir:1.18.4-erlang-28.2-debian-bookworm-20251117 AS build
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
