@@ -12,6 +12,9 @@ systemctl disable ecs || true
 systemctl start docker
 systemctl enable docker
 
+# Install AWS CLI (not included in ECS-optimized AMI by default)
+yum install -y awscli unzip
+
 # Create app directory
 mkdir -p /opt/hermes
 cd /opt/hermes
