@@ -11,8 +11,9 @@ defmodule HermesWeb.AuthController do
         |> redirect(to: ~p"/")
 
       user ->
-        # For MVP: simple password check (in production use proper hashing!)
-        if user.hashed_password == password do
+        # Hash the input password and compare with stored hash
+        hashed_input = :crypto.hash(:sha256, password) |> Base.encode16(case: :lower)
+        if user.hashed_password == hashed_input do
           conn
           |> put_flash(:info, "Welcome back, #{user.email}!")
           |> put_session(:user_id, user.id)
