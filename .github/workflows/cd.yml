@@ -1,0 +1,192 @@
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: eu-south-2
+  ECR_REPOSITORY: hermes
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --cache-from type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:buildcache \
+            --cache-to type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:buildcache,mode=max \
+            .
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
+
+  deploy-infrastructure:
+    name: Deploy Infrastructure with Terraform
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var="database_url=${{ secrets.DATABASE_URL }}" \
+            -var="secret_key_base=${{ secrets.SECRET_KEY_BASE }}" \
+            -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
+            -var="certificate_arn=${{ secrets.ACM_CERTIFICATE_ARN }}" \
+            -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get EC2 Instance IPs
+        id: get-ips
+        run: |
+          terraform output -json ec2_private_ips > ec2_ips.json
+          echo "ec2_ips=$(cat ec2_ips.json)" >> $GITHUB_OUTPUT
+
+    outputs:
+      ec2_ips: ${{ steps.get-ips.outputs.ec2_ips }}
+
+  deploy-application:
+    name: Deploy Application to EC2
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-infrastructure]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $(echo '${{ needs.deploy-infrastructure.outputs.ec2_ips }}' | jq -r '.[]' | head -1) >> ~/.ssh/known_hosts
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy to EC2 instances
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE: ${{ needs.build-and-push.outputs.image }}
+        run: |
+          IPS=$(echo '${{ needs.deploy-infrastructure.outputs.ec2_ips }}' | jq -r '.[]')
+
+          for IP in $IPS; do
+            echo "Deploying to $IP..."
+
+            # Connect to instance and pull new image
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ec2-user@$IP << 'EOF'
+              # Login to ECR
+              aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+                docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+
+              # Pull new image
+              cd /opt/hermes
+              docker-compose pull
+
+              # Run migrations
+              docker-compose run --rm app /app/bin/hermes eval "Hermes.Release.migrate"
+
+              # Restart service
+              sudo systemctl restart hermes
+
+              # Wait for health check
+              sleep 30
+              curl -f http://localhost:4000/health || exit 1
+
+              echo "Deployment to $IP completed successfully"
+          EOF
+          done
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-infrastructure, deploy-application]
+    if: always()
+
+    steps:
+      - name: Deployment Status
+        run: |
+          if [ "${{ needs.deploy-application.result }}" == "success" ]; then
+            echo "✅ Deployment succeeded!"
+            echo "Image: ${{ needs.build-and-push.outputs.image }}"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi

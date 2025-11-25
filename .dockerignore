@@ -1,0 +1,46 @@
+# Build artifacts
+_build/
+deps/
+.elixir_ls/
+.fetch
+
+# Static artifacts
+node_modules/
+assets/node_modules/
+priv/static/
+
+# Local development
+.env
+.env.local
+*.log
+*.swp
+*.swo
+*~
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# Documentation
+*.md
+README.md
+CHANGELOG.md
+FEATURES.md
+
+# CI/CD
+.github/
+terraform/
+
+# Test files
+test/
+cover/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
