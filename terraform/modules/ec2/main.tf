@@ -7,18 +7,20 @@ terraform {
   }
 }
 
-# Get latest Amazon Linux 2023 AMI (supports both x86_64 and ARM64)
-data "aws_ami" "amazon_linux_2023" {
+# Get latest Amazon Linux 2 ECS-optimized AMI
+# This AMI includes: Docker, ECS agent, CloudWatch agent, SSM agent pre-installed
+# This significantly reduces boot time compared to installing these on first boot
+data "aws_ami" "ecs_optimized" {
   most_recent = true
   owners      = ["amazon"]
 
   filter {
-    name   = "name"
+    name = "name"
     # Automatically select ARM64 for t4g/c6g/m6g instances, x86_64 for others
     values = [
       length(regexall("^(t4g|c6g|c6gn|c7g|m6g|m6gd|m7g|r6g|r6gd|r7g)", var.instance_type)) > 0
-      ? "al2023-ami-2023.*-arm64"
-      : "al2023-ami-2023.*-x86_64"
+      ? "amzn2-ami-ecs-hvm-*-arm64-ebs"
+      : "amzn2-ami-ecs-hvm-*-x86_64-ebs"
     ]
   }
 
@@ -151,7 +153,7 @@ resource "aws_iam_instance_profile" "ec2" {
 # Launch Template
 resource "aws_launch_template" "app" {
   name_prefix   = "${var.environment}-app-"
-  image_id      = data.aws_ami.amazon_linux_2023.id
+  image_id      = data.aws_ami.ecs_optimized.id
   instance_type = var.instance_type
   key_name      = var.key_name
 

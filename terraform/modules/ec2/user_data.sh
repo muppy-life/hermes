@@ -1,17 +1,16 @@
 #!/bin/bash
 set -e
 
-# Update system
-dnf update -y
+# ECS-optimized AMI already has Docker, CloudWatch agent, and SSM agent installed
+# Just need to configure the application
 
-# Install Docker
-dnf install -y docker
+# Stop ECS agent since we're not using ECS
+systemctl stop ecs || true
+systemctl disable ecs || true
+
+# Ensure Docker is running
 systemctl start docker
 systemctl enable docker
-
-# Install Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
 
 # Create app directory
 mkdir -p /opt/hermes
@@ -28,69 +27,38 @@ PORT=4000
 MIX_ENV=prod
 EOF
 
-# Create docker-compose.yml (will be updated by CD pipeline)
-cat > /opt/hermes/docker-compose.yml << 'COMPOSE_EOF'
-version: '3.8'
-
-services:
-  app:
-    image: hermes:latest
-    env_file: .env
-    ports:
-      - "4000:4000"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-COMPOSE_EOF
-
-# Create systemd service for the app
-cat > /etc/systemd/system/hermes.service << 'SERVICE_EOF'
-[Unit]
-Description=Hermes Application
-After=docker.service
-Requires=docker.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=/opt/hermes
-ExecStart=/usr/local/bin/docker-compose up -d
-ExecStop=/usr/local/bin/docker-compose down
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-SERVICE_EOF
-
-# Enable and start the service (will fail initially until image is deployed)
-systemctl enable hermes.service
-
-# Install CloudWatch agent for logging (detect architecture)
-ARCH=$(uname -m)
-if [ "$ARCH" = "aarch64" ]; then
-  wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
-else
-  wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
-fi
-rpm -U ./amazon-cloudwatch-agent.rpm
-
-# Configure CloudWatch agent
-cat > /opt/aws/amazon-cloudwatch-agent/etc/config.json << 'CW_EOF'
+# Configure CloudWatch agent for Docker logs
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CW_EOF'
 {
   "logs": {
     "logs_collected": {
       "files": {
         "collect_list": [
           {
-            "file_path": "/opt/hermes/logs/*.log",
+            "file_path": "/var/lib/docker/containers/*/*.log",
             "log_group_name": "/aws/ec2/${environment}/hermes",
-            "log_stream_name": "{instance_id}"
+            "log_stream_name": "{instance_id}/docker",
+            "timezone": "UTC"
           }
         ]
+      }
+    }
+  },
+  "metrics": {
+    "namespace": "Hermes/${environment}",
+    "metrics_collected": {
+      "cpu": {
+        "measurement": ["cpu_usage_idle", "cpu_usage_user", "cpu_usage_system"],
+        "metrics_collection_interval": 60
+      },
+      "mem": {
+        "measurement": ["mem_used_percent"],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": ["disk_used_percent"],
+        "metrics_collection_interval": 60,
+        "resources": ["/"]
       }
     }
   }
@@ -102,6 +70,6 @@ CW_EOF
   -a fetch-config \
   -m ec2 \
   -s \
-  -c file:/opt/aws/amazon-cloudwatch-agent/etc/config.json
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json || true
 
 echo "EC2 instance setup complete"
