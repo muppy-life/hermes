@@ -105,19 +105,79 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
 
-      - name: Get EC2 Instance IDs
-        id: get-instances
+      - name: Get Terraform Outputs
+        id: get-outputs
         run: |
           terraform output -json ec2_instance_ids > ec2_ids.json
           echo "ec2_ids=$(cat ec2_ids.json)" >> $GITHUB_OUTPUT
+          echo "assets_bucket=$(terraform output -raw assets_bucket_name)" >> $GITHUB_OUTPUT
+          echo "assets_url=$(terraform output -raw assets_url)" >> $GITHUB_OUTPUT
+          echo "cloudfront_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
 
     outputs:
-      ec2_ids: ${{ steps.get-instances.outputs.ec2_ids }}
+      ec2_ids: ${{ steps.get-outputs.outputs.ec2_ids }}
+      assets_bucket: ${{ steps.get-outputs.outputs.assets_bucket }}
+      assets_url: ${{ steps.get-outputs.outputs.assets_url }}
+      cloudfront_id: ${{ steps.get-outputs.outputs.cloudfront_id }}
+
+  upload-assets:
+    name: Upload Static Assets to S3
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-infrastructure]
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract static assets from Docker image
+        env:
+          IMAGE: ${{ needs.build-and-push.outputs.image }}
+        run: |
+          # Create a container from the image (don't run it)
+          docker create --name assets-extractor $IMAGE
+          # Copy static assets from the container
+          docker cp assets-extractor:/app/lib/hermes-0.1.0/priv/static ./static
+          # Remove the container
+          docker rm assets-extractor
+          # List extracted files
+          ls -la ./static/
+
+      - name: Upload assets to S3
+        env:
+          ASSETS_BUCKET: ${{ needs.deploy-infrastructure.outputs.assets_bucket }}
+        run: |
+          # Sync assets to S3 with appropriate cache headers
+          # Fingerprinted assets get long cache (1 year)
+          aws s3 sync ./static/assets s3://$ASSETS_BUCKET/assets \
+            --cache-control "public, max-age=31536000, immutable" \
+            --delete
+
+          # Other static files get shorter cache (1 day)
+          aws s3 sync ./static s3://$ASSETS_BUCKET \
+            --exclude "assets/*" \
+            --cache-control "public, max-age=86400" \
+            --delete
+
+      - name: Invalidate CloudFront cache
+        env:
+          CLOUDFRONT_ID: ${{ needs.deploy-infrastructure.outputs.cloudfront_id }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_ID \
+            --paths "/*"
 
   deploy-application:
     name: Deploy Application to EC2
     runs-on: ubuntu-latest
-    needs: [build-and-push, deploy-infrastructure]
+    needs: [build-and-push, deploy-infrastructure, upload-assets]
 
     steps:
       - name: Checkout code
@@ -153,7 +213,7 @@ jobs:
                 \"docker pull ${{ needs.build-and-push.outputs.image }}\",
                 \"docker stop hermes || true\",
                 \"docker rm hermes || true\",
-                \"printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\\nPHX_HOST=${{ secrets.PHX_HOST }}\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\n' > /opt/hermes/.env\",
+                \"printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\\nPHX_HOST=${{ secrets.PHX_HOST }}\\nSTATIC_URL=${{ needs.deploy-infrastructure.outputs.assets_url }}\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\n' > /opt/hermes/.env\",
                 \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env ${{ needs.build-and-push.outputs.image }}\",
                 \"sleep 15\",
                 \"docker logs hermes 2>&1 | tail -50 || true\",
@@ -200,7 +260,7 @@ jobs:
   notify:
     name: Notify Deployment Status
     runs-on: ubuntu-latest
-    needs: [build-and-push, deploy-infrastructure, deploy-application]
+    needs: [build-and-push, deploy-infrastructure, upload-assets, deploy-application]
     if: always()
 
     steps:

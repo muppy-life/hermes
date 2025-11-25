@@ -67,7 +67,10 @@ if config_env() == :prod do
 
   config :hermes, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
-  config :hermes, HermesWeb.Endpoint,
+  # Static assets URL (CloudFront CDN)
+  static_url = System.get_env("STATIC_URL")
+
+  endpoint_config = [
     url: [host: host, port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
@@ -78,6 +81,17 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
+  ]
+
+  # Add static_url if configured (for CloudFront CDN)
+  endpoint_config =
+    if static_url do
+      Keyword.put(endpoint_config, :static_url, [host: static_url, scheme: "https", port: 443])
+    else
+      endpoint_config
+    end
+
+  config :hermes, HermesWeb.Endpoint, endpoint_config
 
   # ## SSL Support
   #

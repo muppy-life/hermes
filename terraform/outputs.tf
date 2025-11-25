@@ -27,3 +27,18 @@ output "ecr_registry_id" {
   description = "Registry ID of the ECR repository"
   value       = aws_ecr_repository.hermes.registry_id
 }
+
+output "assets_bucket_name" {
+  description = "Name of the S3 bucket for static assets"
+  value       = module.s3_assets.bucket_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "ID of the CloudFront distribution"
+  value       = module.s3_assets.cloudfront_distribution_id
+}
+
+output "assets_url" {
+  description = "URL for serving static assets (CloudFront)"
+  value       = module.s3_assets.assets_url
+}

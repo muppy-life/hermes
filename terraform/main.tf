@@ -71,7 +71,13 @@ module "ec2" {
   phx_host          = var.phx_host
 }
 
-# Note: No S3 module needed - assets served directly from application
+# S3 + CloudFront for static assets
+module "s3_assets" {
+  source = "./modules/s3_assets"
+
+  environment = var.environment
+  domain      = var.phx_host
+}
 
 # ECR Repository for Docker images
 resource "aws_ecr_repository" "hermes" {
