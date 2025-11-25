@@ -166,6 +166,7 @@ resource "aws_launch_template" "app" {
     secret_key_base   = var.secret_key_base
     anthropic_api_key = var.anthropic_api_key
     environment       = var.environment
+    phx_host          = var.phx_host
   }))
 
   tag_specifications {

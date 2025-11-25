@@ -22,9 +22,9 @@ cat > /opt/hermes/.env << EOF
 DATABASE_URL=${database_url}
 SECRET_KEY_BASE=${secret_key_base}
 ANTHROPIC_API_KEY=${anthropic_api_key}
-PHX_HOST=hermes.example.com
+PHX_HOST=${phx_host}
 PORT=4000
-MIX_ENV=production
+MIX_ENV=prod
 EOF
 
 # Create docker-compose.yml (will be updated by CD pipeline)
@@ -68,8 +68,13 @@ SERVICE_EOF
 # Enable and start the service (will fail initially until image is deployed)
 systemctl enable hermes.service
 
-# Install CloudWatch agent for logging
-wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+# Install CloudWatch agent for logging (detect architecture)
+ARCH=$(uname -m)
+if [ "$ARCH" = "aarch64" ]; then
+  wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
+else
+  wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+fi
 rpm -U ./amazon-cloudwatch-agent.rpm
 
 # Configure CloudWatch agent

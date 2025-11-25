@@ -68,6 +68,7 @@ module "ec2" {
   database_url      = var.database_url
   secret_key_base   = var.secret_key_base
   anthropic_api_key = var.anthropic_api_key
+  phx_host          = var.phx_host
 }
 
 # Note: No S3 module needed - assets served directly from application

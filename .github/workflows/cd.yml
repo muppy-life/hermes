@@ -98,6 +98,7 @@ jobs:
             -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
             -var="certificate_arn=${{ secrets.ACM_CERTIFICATE_ARN }}" \
             -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
+            -var="phx_host=${{ secrets.PHX_HOST }}" \
             -out=tfplan
 
       - name: Terraform Apply

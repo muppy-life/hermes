@@ -57,3 +57,9 @@ variable "anthropic_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "phx_host" {
+  description = "Phoenix host domain"
+  type        = string
+  default     = "localhost"
+}
