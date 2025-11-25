@@ -141,8 +141,10 @@ jobs:
         env:
           IMAGE: ${{ needs.build-and-push.outputs.image }}
         run: |
+          # Pull the ARM64 image (need to specify platform since runner is amd64)
+          docker pull --platform linux/arm64 $IMAGE
           # Create a container from the image (don't run it)
-          docker create --name assets-extractor $IMAGE
+          docker create --platform linux/arm64 --name assets-extractor $IMAGE
           # Copy static assets from the container
           docker cp assets-extractor:/app/lib/hermes-0.1.0/priv/static ./static
           # Remove the container
