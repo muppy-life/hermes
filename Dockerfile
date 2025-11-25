@@ -1,9 +1,11 @@
 # Build stage
-# Multi-platform support: automatically selects correct architecture (amd64/arm64)
-FROM hexpm/elixir:1.15.7-erlang-26.1.2-alpine-3.18.4 AS build
+# Using Debian-based image for better Tailwind v4 compatibility
+FROM hexpm/elixir:1.18.1-erlang-27.2.4-debian-bookworm-20250113 AS build
 
 # Install build dependencies
-RUN apk add --no-cache build-base git
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential git curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set build ENV
 ENV MIX_ENV=prod
@@ -40,14 +42,16 @@ COPY config/runtime.exs config/
 RUN mix release
 
 # Runtime stage
-FROM alpine:3.18.4 AS app
+FROM debian:bookworm-slim AS app
 
 # Install runtime dependencies
-RUN apk add --no-cache libstdc++ openssl ncurses-libs curl
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libstdc++6 openssl libncurses6 curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create app user
-RUN addgroup -g 1000 hermes && \
-    adduser -D -u 1000 -G hermes hermes
+RUN groupadd -g 1000 hermes && \
+    useradd -u 1000 -g hermes -m hermes
 
 # Create app directory
 WORKDIR /app
