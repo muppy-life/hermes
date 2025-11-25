@@ -14,6 +14,13 @@ alias Hermes.Repo
 alias Hermes.Accounts.{Team, User}
 alias Hermes.Requests.{Request, RequestChange, RequestComment}
 
+# Helper function to hash passwords
+defmodule PasswordHelper do
+  def hash(password) do
+    :crypto.hash(:sha256, password) |> Base.encode16(case: :lower)
+  end
+end
+
 # Clear existing data (optional - comment out if you want to keep existing data)
 Repo.delete_all(RequestComment)
 Repo.delete_all(RequestChange)
@@ -46,13 +53,11 @@ hr_team =
     description: "Human resources team"
   })
 
-# Create users (Note: In production, you should hash passwords properly)
-# For this MVP, we're using a simple placeholder password
+# Create users with hashed passwords
 dev_user =
   Repo.insert!(%User{
     email: "dev@hermes.com",
-    # In production, use proper password hashing
-    hashed_password: "dev123",
+    hashed_password: PasswordHelper.hash("dev123"),
     role: "dev_team",
     team_id: dev_team.id
   })
@@ -60,7 +65,7 @@ dev_user =
 product_owner =
   Repo.insert!(%User{
     email: "po@hermes.com",
-    hashed_password: "po123",
+    hashed_password: PasswordHelper.hash("po123"),
     role: "product_owner",
     team_id: dev_team.id
   })
@@ -68,7 +73,7 @@ product_owner =
 marketing_user =
   Repo.insert!(%User{
     email: "marketing@hermes.com",
-    hashed_password: "marketing123",
+    hashed_password: PasswordHelper.hash("marketing123"),
     role: "team_member",
     team_id: marketing_team.id
   })
@@ -76,7 +81,7 @@ marketing_user =
 sales_user =
   Repo.insert!(%User{
     email: "sales@hermes.com",
-    hashed_password: "sales123",
+    hashed_password: PasswordHelper.hash("sales123"),
     role: "team_member",
     team_id: sales_team.id
   })
@@ -84,7 +89,7 @@ sales_user =
 hr_user =
   Repo.insert!(%User{
     email: "hr@hermes.com",
-    hashed_password: "hr123",
+    hashed_password: PasswordHelper.hash("hr123"),
     role: "team_member",
     team_id: hr_team.id
   })

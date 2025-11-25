@@ -44,12 +44,12 @@ defmodule HermesWeb.Layouts do
             class="flex items-center transition-transform hover:scale-110"
           >
             <img
-              src={static_url(@conn || @socket, "/images/logo_light_themes.png")}
+              src={HermesWeb.Endpoint.static_url() <> "/images/logo_light_themes.png"}
               width="32"
               class="[[data-theme=dark]_&]:hidden"
             />
             <img
-              src={static_url(@conn || @socket, "/images/logo_dark_themes.png")}
+              src={HermesWeb.Endpoint.static_url() <> "/images/logo_dark_themes.png"}
               width="32"
               class="[[data-theme=light]_&]:hidden [[data-theme=system]_&]:hidden dark:block"
             />

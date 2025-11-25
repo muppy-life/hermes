@@ -2,12 +2,12 @@
   <div class="w-full max-w-md space-y-8">
     <div class="text-center">
       <img
-        src={static_url(@socket, "/images/logo_light_themes.png")}
+        src={HermesWeb.Endpoint.static_url() <> "/images/logo_light_themes.png"}
         width="154"
         class="mx-auto [[data-theme=dark]_&]:hidden"
       />
       <img
-        src={static_url(@socket, "/images/logo_dark_themes.png")}
+        src={HermesWeb.Endpoint.static_url() <> "/images/logo_dark_themes.png"}
         width="154"
         class="mx-auto hidden [[data-theme=dark]_&]:block dark:[[data-theme=system]_&]:block"
       />
