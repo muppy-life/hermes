@@ -84,9 +84,17 @@ if config_env() == :prod do
   ]
 
   # Add static_url if configured (for CloudFront CDN)
+  # STATIC_URL can be a full URL (https://cdn.example.com) or just a host (cdn.example.com)
   endpoint_config =
     if static_url do
-      Keyword.put(endpoint_config, :static_url, [host: static_url, scheme: "https", port: 443])
+      # Extract host from full URL if needed
+      static_host =
+        case URI.parse(static_url) do
+          %URI{host: host} when is_binary(host) -> host
+          _ -> static_url
+        end
+
+      Keyword.put(endpoint_config, :static_url, [host: static_host, scheme: "https", port: 443])
     else
       endpoint_config
     end
