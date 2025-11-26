@@ -94,7 +94,7 @@ if config_env() == :prod do
           _ -> static_url
         end
 
-      Keyword.put(endpoint_config, :static_url, [host: static_host, scheme: "https", port: 443])
+      Keyword.put(endpoint_config, :static_url, host: static_host, scheme: "https", port: 443)
     else
       endpoint_config
     end

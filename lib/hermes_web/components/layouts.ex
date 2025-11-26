@@ -46,12 +46,12 @@ defmodule HermesWeb.Layouts do
             <img
               src={HermesWeb.Endpoint.static_url() <> "/images/logo_light_themes.png"}
               width="32"
-              class="[[data-theme=dark]_&]:hidden"
+              class="dark:hidden [[data-theme=dark]_&]:hidden"
             />
             <img
               src={HermesWeb.Endpoint.static_url() <> "/images/logo_dark_themes.png"}
               width="32"
-              class="[[data-theme=light]_&]:hidden [[data-theme=system]_&]:hidden dark:block"
+              class="hidden dark:block [[data-theme=dark]_&]:block [[data-theme=light]_&]:hidden"
             />
           </a>
           <%= if @current_user do %>
