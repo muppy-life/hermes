@@ -55,6 +55,9 @@ resource "aws_lb" "main" {
   enable_http2                     = true
   enable_cross_zone_load_balancing = true
 
+  # Increased idle timeout for WebSocket/LiveView connections (max 4000s)
+  idle_timeout = 4000
+
   tags = {
     Name        = "${var.environment}-alb"
     Environment = var.environment
@@ -82,6 +85,13 @@ resource "aws_lb_target_group" "blue" {
   }
 
   deregistration_delay = 30
+
+  # Sticky sessions for WebSocket/LiveView connections
+  stickiness {
+    type            = "lb_cookie"
+    cookie_duration = 86400
+    enabled         = true
+  }
 
   tags = {
     Name        = "${var.environment}-tg-blue"
@@ -111,6 +121,13 @@ resource "aws_lb_target_group" "green" {
   }
 
   deregistration_delay = 30
+
+  # Sticky sessions for WebSocket/LiveView connections
+  stickiness {
+    type            = "lb_cookie"
+    cookie_duration = 86400
+    enabled         = true
+  }
 
   tags = {
     Name        = "${var.environment}-tg-green"
