@@ -5,6 +5,10 @@ defmodule HermesWeb.Layouts do
   """
   use HermesWeb, :html
 
+  # Compile-time environment detection (Mix is not available in releases)
+  @mix_env Mix.env()
+  def mix_env, do: @mix_env
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers
@@ -117,9 +121,9 @@ defmodule HermesWeb.Layouts do
               </a>
             </div>
             <div class="flex items-center gap-2">
-              <%= if Mix.env() != :prod do %>
-                <span class={"badge badge-xs #{if Mix.env() == :dev, do: "badge-warning", else: "badge-info"}"}>
-                  {Mix.env() |> Atom.to_string() |> String.upcase()}
+              <%= if mix_env() != :prod do %>
+                <span class={"badge badge-xs #{if mix_env() == :dev, do: "badge-warning", else: "badge-info"}"}>
+                  {mix_env() |> Atom.to_string() |> String.upcase()}
                 </span>
                 <span class="hidden sm:inline">•</span>
               <% end %>
