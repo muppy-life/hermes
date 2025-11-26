@@ -13,8 +13,13 @@ variable "private_subnets" {
   type        = list(string)
 }
 
-variable "alb_target_group_arn" {
-  description = "ARN of the ALB target group"
+variable "target_group_blue_arn" {
+  description = "ARN of the blue ALB target group"
+  type        = string
+}
+
+variable "target_group_green_arn" {
+  description = "ARN of the green ALB target group"
   type        = string
 }
 
@@ -30,7 +35,7 @@ variable "instance_type" {
 }
 
 variable "instance_count" {
-  description = "Number of EC2 instances"
+  description = "Number of EC2 instances per environment (blue and green)"
   type        = number
   default     = 2
 }

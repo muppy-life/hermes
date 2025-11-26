@@ -51,14 +51,15 @@ module "alb" {
   certificate_arn = var.certificate_arn
 }
 
-# EC2 Instances Module
+# EC2 Instances Module (Blue-Green Deployment)
 module "ec2" {
   source = "./modules/ec2"
 
   environment           = var.environment
   vpc_id                = module.vpc.vpc_id
   private_subnets       = module.vpc.private_subnets
-  alb_target_group_arn  = module.alb.target_group_arn
+  target_group_blue_arn  = module.alb.target_group_blue_arn
+  target_group_green_arn = module.alb.target_group_green_arn
   alb_security_group_id = module.alb.alb_security_group_id
 
   instance_type     = var.instance_type
