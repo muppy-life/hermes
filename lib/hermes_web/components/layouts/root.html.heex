@@ -7,8 +7,18 @@
     <.live_title default="Hermes" suffix=" · Hermes">
       {assigns[:page_title]}
     </.live_title>
-    <link rel="icon" type="image/png" sizes="32x32" href={HermesWeb.Endpoint.static_url() <> "/favicon-32.png"} />
-    <link rel="icon" type="image/png" sizes="16x16" href={HermesWeb.Endpoint.static_url() <> "/favicon-16.png"} />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href={HermesWeb.Endpoint.static_url() <> "/favicon-32.png"}
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href={HermesWeb.Endpoint.static_url() <> "/favicon-16.png"}
+    />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
