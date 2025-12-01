@@ -566,6 +566,13 @@
             ]}
           />
           <.input
+            field={@form[:requesting_team_id]}
+            type="select"
+            label={gettext("Requesting Team")}
+            prompt={gettext("Choose a team")}
+            options={Enum.map(@teams, &{&1.name, &1.id})}
+          />
+          <.input
             field={@form[:assigned_to_team_id]}
             type="select"
             label={gettext("Assign To Team")}
