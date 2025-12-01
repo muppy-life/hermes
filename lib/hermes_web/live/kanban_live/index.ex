@@ -43,7 +43,7 @@ defmodule HermesWeb.KanbanLive.Index do
 
     %{
       total: length(board_requests),
-      new: Map.get(status_counts, "new", 0),
+      new: Map.get(status_counts, "new", 0) + Map.get(status_counts, "pending", 0),
       in_progress: Map.get(status_counts, "in_progress", 0),
       completed: Map.get(status_counts, "completed", 0)
     }
