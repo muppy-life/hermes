@@ -286,18 +286,27 @@ Every push to `main` branch triggers:
    - Build assets
    - Run security checks
 
-2. **CD Pipeline** (from cd.yml)
-   - Build Docker image
+2. **CD Pipeline** (from cd.yml) - Rolling Deployment Strategy
+   - Build Docker image (ARM64 for Graviton instances)
    - Push to ECR
-   - Update infrastructure
-   - Deploy to EC2 instances
+   - Update infrastructure with Terraform
+   - Upload static assets to S3/CloudFront
    - Run database migrations
-   - Restart application
+   - Rolling deployment to instances:
+     - For each instance: deregister from ALB → deploy → health check → re-register
+     - Ensures zero-downtime with single instance (brief interruption) or multiple instances
    - Health check verification
 
 ### Manual Deployment
 
 Use GitHub Actions workflow dispatch to deploy specific commits or branches.
+
+### Rolling Deployment Benefits
+
+- **Cost efficient**: Only need 1 instance running (vs 2 for blue-green)
+- **Simple architecture**: Single target group, no traffic switching
+- **Zero-downtime** (with 2+ instances): One instance always serves traffic
+- **Automatic recovery**: Failed instances are re-registered for recovery
 
 ## Database Migrations
 
@@ -317,29 +326,46 @@ docker-compose run --rm app /app/bin/hermes eval "Hermes.Release.migrate"
 
 ## Rollback Procedure
 
-### Rollback via Docker Image Tag
-
-```bash
-# SSH to all instances
-for IP in $(terraform output -json ec2_private_ips | jq -r '.[]'); do
-  ssh -i ~/.ssh/hermes-production.pem ec2-user@$IP << 'EOF'
-    cd /opt/hermes
-    # Update docker-compose.yml to use specific image tag
-    sed -i 's/hermes:latest/hermes:PREVIOUS_SHA/g' docker-compose.yml
-    docker-compose pull
-    sudo systemctl restart hermes
-EOF
-done
-```
-
-### Rollback via Git
+### Rollback via Git Revert (Recommended)
 
 ```bash
 # Revert to previous commit
 git revert HEAD
 git push origin main
 
-# CD pipeline will deploy the reverted version
+# CD pipeline will deploy the reverted version using rolling deployment
+```
+
+### Rollback via Manual Re-deploy of Previous Image
+
+```bash
+# Get previous image tags from ECR
+aws ecr describe-images --repository-name hermes \
+  --query 'imageDetails[*].imageTags' \
+  --region eu-south-2
+
+# Manually trigger workflow with specific commit SHA
+# Go to GitHub Actions → CD workflow → Run workflow
+# Or redeploy via SSM command to instances
+```
+
+### Emergency Rollback via SSM
+
+```bash
+# Get instance IDs
+INSTANCE_IDS=$(terraform output -json instance_ids | jq -r '.[]')
+
+# Deploy previous image version to each instance
+for INSTANCE_ID in $INSTANCE_IDS; do
+  aws ssm send-command \
+    --instance-ids "$INSTANCE_ID" \
+    --document-name "AWS-RunShellScript" \
+    --parameters commands="[
+      \"docker stop hermes || true\",
+      \"docker rm hermes || true\",
+      \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env ACCOUNT_ID.dkr.ecr.eu-south-2.amazonaws.com/hermes:PREVIOUS_SHA\"
+    ]"
+done
 ```
 
 ## Monitoring
@@ -474,7 +500,7 @@ git push origin main
 
 ## Cost Estimation
 
-### Optimized Configuration (Current Setup)
+### Optimized Configuration (Current Setup - Rolling Deployment)
 
 Monthly costs in Madrid region (eu-south-2):
 - **EC2 (2x t4g.small ARM)**: ~$24/month ($0.0168/hour × 2 × 730 hours)
@@ -485,6 +511,8 @@ Monthly costs in Madrid region (eu-south-2):
 - **S3 + DynamoDB (Terraform state)**: <$1/month (minimal usage)
 
 **Total: ~$86-95/month** (excluding external database)
+
+Note: With rolling deployments you still get zero-downtime deploys with 2 instances, but you no longer need 4 instances (2 blue + 2 green) like blue-green deployment required. This saves ~$24/month compared to blue-green.
 
 ### Cost Comparison vs Alternatives
 

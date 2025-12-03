@@ -37,7 +37,7 @@ variable "instance_type" {
 }
 
 variable "instance_count" {
-  description = "Number of EC2 instances"
+  description = "Number of EC2 instances (2 for high availability with rolling deployments)"
   type        = number
   default     = 2
 }

@@ -195,8 +195,8 @@ resource "aws_launch_template" "app" {
   }
 }
 
-# Blue EC2 Instances
-resource "aws_instance" "blue" {
+# EC2 Instances
+resource "aws_instance" "app" {
   count = var.instance_count
 
   launch_template {
@@ -207,9 +207,8 @@ resource "aws_instance" "blue" {
   subnet_id = var.private_subnets[count.index % length(var.private_subnets)]
 
   tags = {
-    Name        = "${var.environment}-app-blue-${count.index + 1}"
+    Name        = "${var.environment}-app-${count.index + 1}"
     Environment = var.environment
-    Color       = "blue"
   }
 
   lifecycle {
@@ -217,42 +216,11 @@ resource "aws_instance" "blue" {
   }
 }
 
-# Green EC2 Instances
-resource "aws_instance" "green" {
+# Target Group Attachments
+resource "aws_lb_target_group_attachment" "app" {
   count = var.instance_count
 
-  launch_template {
-    id      = aws_launch_template.app.id
-    version = "$Latest"
-  }
-
-  subnet_id = var.private_subnets[count.index % length(var.private_subnets)]
-
-  tags = {
-    Name        = "${var.environment}-app-green-${count.index + 1}"
-    Environment = var.environment
-    Color       = "green"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-# Blue Target Group Attachments
-resource "aws_lb_target_group_attachment" "blue" {
-  count = var.instance_count
-
-  target_group_arn = var.target_group_blue_arn
-  target_id        = aws_instance.blue[count.index].id
-  port             = 4000
-}
-
-# Green Target Group Attachments
-resource "aws_lb_target_group_attachment" "green" {
-  count = var.instance_count
-
-  target_group_arn = var.target_group_green_arn
-  target_id        = aws_instance.green[count.index].id
+  target_group_arn = var.target_group_arn
+  target_id        = aws_instance.app[count.index].id
   port             = 4000
 }

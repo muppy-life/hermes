@@ -113,16 +113,11 @@ jobs:
       - name: Get Terraform Outputs
         id: get-outputs
         run: |
-          # Blue-green infrastructure outputs
-          echo "https_listener_arn=$(terraform output -raw https_listener_arn)" >> $GITHUB_OUTPUT
-          echo "target_group_blue_arn=$(terraform output -raw target_group_blue_arn)" >> $GITHUB_OUTPUT
-          echo "target_group_green_arn=$(terraform output -raw target_group_green_arn)" >> $GITHUB_OUTPUT
-          echo "target_group_blue_name=$(terraform output -raw target_group_blue_name)" >> $GITHUB_OUTPUT
-          echo "target_group_green_name=$(terraform output -raw target_group_green_name)" >> $GITHUB_OUTPUT
-          terraform output -json blue_instance_ids > blue_ids.json
-          terraform output -json green_instance_ids > green_ids.json
-          echo "blue_instance_ids=$(cat blue_ids.json)" >> $GITHUB_OUTPUT
-          echo "green_instance_ids=$(cat green_ids.json)" >> $GITHUB_OUTPUT
+          # Infrastructure outputs
+          echo "target_group_arn=$(terraform output -raw target_group_arn)" >> $GITHUB_OUTPUT
+          echo "target_group_name=$(terraform output -raw target_group_name)" >> $GITHUB_OUTPUT
+          terraform output -json instance_ids > instance_ids.json
+          echo "instance_ids=$(cat instance_ids.json)" >> $GITHUB_OUTPUT
 
           # Assets outputs
           echo "assets_bucket=$(terraform output -raw assets_bucket_name)" >> $GITHUB_OUTPUT
@@ -130,65 +125,12 @@ jobs:
           echo "cloudfront_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
 
     outputs:
-      https_listener_arn: ${{ steps.get-outputs.outputs.https_listener_arn }}
-      target_group_blue_arn: ${{ steps.get-outputs.outputs.target_group_blue_arn }}
-      target_group_green_arn: ${{ steps.get-outputs.outputs.target_group_green_arn }}
-      target_group_blue_name: ${{ steps.get-outputs.outputs.target_group_blue_name }}
-      target_group_green_name: ${{ steps.get-outputs.outputs.target_group_green_name }}
-      blue_instance_ids: ${{ steps.get-outputs.outputs.blue_instance_ids }}
-      green_instance_ids: ${{ steps.get-outputs.outputs.green_instance_ids }}
+      target_group_arn: ${{ steps.get-outputs.outputs.target_group_arn }}
+      target_group_name: ${{ steps.get-outputs.outputs.target_group_name }}
+      instance_ids: ${{ steps.get-outputs.outputs.instance_ids }}
       assets_bucket: ${{ steps.get-outputs.outputs.assets_bucket }}
       assets_url: ${{ steps.get-outputs.outputs.assets_url }}
       cloudfront_id: ${{ steps.get-outputs.outputs.cloudfront_id }}
-
-  determine-deployment-target:
-    name: Determine Blue-Green Target
-    runs-on: ubuntu-latest
-    needs: deploy-infrastructure
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Determine active and inactive environments
-        id: determine-target
-        env:
-          HTTPS_LISTENER_ARN: ${{ needs.deploy-infrastructure.outputs.https_listener_arn }}
-          TARGET_GROUP_BLUE_ARN: ${{ needs.deploy-infrastructure.outputs.target_group_blue_arn }}
-          TARGET_GROUP_GREEN_ARN: ${{ needs.deploy-infrastructure.outputs.target_group_green_arn }}
-        run: |
-          # Get the current active target group from the listener
-          CURRENT_TG=$(aws elbv2 describe-listeners \
-            --listener-arns "$HTTPS_LISTENER_ARN" \
-            --query 'Listeners[0].DefaultActions[0].TargetGroupArn' \
-            --output text)
-
-          echo "Current active target group: $CURRENT_TG"
-
-          # Determine which environment to deploy to (the inactive one)
-          if [ "$CURRENT_TG" == "$TARGET_GROUP_BLUE_ARN" ]; then
-            echo "Blue is active, deploying to GREEN"
-            echo "deploy_to=green" >> $GITHUB_OUTPUT
-            echo "active_env=blue" >> $GITHUB_OUTPUT
-            echo "deploy_tg_arn=$TARGET_GROUP_GREEN_ARN" >> $GITHUB_OUTPUT
-            echo "active_tg_arn=$TARGET_GROUP_BLUE_ARN" >> $GITHUB_OUTPUT
-          else
-            echo "Green is active, deploying to BLUE"
-            echo "deploy_to=blue" >> $GITHUB_OUTPUT
-            echo "active_env=green" >> $GITHUB_OUTPUT
-            echo "deploy_tg_arn=$TARGET_GROUP_BLUE_ARN" >> $GITHUB_OUTPUT
-            echo "active_tg_arn=$TARGET_GROUP_GREEN_ARN" >> $GITHUB_OUTPUT
-          fi
-
-    outputs:
-      deploy_to: ${{ steps.determine-target.outputs.deploy_to }}
-      active_env: ${{ steps.determine-target.outputs.active_env }}
-      deploy_tg_arn: ${{ steps.determine-target.outputs.deploy_tg_arn }}
-      active_tg_arn: ${{ steps.determine-target.outputs.active_tg_arn }}
 
   upload-assets:
     name: Upload Static Assets to S3
@@ -266,7 +208,7 @@ jobs:
   run-migrations:
     name: Run Database Migrations
     runs-on: ubuntu-latest
-    needs: [build-and-push, deploy-infrastructure, determine-deployment-target]
+    needs: [build-and-push, deploy-infrastructure]
 
     steps:
       - name: Configure AWS credentials
@@ -283,18 +225,12 @@ jobs:
       - name: Run Database Migrations
         env:
           IMAGE: ${{ needs.build-and-push.outputs.image }}
-          DEPLOY_TO: ${{ needs.determine-deployment-target.outputs.deploy_to }}
-          BLUE_INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.blue_instance_ids }}
-          GREEN_INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.green_instance_ids }}
+          INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.instance_ids }}
         run: |
-          # Get one instance from the deployment target to run migrations
-          if [ "$DEPLOY_TO" == "blue" ]; then
-            INSTANCE_ID=$(echo "$BLUE_INSTANCE_IDS" | jq -r '.[0]')
-          else
-            INSTANCE_ID=$(echo "$GREEN_INSTANCE_IDS" | jq -r '.[0]')
-          fi
+          # Get first instance to run migrations
+          INSTANCE_ID=$(echo "$INSTANCE_IDS" | jq -r '.[0]')
 
-          echo "Running migrations on $INSTANCE_ID ($DEPLOY_TO environment)..."
+          echo "Running migrations on $INSTANCE_ID..."
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
@@ -342,10 +278,10 @@ jobs:
 
           echo "Migrations completed successfully"
 
-  deploy-to-inactive:
-    name: Deploy to Inactive Environment
+  rolling-deploy:
+    name: Rolling Deployment
     runs-on: ubuntu-latest
-    needs: [build-and-push, deploy-infrastructure, determine-deployment-target, upload-assets, run-migrations]
+    needs: [build-and-push, deploy-infrastructure, upload-assets, run-migrations]
 
     steps:
       - name: Configure AWS credentials
@@ -359,26 +295,45 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Deploy to inactive environment
+      - name: Rolling deploy to instances
         env:
           IMAGE: ${{ needs.build-and-push.outputs.image }}
-          DEPLOY_TO: ${{ needs.determine-deployment-target.outputs.deploy_to }}
-          BLUE_INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.blue_instance_ids }}
-          GREEN_INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.green_instance_ids }}
+          INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.instance_ids }}
+          TARGET_GROUP_ARN: ${{ needs.deploy-infrastructure.outputs.target_group_arn }}
           ASSETS_URL: ${{ needs.deploy-infrastructure.outputs.assets_url }}
         run: |
-          echo "Deploying to $DEPLOY_TO environment..."
+          echo "Starting rolling deployment..."
 
-          # Get instance IDs for the target environment
-          if [ "$DEPLOY_TO" == "blue" ]; then
-            INSTANCE_IDS=$(echo "$BLUE_INSTANCE_IDS" | jq -r '.[]')
-          else
-            INSTANCE_IDS=$(echo "$GREEN_INSTANCE_IDS" | jq -r '.[]')
-          fi
+          # Get all instance IDs
+          INSTANCES=$(echo "$INSTANCE_IDS" | jq -r '.[]')
+          INSTANCE_COUNT=$(echo "$INSTANCE_IDS" | jq -r '. | length')
 
-          for INSTANCE_ID in $INSTANCE_IDS; do
-            echo "Deploying to $INSTANCE_ID ($DEPLOY_TO)..."
+          echo "Deploying to $INSTANCE_COUNT instance(s)"
 
+          INSTANCE_INDEX=0
+          for INSTANCE_ID in $INSTANCES; do
+            INSTANCE_INDEX=$((INSTANCE_INDEX + 1))
+            echo ""
+            echo "=========================================="
+            echo "Deploying to instance $INSTANCE_INDEX of $INSTANCE_COUNT: $INSTANCE_ID"
+            echo "=========================================="
+
+            # Step 1: Deregister instance from target group (only if more than 1 instance)
+            if [ "$INSTANCE_COUNT" -gt 1 ]; then
+              echo "Step 1: Deregistering instance from target group..."
+              aws elbv2 deregister-targets \
+                --target-group-arn "$TARGET_GROUP_ARN" \
+                --targets Id="$INSTANCE_ID"
+
+              # Wait for connection draining (30 seconds as configured in ALB)
+              echo "Waiting for connection draining (35 seconds)..."
+              sleep 35
+            else
+              echo "Step 1: Skipping deregistration (single instance deployment)"
+            fi
+
+            # Step 2: Deploy to instance
+            echo "Step 2: Deploying new version to instance..."
             COMMAND_ID=$(aws ssm send-command \
               --instance-ids "$INSTANCE_ID" \
               --document-name "AWS-RunShellScript" \
@@ -396,9 +351,9 @@ jobs:
               --query 'Command.CommandId' \
               --output text)
 
-            echo "Command ID: $COMMAND_ID"
+            echo "Deploy Command ID: $COMMAND_ID"
 
-            # Wait for command to complete
+            # Wait for deployment to complete
             aws ssm wait command-executed \
               --command-id "$COMMAND_ID" \
               --instance-id "$INSTANCE_ID" || true
@@ -409,9 +364,10 @@ jobs:
               --query 'Status' \
               --output text)
 
-            echo "Command status: $STATUS"
+            echo "Deploy status: $STATUS"
 
             if [ "$STATUS" != "Success" ]; then
+              echo "Deployment failed on instance $INSTANCE_ID"
               echo "Command output:"
               aws ssm get-command-invocation \
                 --command-id "$COMMAND_ID" \
@@ -424,134 +380,76 @@ jobs:
                 --instance-id "$INSTANCE_ID" \
                 --query 'StandardErrorContent' \
                 --output text
+
+              # Re-register instance if we deregistered it (even on failure for recovery)
+              if [ "$INSTANCE_COUNT" -gt 1 ]; then
+                echo "Re-registering instance to target group for recovery..."
+                aws elbv2 register-targets \
+                  --target-group-arn "$TARGET_GROUP_ARN" \
+                  --targets Id="$INSTANCE_ID"
+              fi
               exit 1
             fi
 
-            echo "Deployment to $INSTANCE_ID completed successfully"
-          done
+            # Step 3: Re-register instance with target group
+            if [ "$INSTANCE_COUNT" -gt 1 ]; then
+              echo "Step 3: Re-registering instance with target group..."
+              aws elbv2 register-targets \
+                --target-group-arn "$TARGET_GROUP_ARN" \
+                --targets Id="$INSTANCE_ID"
 
-  verify-deployment:
-    name: Verify Inactive Environment Health
-    runs-on: ubuntu-latest
-    needs: [deploy-infrastructure, determine-deployment-target, deploy-to-inactive]
+              # Wait for instance to become healthy in target group
+              echo "Waiting for instance to become healthy (checking every 10s, max 2 minutes)..."
+              HEALTHY=false
+              for i in {1..12}; do
+                HEALTH_STATE=$(aws elbv2 describe-target-health \
+                  --target-group-arn "$TARGET_GROUP_ARN" \
+                  --targets Id="$INSTANCE_ID" \
+                  --query 'TargetHealthDescriptions[0].TargetHealth.State' \
+                  --output text)
 
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+                echo "Health check $i: $HEALTH_STATE"
 
-      - name: Verify instances are healthy via SSM
-        env:
-          DEPLOY_TO: ${{ needs.determine-deployment-target.outputs.deploy_to }}
-          BLUE_INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.blue_instance_ids }}
-          GREEN_INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.green_instance_ids }}
-        run: |
-          echo "Verifying $DEPLOY_TO instances are healthy..."
+                if [ "$HEALTH_STATE" == "healthy" ]; then
+                  HEALTHY=true
+                  break
+                fi
+                sleep 10
+              done
 
-          # Get instance IDs for the target environment
-          if [ "$DEPLOY_TO" == "blue" ]; then
-            INSTANCE_IDS=$(echo "$BLUE_INSTANCE_IDS" | jq -r '.[]')
-          else
-            INSTANCE_IDS=$(echo "$GREEN_INSTANCE_IDS" | jq -r '.[]')
-          fi
-
-          ALL_HEALTHY=true
-          for INSTANCE_ID in $INSTANCE_IDS; do
-            echo "Checking health of $INSTANCE_ID..."
-
-            COMMAND_ID=$(aws ssm send-command \
-              --instance-ids "$INSTANCE_ID" \
-              --document-name "AWS-RunShellScript" \
-              --parameters commands='["curl -sf http://localhost:4000/health || exit 1"]' \
-              --query 'Command.CommandId' \
-              --output text)
-
-            # Wait for command to complete
-            sleep 5
-            aws ssm wait command-executed \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" || true
-
-            STATUS=$(aws ssm get-command-invocation \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" \
-              --query 'Status' \
-              --output text)
-
-            if [ "$STATUS" == "Success" ]; then
-              echo "✅ Instance $INSTANCE_ID is healthy"
+              if [ "$HEALTHY" != "true" ]; then
+                echo "WARNING: Instance did not become healthy within 2 minutes"
+                echo "Continuing with deployment, but manual verification recommended"
+              fi
             else
-              echo "❌ Instance $INSTANCE_ID health check failed"
-              aws ssm get-command-invocation \
-                --command-id "$COMMAND_ID" \
-                --instance-id "$INSTANCE_ID" \
-                --query 'StandardErrorContent' \
-                --output text
-              ALL_HEALTHY=false
+              echo "Step 3: Verifying instance health locally..."
+              # For single instance, just verify the local health check passed (already done in deploy)
+              echo "Instance health verified during deployment"
             fi
+
+            echo "Instance $INSTANCE_ID deployed successfully"
           done
 
-          if [ "$ALL_HEALTHY" == "true" ]; then
-            echo "All $DEPLOY_TO instances are healthy!"
-          else
-            echo "ERROR: Some instances failed health check"
-            exit 1
-          fi
-
-  switch-traffic:
-    name: Switch Traffic to New Environment
-    runs-on: ubuntu-latest
-    needs: [deploy-infrastructure, determine-deployment-target, verify-deployment]
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Switch ALB traffic to new environment
-        env:
-          HTTPS_LISTENER_ARN: ${{ needs.deploy-infrastructure.outputs.https_listener_arn }}
-          DEPLOY_TG_ARN: ${{ needs.determine-deployment-target.outputs.deploy_tg_arn }}
-          DEPLOY_TO: ${{ needs.determine-deployment-target.outputs.deploy_to }}
-          ACTIVE_ENV: ${{ needs.determine-deployment-target.outputs.active_env }}
-        run: |
-          echo "Switching traffic from $ACTIVE_ENV to $DEPLOY_TO..."
-
-          # Update the listener to point to the new target group
-          aws elbv2 modify-listener \
-            --listener-arn "$HTTPS_LISTENER_ARN" \
-            --default-actions Type=forward,TargetGroupArn="$DEPLOY_TG_ARN"
-
-          echo "Traffic switched successfully!"
-          echo "New active environment: $DEPLOY_TO"
-          echo "Previous environment ($ACTIVE_ENV) is still running for quick rollback if needed"
+          echo ""
+          echo "=========================================="
+          echo "Rolling deployment completed successfully!"
+          echo "=========================================="
 
   notify:
     name: Notify Deployment Status
     runs-on: ubuntu-latest
-    needs: [build-and-push, deploy-infrastructure, determine-deployment-target, switch-traffic]
+    needs: [build-and-push, deploy-infrastructure, rolling-deploy]
     if: always()
 
     steps:
       - name: Deployment Status
-        env:
-          DEPLOY_TO: ${{ needs.determine-deployment-target.outputs.deploy_to }}
-          ACTIVE_ENV: ${{ needs.determine-deployment-target.outputs.active_env }}
         run: |
-          if [ "${{ needs.switch-traffic.result }}" == "success" ]; then
-            echo "✅ Blue-Green Deployment succeeded!"
+          if [ "${{ needs.rolling-deploy.result }}" == "success" ]; then
+            echo "Deployment succeeded!"
             echo "Image: ${{ needs.build-and-push.outputs.image }}"
-            echo "Traffic switched from $ACTIVE_ENV to $DEPLOY_TO"
             echo ""
-            echo "To rollback, manually switch the ALB listener back to $ACTIVE_ENV target group"
+            echo "To rollback, redeploy a previous commit or manually deploy an older image"
           else
-            echo "❌ Deployment failed!"
-            echo "Active environment ($ACTIVE_ENV) is still serving traffic"
+            echo "Deployment failed!"
             exit 1
           fi

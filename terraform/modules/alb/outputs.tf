@@ -13,24 +13,14 @@ output "alb_arn" {
   value       = aws_lb.main.arn
 }
 
-output "target_group_blue_arn" {
-  description = "ARN of the blue target group"
-  value       = aws_lb_target_group.blue.arn
+output "target_group_arn" {
+  description = "ARN of the target group"
+  value       = aws_lb_target_group.app.arn
 }
 
-output "target_group_green_arn" {
-  description = "ARN of the green target group"
-  value       = aws_lb_target_group.green.arn
-}
-
-output "target_group_blue_name" {
-  description = "Name of the blue target group"
-  value       = aws_lb_target_group.blue.name
-}
-
-output "target_group_green_name" {
-  description = "Name of the green target group"
-  value       = aws_lb_target_group.green.name
+output "target_group_name" {
+  description = "Name of the target group"
+  value       = aws_lb_target_group.app.name
 }
 
 output "https_listener_arn" {

@@ -8,49 +8,24 @@ output "alb_zone_id" {
   value       = module.alb.alb_zone_id
 }
 
-output "https_listener_arn" {
-  description = "ARN of the HTTPS listener for blue-green switching"
-  value       = module.alb.https_listener_arn
+output "target_group_arn" {
+  description = "ARN of the target group"
+  value       = module.alb.target_group_arn
 }
 
-output "target_group_blue_arn" {
-  description = "ARN of the blue target group"
-  value       = module.alb.target_group_blue_arn
+output "target_group_name" {
+  description = "Name of the target group"
+  value       = module.alb.target_group_name
 }
 
-output "target_group_green_arn" {
-  description = "ARN of the green target group"
-  value       = module.alb.target_group_green_arn
+output "instance_ids" {
+  description = "IDs of the EC2 instances"
+  value       = module.ec2.instance_ids
 }
 
-output "target_group_blue_name" {
-  description = "Name of the blue target group"
-  value       = module.alb.target_group_blue_name
-}
-
-output "target_group_green_name" {
-  description = "Name of the green target group"
-  value       = module.alb.target_group_green_name
-}
-
-output "blue_instance_ids" {
-  description = "IDs of the blue EC2 instances"
-  value       = module.ec2.blue_instance_ids
-}
-
-output "green_instance_ids" {
-  description = "IDs of the green EC2 instances"
-  value       = module.ec2.green_instance_ids
-}
-
-output "blue_private_ips" {
-  description = "Private IP addresses of blue EC2 instances"
-  value       = module.ec2.blue_private_ips
-}
-
-output "green_private_ips" {
-  description = "Private IP addresses of green EC2 instances"
-  value       = module.ec2.green_private_ips
+output "private_ips" {
+  description = "Private IP addresses of EC2 instances"
+  value       = module.ec2.private_ips
 }
 
 output "ecr_repository_url" {
