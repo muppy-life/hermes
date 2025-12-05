@@ -103,9 +103,10 @@ defmodule HermesWeb.DashboardLive do
 
   defp generate_months(today, months_before, months_after) do
     total_months = months_before * -1 + months_after + 1
+    start_of_month = Date.beginning_of_month(today)
 
     Enum.map(0..(total_months - 1), fn offset ->
-      date = add_months(today, months_before + offset)
+      date = add_months(start_of_month, months_before + offset)
 
       %{
         year: date.year,
