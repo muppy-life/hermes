@@ -70,7 +70,7 @@ defmodule HermesWeb.DashboardLive do
 
     # Calculate date range: previous month to 6 months ahead
     start_date = today |> Date.beginning_of_month() |> Date.add(-1) |> Date.beginning_of_month()
-    end_date = today |> Date.add(6 * 31) |> Date.end_of_month()
+    end_date = today |> Date.shift(month: 6) |> Date.end_of_month()
 
     # Get all requests with deadlines in range
     requests = Requests.list_requests_by_team(user.team_id)
@@ -102,11 +102,10 @@ defmodule HermesWeb.DashboardLive do
   end
 
   defp generate_months(today, months_before, months_after) do
-    total_months = months_before * -1 + months_after + 1
-    start_of_month = Date.beginning_of_month(today)
+    start_month = Date.beginning_of_month(today) |> Date.shift(month: months_before)
 
-    Enum.map(0..(total_months - 1), fn offset ->
-      date = add_months(start_of_month, months_before + offset)
+    Enum.map(0..(months_before * -1 + months_after), fn offset ->
+      date = Date.shift(start_month, month: offset)
 
       %{
         year: date.year,
