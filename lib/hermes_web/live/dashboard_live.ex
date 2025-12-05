@@ -102,11 +102,10 @@ defmodule HermesWeb.DashboardLive do
   end
 
   defp generate_months(today, months_before, months_after) do
-    start_month =
-      Date.beginning_of_month(today) |> Date.add(months_before * 31) |> Date.beginning_of_month()
+    total_months = months_before * -1 + months_after + 1
 
-    Enum.map(0..(months_before * -1 + months_after), fn offset ->
-      date = Date.add(start_month, offset * 31) |> Date.beginning_of_month()
+    Enum.map(0..(total_months - 1), fn offset ->
+      date = add_months(today, months_before + offset)
 
       %{
         year: date.year,
@@ -116,8 +115,19 @@ defmodule HermesWeb.DashboardLive do
         is_current: date.year == today.year and date.month == today.month
       }
     end)
-    |> Enum.uniq_by(fn m -> {m.year, m.month} end)
-    |> Enum.take(8)
+  end
+
+  # Add months to a date using proper month arithmetic
+  defp add_months(date, months_to_add) do
+    # Calculate the new month and year
+    total_months = date.year * 12 + date.month - 1 + months_to_add
+    new_year = div(total_months, 12)
+    new_month = rem(total_months, 12) + 1
+
+    # Ensure the day is valid for the new month
+    new_day = min(date.day, Date.days_in_month(%Date{year: new_year, month: new_month, day: 1}))
+
+    Date.new!(new_year, new_month, new_day)
   end
 
   # Helper function to calculate today marker position as percentage
