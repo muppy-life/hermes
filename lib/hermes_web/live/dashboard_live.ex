@@ -81,7 +81,7 @@ defmodule HermesWeb.DashboardLive do
         r.deadline != nil and
           Date.compare(r.deadline, start_date) != :lt and
           Date.compare(r.deadline, end_date) != :gt and
-          r.status not in ["completed"]
+          r.status != "completed"
       end)
       |> Enum.sort_by(& &1.deadline, Date)
 
@@ -115,8 +115,19 @@ defmodule HermesWeb.DashboardLive do
         is_current: date.year == today.year and date.month == today.month
       }
     end)
-    |> Enum.uniq_by(fn m -> {m.year, m.month} end)
-    |> Enum.take(8)
+  end
+
+  # Add months to a date using proper month arithmetic
+  defp add_months(date, months_to_add) do
+    # Calculate the new month and year
+    total_months = date.year * 12 + date.month - 1 + months_to_add
+    new_year = div(total_months, 12)
+    new_month = rem(total_months, 12) + 1
+
+    # Ensure the day is valid for the new month
+    new_day = min(date.day, Date.days_in_month(%Date{year: new_year, month: new_month, day: 1}))
+
+    Date.new!(new_year, new_month, new_day)
   end
 
   # Helper function to calculate today marker position as percentage
