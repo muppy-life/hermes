@@ -81,7 +81,7 @@ defmodule HermesWeb.DashboardLive do
         r.deadline != nil and
           Date.compare(r.deadline, start_date) != :lt and
           Date.compare(r.deadline, end_date) != :gt and
-          r.status not in ["completed"]
+          r.status != "completed"
       end)
       |> Enum.sort_by(& &1.deadline, Date)
 
