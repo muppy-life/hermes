@@ -2,7 +2,7 @@ defmodule Hermes.Workers.SummarizationWorker do
   @moduledoc """
   Oban worker for performing text summarization asynchronously.
 
-  This worker uses the mT5 multilingual model to summarize text
+  This worker uses the google/mt5-small multilingual model to summarize text
   and stores the result in the database.
 
   ## Usage

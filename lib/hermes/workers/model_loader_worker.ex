@@ -2,9 +2,11 @@ defmodule Hermes.Workers.ModelLoaderWorker do
   @moduledoc """
   Oban worker for loading ML models asynchronously.
 
-  This worker loads the mT5 multilingual summarization model in the background
+  This worker loads the mT5-small multilingual model in the background
   so it doesn't block application startup. The model is loaded once and then
   served via Nx.Serving for all subsequent summarization requests.
+
+  Uses google/mt5-small which has a Bumblebee-compatible tokenizer format.
 
   ## Usage
 
@@ -21,6 +23,9 @@ defmodule Hermes.Workers.ModelLoaderWorker do
     priority: 1
 
   require Logger
+
+  # Use google/mt5-small which has compatible tokenizer format
+  @model_repo "google/mt5-small"
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do
@@ -46,19 +51,26 @@ defmodule Hermes.Workers.ModelLoaderWorker do
   end
 
   defp load_model do
-    Logger.info("Loading mT5 multilingual summarization model...")
+    Logger.info("Loading #{@model_repo} multilingual summarization model...")
 
     {:ok, model_info} =
       Bumblebee.load_model(
-        {:hf, "csebuetnlp/mT5_multilingual_XLSum"},
+        {:hf, @model_repo},
         module: Bumblebee.Text.T5,
         architecture: :for_conditional_generation
       )
 
-    {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, "csebuetnlp/mT5_multilingual_XLSum"})
+    {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, @model_repo})
 
     {:ok, generation_config} =
-      Bumblebee.load_generation_config({:hf, "csebuetnlp/mT5_multilingual_XLSum"})
+      Bumblebee.load_generation_config({:hf, @model_repo})
+
+    # Override generation config for better summarization
+    generation_config = %{
+      generation_config
+      | max_new_tokens: 64,
+        min_new_tokens: 10
+    }
 
     serving =
       Bumblebee.Text.generation(model_info, tokenizer, generation_config,
@@ -74,7 +86,7 @@ defmodule Hermes.Workers.ModelLoaderWorker do
         batch_timeout: 100
       )
 
-    Logger.info("ML model loaded successfully and now serving requests")
+    Logger.info("ML model #{@model_repo} loaded successfully and now serving requests")
     :ok
   end
 end
