@@ -149,4 +149,160 @@ defmodule HermesWeb.DashboardLive do
       _ -> "bg-base-200"
     end
   end
+
+  # Status icon component for roadmap cards
+  attr :status, :string, required: true
+
+  def roadmap_status_icon(%{status: "new"} = assigns) do
+    ~H"""
+    <span class="text-cyan-600" title={gettext("New")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(%{status: "pending"} = assigns) do
+    ~H"""
+    <span class="text-yellow-600" title={gettext("Pending")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(%{status: "in_progress"} = assigns) do
+    ~H"""
+    <span class="text-purple-600" title={gettext("In Progress")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M13 10V3L4 14h7v7l9-11h-7z"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(%{status: "review"} = assigns) do
+    ~H"""
+    <span class="text-indigo-600" title={gettext("Review")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(%{status: "completed"} = assigns) do
+    ~H"""
+    <span class="text-green-600" title={gettext("Completed")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(%{status: "blocked"} = assigns) do
+    ~H"""
+    <span class="text-red-600" title={gettext("Blocked")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(assigns) do
+    ~H"""
+    <span class="text-base-content/50" title={@status}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+    """
+  end
 end
