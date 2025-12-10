@@ -678,8 +678,10 @@
         <% end %>
         
 <!-- Empty cells for padding -->
-        <%= for _ <- 1..padding_days do %>
-          <div></div>
+        <%= if padding_days > 0 do %>
+          <%= for _ <- 1..padding_days do %>
+            <div></div>
+          <% end %>
         <% end %>
         
 <!-- Day buttons -->
