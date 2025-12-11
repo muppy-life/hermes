@@ -5,6 +5,7 @@ defmodule Hermes.Requests do
 
   import Ecto.Query, warn: false
   alias Hermes.Repo
+  alias Hermes.Requests.DraftStore
   alias Hermes.Requests.Request
   alias Hermes.Requests.RequestChange
   alias Hermes.Requests.RequestComment
@@ -246,5 +247,29 @@ defmodule Hermes.Requests do
 
   def delete_comment(%RequestComment{} = comment) do
     Repo.delete(comment)
+  end
+
+  # Draft functions for request creation form
+
+  @doc """
+  Get a draft for the given user ID.
+  Returns nil if no draft exists.
+  """
+  def get_draft(user_id) do
+    DraftStore.get(user_id)
+  end
+
+  @doc """
+  Save a draft for the given user ID.
+  """
+  def save_draft(user_id, step, form_data) do
+    DraftStore.save(user_id, step, form_data)
+  end
+
+  @doc """
+  Delete a draft for the given user ID.
+  """
+  def delete_draft(user_id) do
+    DraftStore.delete(user_id)
   end
 end

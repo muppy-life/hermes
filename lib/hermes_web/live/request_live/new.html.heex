@@ -150,6 +150,8 @@
                   "Describe the current state, what's happening now, what problems exist..."
                 )
               }
+              phx-blur="update_field"
+              phx-value-field="current_situation"
               required
             ><%= @form_data["current_situation"] %></textarea>
             <label class="label">
@@ -179,6 +181,8 @@
               name="request[goal_description]"
               class="textarea textarea-bordered textarea-lg min-h-[200px] w-full"
               placeholder={gettext("What should be the result? What do you want to accomplish?")}
+              phx-blur="update_field"
+              phx-value-field="goal_description"
               required
             ><%= @form_data["goal_description"] %></textarea>
             <label class="label">
@@ -213,6 +217,8 @@
                   "What data will be used or affected? Where does it come from? Leave empty if not applicable..."
                 )
               }
+              phx-blur="update_field"
+              phx-value-field="data_description"
             ><%= @form_data["data_description"] %></textarea>
             <label class="label">
               <span class="label-text-alt opacity-60">
@@ -271,6 +277,8 @@
               placeholder={
                 gettext("Describe in detail what the final output should look like or contain...")
               }
+              phx-blur="update_field"
+              phx-value-field="expected_output"
               required
             ><%= @form_data["expected_output"] %></textarea>
             <label class="label">
