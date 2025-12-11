@@ -14,6 +14,7 @@ defmodule Hermes.Application do
       {DNSCluster, query: Application.get_env(:hermes, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Hermes.PubSub},
       HermesWeb.Presence,
+      Hermes.Requests.DraftStore,
       # Start to serve requests, typically the last entry
       HermesWeb.Endpoint
     ]
