@@ -112,12 +112,16 @@ defmodule Hermes.Requests do
   end
 
   defp build_summarization_text(request) do
-    """
-    Request Type: #{Request.kind_label(request.kind)}
-    Goal: #{request.goal_description}
-    Current Situation: #{request.current_situation}
-    Expected Output: #{request.expected_output}
-    """
+    # Use only user-provided text without English labels to preserve input language
+    # The mT5 model will output in the same language as the input
+    [
+      request.goal_description,
+      request.current_situation,
+      request.expected_output
+    ]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join(" ")
   end
 
   def trigger_diagram_generation(request) do
