@@ -159,8 +159,8 @@
                   {request.title}
                 </div>
               </div>
-              <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate">{request.requesting_team.name}</div>
+              <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate">
                 {if request.assigned_to_team,
                   do: request.assigned_to_team.name,
