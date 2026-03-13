@@ -598,6 +598,10 @@ msgstr "Parte de un equipo de la empresa"
 #: lib/hermes_web/live/dashboard_live.html.heex:37
 #: lib/hermes_web/live/request_live/show.html.heex:346
 #, elixir-autogen, elixir-format
+msgid "Draft"
+msgstr "Borrador"
+
+#, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr "Pendiente"
 
@@ -905,6 +909,10 @@ msgid "new"
 msgstr "nuevas"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:135
+#, elixir-autogen, elixir-format, fuzzy
+msgid "draft"
+msgstr "Borrador"
+
 #, elixir-autogen, elixir-format, fuzzy
 msgid "pending"
 msgstr "Pendiente"

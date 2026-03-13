@@ -617,6 +617,7 @@ defmodule HermesWeb.CoreComponents do
 
   defp status_label(status) do
     case status do
+      "draft" -> gettext("Draft")
       "pending" -> gettext("Pending")
       "in_progress" -> gettext("In Progress")
       "completed" -> gettext("Completed")
@@ -629,6 +630,7 @@ defmodule HermesWeb.CoreComponents do
 
   defp status_color_class(status) do
     case status do
+      "draft" -> "bg-orange-200 text-orange-900 border-orange-300"
       "pending" -> "bg-yellow-200 text-yellow-900 border-yellow-300"
       "in_progress" -> "bg-blue-200 text-blue-900 border-blue-300"
       "completed" -> "bg-green-200 text-green-900 border-green-300"
@@ -803,6 +805,9 @@ defmodule HermesWeb.CoreComponents do
                   {gettext("All Statuses")}
                 </option>
                 <option value="new" selected={@filter_status == "new"}>{gettext("New")}</option>
+                <option value="draft" selected={@filter_status == "draft"}>
+                  {gettext("Draft")}
+                </option>
                 <option value="pending" selected={@filter_status == "pending"}>
                   {gettext("Pending")}
                 </option>
