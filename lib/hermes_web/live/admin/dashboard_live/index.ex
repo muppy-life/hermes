@@ -83,6 +83,9 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
     {:noreply, assign(socket, :users, users)}
   end
 
+  # Catch-all for unexpected messages
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp assign_stats(socket) do
     socket
     |> assign(:total_users, count_users())
