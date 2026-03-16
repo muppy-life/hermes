@@ -44,6 +44,9 @@ defmodule HermesWeb.RequestLive.New do
     {:noreply, socket}
   end
 
+  # Catch-all for Presence diff broadcasts and other system messages
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp schedule_auto_save do
     Process.send_after(self(), :auto_save, @auto_save_interval)
   end
