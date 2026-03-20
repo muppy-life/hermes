@@ -61,6 +61,8 @@ defmodule Hermes.Requests do
         # This will create a visual representation of the solution flow
         trigger_diagram_generation(request)
 
+        trigger_request_created_notification(request)
+
         {:ok, request}
 
       error ->
@@ -258,6 +260,12 @@ defmodule Hermes.Requests do
       error ->
         error
     end
+  end
+
+  defp trigger_request_created_notification(request) do
+    %{request_id: request.id, type: "created"}
+    |> Hermes.Workers.RequestNotificationWorker.new()
+    |> Oban.insert()
   end
 
   defp trigger_comment_notification(comment) do
