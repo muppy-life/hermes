@@ -2,7 +2,7 @@ defmodule Hermes.Notifications.Email do
   @moduledoc """
   Email notification module for sending transactional emails via SendGrid.
 
-  Builds typed email payloads and delegates delivery to `Hermes.Notifications.Mailer`.
+  Builds typed Swoosh emails and delivers them via `Hermes.Mailer`.
 
   ## Usage
 
@@ -10,21 +10,17 @@ defmodule Hermes.Notifications.Email do
       Hermes.Notifications.Email.send_request_created_notification(request, recipients)
   """
 
+  import Swoosh.Email
+
   require Logger
 
-  alias Hermes.Notifications.Mailer
-
-  @from_email %{email: "no-reply@muppy.com", name: "Muppy"}
+  @from {"Muppy", "no-reply@muppy.com"}
 
   @doc """
   Sends a comment notification email to all involved parties on a request.
 
   Recipients typically include members of the requesting team, members of
   the assigned team, and the request creator.
-
-  The email content (subject, body, layout) is managed by the SendGrid
-  dynamic template. This function passes the relevant data as template
-  variables.
 
   ## Parameters
 
@@ -34,32 +30,25 @@ defmodule Hermes.Notifications.Email do
 
   ## Returns
 
-    * `:ok` on success or when there are no recipients
+    * `{:ok, email}` on success or when there are no recipients
     * `{:error, reason}` on failure
   """
   def send_comment_notification(comment, recipients) when is_list(recipients) do
     if recipients == [] do
       Logger.debug("No recipients for comment notification #{comment.id}")
-      :ok
+      {:ok, nil}
     else
       Logger.info(
         "Sending comment notification for comment #{comment.id} to #{length(recipients)} recipient(s)"
       )
 
-      to_emails = Enum.map(recipients, &%{email: &1.email})
-
-      payload = %{
-        from: @from_email,
-        personalizations: [
-          %{
-            to: to_emails,
-            dynamic_template_data: build_comment_template_data(comment)
-          }
-        ],
-        template_id: comment_notification_template_id()
-      }
-
-      Mailer.deliver(payload)
+      new()
+      |> from(@from)
+      |> to(Enum.map(recipients, & &1.email))
+      |> subject(" ")
+      |> put_provider_option(:template_id, comment_notification_template_id())
+      |> put_provider_option(:dynamic_template_data, build_comment_template_data(comment))
+      |> Hermes.Mailer.deliver()
     end
   end
 
@@ -74,32 +63,25 @@ defmodule Hermes.Notifications.Email do
 
   ## Returns
 
-    * `:ok` on success or when there are no recipients
+    * `{:ok, email}` on success or when there are no recipients
     * `{:error, reason}` on failure
   """
   def send_request_created_notification(request, recipients) when is_list(recipients) do
     if recipients == [] do
       Logger.debug("No recipients for request created notification on request #{request.id}")
-      :ok
+      {:ok, nil}
     else
       Logger.info(
         "Sending request created notification for request #{request.id} to #{length(recipients)} recipient(s)"
       )
 
-      to_emails = Enum.map(recipients, &%{email: &1.email})
-
-      payload = %{
-        from: @from_email,
-        personalizations: [
-          %{
-            to: to_emails,
-            dynamic_template_data: build_request_created_template_data(request)
-          }
-        ],
-        template_id: request_created_template_id()
-      }
-
-      Mailer.deliver(payload)
+      new()
+      |> from(@from)
+      |> to(Enum.map(recipients, & &1.email))
+      |> subject(" ")
+      |> put_provider_option(:template_id, request_created_template_id())
+      |> put_provider_option(:dynamic_template_data, build_request_created_template_data(request))
+      |> Hermes.Mailer.deliver()
     end
   end
 
