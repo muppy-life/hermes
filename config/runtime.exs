@@ -167,13 +167,7 @@ if config_env() == :prod do
            max_no_bytes: 10_485_760,
            max_no_files: 5
          },
-         level: :info,
-         formatter:
-           {Logger.Formatter,
-            Logger.Formatter.new(
-              format: "$time $metadata[$level] $message\n",
-              metadata: [:request_id]
-            )}
+         level: :info
        }}
     ]
 end
