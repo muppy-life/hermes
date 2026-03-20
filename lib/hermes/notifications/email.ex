@@ -52,7 +52,7 @@ defmodule Hermes.Notifications.Email do
   end
 
   @doc """
-  Sends a request creation notification email to the assigned team and the request creator.
+  Sends a request creation notification email to the assigned team and responsible team.
 
   ## Parameters
 
