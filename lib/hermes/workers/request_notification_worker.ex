@@ -45,7 +45,6 @@ defmodule Hermes.Workers.RequestNotificationWorker do
   defp send_notification(request, "created", _args) do
     Logger.info("Sending creation notification for request: #{request.title}")
     # TODO: Implement actual notification logic (email, Slack, etc.)
-    # Example: Hermes.Mailer.send_request_created_email(request)
     :ok
   end
 
