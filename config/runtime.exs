@@ -150,4 +150,30 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Req
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+
+  # ## File logging
+  #
+  # Adds a file handler alongside the default console handler.
+  # Logs are rotated at 10 MB, keeping the last 5 files.
+  log_dir = System.get_env("LOG_DIR") || "/var/log/hermes"
+
+  config :kernel,
+    logger: [
+      {:handler, :file_log, :logger_std_h,
+       %{
+         config: %{
+           type: :file,
+           file: String.to_charlist("#{log_dir}/app.log"),
+           max_no_bytes: 10_485_760,
+           max_no_files: 5
+         },
+         level: :info,
+         formatter:
+           {Logger.Formatter,
+            Logger.Formatter.new(
+              format: "$time $metadata[$level] $message\n",
+              metadata: [:request_id]
+            )}
+       }}
+    ]
 end
