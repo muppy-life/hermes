@@ -57,6 +57,9 @@ RUN groupadd -g 1000 hermes && \
 # Create app directory
 WORKDIR /app
 
+# Create log directory with correct ownership before dropping privileges
+RUN mkdir -p /var/log/hermes && chown hermes:hermes /var/log/hermes
+
 # Copy the release from build stage
 COPY --from=build --chown=hermes:hermes /app/_build/prod/rel/hermes ./
 
