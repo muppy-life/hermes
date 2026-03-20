@@ -70,7 +70,6 @@ defmodule Hermes.Accounts do
   def list_users_by_team(team_id) do
     from(u in User, where: u.team_id == ^team_id)
     |> Repo.all()
-    |> Repo.preload(:team)
   end
 
   def list_recently_active_users(days \\ 7) do
