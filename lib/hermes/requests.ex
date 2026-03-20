@@ -244,9 +244,26 @@ defmodule Hermes.Requests do
   end
 
   def create_comment(attrs \\ %{}) do
-    %RequestComment{}
-    |> RequestComment.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %RequestComment{}
+      |> RequestComment.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, comment} ->
+        trigger_comment_notification(comment)
+
+        {:ok, comment}
+
+      error ->
+        error
+    end
+  end
+
+  defp trigger_comment_notification(comment) do
+    %{comment_id: comment.id}
+    |> Hermes.Workers.CommentNotificationWorker.new()
+    |> Oban.insert()
   end
 
   def delete_comment(%RequestComment{} = comment) do
