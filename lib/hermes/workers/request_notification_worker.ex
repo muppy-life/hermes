@@ -26,6 +26,9 @@ defmodule Hermes.Workers.RequestNotificationWorker do
     priority: 1
 
   require Logger
+
+  alias Hermes.Accounts
+  alias Hermes.Notifications.Email
   alias Hermes.Requests
 
   @impl Oban.Worker
@@ -43,9 +46,8 @@ defmodule Hermes.Workers.RequestNotificationWorker do
   end
 
   defp send_notification(request, "created", _args) do
-    Logger.info("Sending creation notification for request: #{request.title}")
-    # TODO: Implement actual notification logic (email, Slack, etc.)
-    :ok
+    recipients = build_created_recipients(request)
+    Email.send_request_created_notification(request, recipients)
   end
 
   defp send_notification(request, "status_changed", %{
@@ -72,5 +74,23 @@ defmodule Hermes.Workers.RequestNotificationWorker do
   defp send_notification(_request, type, _args) do
     Logger.warning("Unknown notification type: #{type}")
     {:discard, "Unknown notification type"}
+  end
+
+  defp build_created_recipients(request) do
+    requesting_team_users =
+      if request.requesting_team_id,
+        do: Accounts.list_users_by_team(request.requesting_team_id),
+        else: []
+
+    assigned_team_users =
+      if request.assigned_to_team_id,
+        do: Accounts.list_users_by_team(request.assigned_to_team_id),
+        else: []
+
+    creator = if request.created_by, do: request.created_by, else: %{id: nil}
+
+    (requesting_team_users ++ assigned_team_users)
+    |> Enum.uniq_by(& &1.id)
+    |> Enum.reject(&(&1.id == creator.id))
   end
 end
