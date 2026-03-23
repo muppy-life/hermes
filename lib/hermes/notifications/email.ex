@@ -91,7 +91,6 @@ defmodule Hermes.Notifications.Email do
       request_priority: request.priority,
       requesting_team: request.requesting_team && request.requesting_team.name,
       assigned_team: request.assigned_to_team && request.assigned_to_team.name,
-      created_by_email: request.created_by && request.created_by.email,
       comment_author_email: comment.user.email,
       comment_content: comment.content,
       comment_inserted_at: comment.inserted_at
@@ -110,6 +109,6 @@ defmodule Hermes.Notifications.Email do
     }
   end
 
-  defp comment_notification_template_id, do: "SENDGRID_COMMENT_TEMPLATE_ID"
-  defp request_created_template_id, do: "SENDGRID_REQUEST_CREATED_TEMPLATE_ID"
+  defp comment_notification_template_id, do: "d-7fc39f0f05434473a1750b25c71fb778"
+  defp request_created_template_id, do: "d-44121f995d0441f28b1d6a6486dbafd4"
 end
