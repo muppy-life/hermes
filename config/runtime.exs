@@ -167,6 +167,7 @@ if config_env() == :prod do
            max_no_bytes: 10_485_760,
            max_no_files: 5
          },
+         formatter: Logger.Formatter.new(colors: [enabled: false]),
          level: :info
        }}
     ]
