@@ -64,6 +64,12 @@ variable "anthropic_api_key" {
   sensitive   = true
 }
 
+variable "sendgrid_api_key" {
+  description = "SendGrid API key for email notifications"
+  type        = string
+  sensitive   = true
+}
+
 variable "phx_host" {
   description = "Phoenix host domain (e.g., hermes.muppy.dev)"
   type        = string

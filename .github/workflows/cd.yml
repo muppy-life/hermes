@@ -91,6 +91,7 @@ jobs:
             -var="database_url=${{ secrets.DATABASE_URL }}" \
             -var="secret_key_base=${{ secrets.SECRET_KEY_BASE }}" \
             -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
+            -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
             -var="certificate_arn=${{ secrets.ACM_CERTIFICATE_ARN }}" \
             -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
             -var="phx_host=${{ secrets.PHX_HOST }}" \
@@ -332,7 +333,7 @@ jobs:
                 \"docker pull ${{ needs.build-and-push.outputs.image }}\",
                 \"docker stop hermes || true\",
                 \"docker rm hermes || true\",
-                \"printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\\nPHX_HOST=${{ secrets.PHX_HOST }}\\nSTATIC_URL=${{ needs.deploy-infrastructure.outputs.assets_url }}\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\nPOOL_SIZE=5\\n' > /opt/hermes/.env\",
+                \"printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\\nSENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}\\nPHX_HOST=${{ secrets.PHX_HOST }}\\nSTATIC_URL=${{ needs.deploy-infrastructure.outputs.assets_url }}\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\nPOOL_SIZE=5\\n' > /opt/hermes/.env\",
                 \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env ${{ needs.build-and-push.outputs.image }}\",
                 \"sleep 15\",
                 \"docker logs hermes 2>&1 | tail -50 || true\",
