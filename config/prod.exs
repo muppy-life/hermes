@@ -19,5 +19,21 @@ config :swoosh, local: false
 # Do not print debug messages in production
 config :logger, level: :info
 
+# File logging - rotate at 10 MB, keep last 5 files
+config :kernel,
+  logger: [
+    {:handler, :file_log, :logger_std_h,
+     %{
+       config: %{
+         type: :file,
+         file: ~c"/var/log/hermes/app.log",
+         max_no_bytes: 10_485_760,
+         max_no_files: 5
+       },
+       formatter: Logger.Formatter.new(colors: [enabled: false]),
+       level: :info
+     }}
+  ]
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.
