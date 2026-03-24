@@ -61,6 +61,8 @@ defmodule Hermes.Requests do
         # This will create a visual representation of the solution flow
         trigger_diagram_generation(request)
 
+        trigger_request_created_notification(request)
+
         {:ok, request}
 
       error ->
@@ -244,9 +246,32 @@ defmodule Hermes.Requests do
   end
 
   def create_comment(attrs \\ %{}) do
-    %RequestComment{}
-    |> RequestComment.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %RequestComment{}
+      |> RequestComment.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, comment} ->
+        trigger_comment_notification(comment)
+
+        {:ok, comment}
+
+      error ->
+        error
+    end
+  end
+
+  defp trigger_request_created_notification(request) do
+    %{request_id: request.id, type: "created"}
+    |> Hermes.Workers.RequestNotificationWorker.new()
+    |> Oban.insert()
+  end
+
+  defp trigger_comment_notification(comment) do
+    %{comment_id: comment.id}
+    |> Hermes.Workers.CommentNotificationWorker.new()
+    |> Oban.insert()
   end
 
   def delete_comment(%RequestComment{} = comment) do

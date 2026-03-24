@@ -67,6 +67,11 @@ defmodule Hermes.Accounts do
     |> Repo.update()
   end
 
+  def list_users_by_team(team_id) do
+    from(u in User, where: u.team_id == ^team_id)
+    |> Repo.all()
+  end
+
   def list_recently_active_users(days \\ 7) do
     cutoff = DateTime.utc_now() |> DateTime.add(-days * 24 * 60 * 60, :second)
 
