@@ -29,6 +29,12 @@
         <div class="text-cyan-700 mt-1">{gettext("New")}</div>
       </div>
     </.link>
+    <.link navigate={~p"/backlog?status=draft&tab=ongoing"} class="block">
+      <div class="bg-orange-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-orange-900">{@stats.draft}</div>
+        <div class="text-orange-700 mt-1">{gettext("Draft")}</div>
+      </div>
+    </.link>
     <.link navigate={~p"/backlog?status=pending&tab=ongoing"} class="block">
       <div class="bg-yellow-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
         <div class="text-3xl font-bold text-yellow-900">{@stats.pending}</div>
@@ -266,6 +272,10 @@
                   <span class="flex items-center gap-1 text-cyan-700">
                     <span class="font-semibold">{board.task_stats.new}</span>
                     <span class="opacity-60">{gettext("new")}</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-orange-700">
+                    <span class="font-semibold">{board.task_stats.draft}</span>
+                    <span class="opacity-60">{gettext("draft")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-yellow-700">
                     <span class="font-semibold">{board.task_stats.pending}</span>
