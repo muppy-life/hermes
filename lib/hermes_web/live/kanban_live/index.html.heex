@@ -6,32 +6,22 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
   <%= for board <- @boards do %>
     <% board_id = Map.get(board, :id) %>
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-6 border border-gray-200 dark:border-slate-700">
-      <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{board.name}</h3>
+    <div class="bg-base-100 rounded-xl shadow hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-6 border border-base-300">
+      <h3 class="text-xl font-semibold mb-4 text-base-content">{board.name}</h3>
 
       <%!-- Status Summary --%>
       <div class="grid grid-cols-3 gap-2 mb-5">
-        <div class="bg-blue-50 dark:bg-slate-700/60 rounded-lg p-2 text-center">
-          <div class="text-xs text-blue-500 dark:text-sky-400 font-medium mb-0.5">
-            {gettext("New")}
-          </div>
-          <div class="text-lg font-bold text-blue-600 dark:text-sky-300">{board.stats.new}</div>
+        <div class="bg-info/10 rounded-lg p-2 text-center">
+          <div class="text-xs text-info font-medium mb-0.5">{gettext("New")}</div>
+          <div class="text-lg font-bold text-info">{board.stats.new}</div>
         </div>
-        <div class="bg-amber-50 dark:bg-slate-700/60 rounded-lg p-2 text-center">
-          <div class="text-xs text-amber-500 dark:text-amber-400 font-medium mb-0.5">
-            {gettext("In Progress")}
-          </div>
-          <div class="text-lg font-bold text-amber-600 dark:text-amber-300">
-            {board.stats.in_progress}
-          </div>
+        <div class="bg-warning/10 rounded-lg p-2 text-center">
+          <div class="text-xs text-warning font-medium mb-0.5">{gettext("In Progress")}</div>
+          <div class="text-lg font-bold text-warning">{board.stats.in_progress}</div>
         </div>
-        <div class="bg-green-50 dark:bg-slate-700/60 rounded-lg p-2 text-center">
-          <div class="text-xs text-green-500 dark:text-emerald-400 font-medium mb-0.5">
-            {gettext("Done")}
-          </div>
-          <div class="text-lg font-bold text-green-600 dark:text-emerald-300">
-            {board.stats.completed}
-          </div>
+        <div class="bg-success/10 rounded-lg p-2 text-center">
+          <div class="text-xs text-success font-medium mb-0.5">{gettext("Done")}</div>
+          <div class="text-lg font-bold text-success">{board.stats.completed}</div>
         </div>
       </div>
 
@@ -46,7 +36,7 @@
         </.link>
         <.link
           navigate={~p"/boards/#{board_id}/metrics"}
-          class="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 transition-colors duration-150"
+          class="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium bg-base-200 hover:bg-base-300 text-base-content transition-colors duration-150"
         >
           <.icon name="hero-chart-bar" class="size-4" />
           {gettext("Metrics")}
