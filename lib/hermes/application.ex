@@ -31,10 +31,12 @@ defmodule Hermes.Application do
   end
 
   defp schedule_model_loading do
-    # Schedule model loading job to run immediately in the background
-    %{}
-    |> Hermes.Workers.ModelLoaderWorker.new(queue: :media)
-    |> Oban.insert()
+    # Schedule model loading job to run immediately in the background for production environments
+    if Application.get_env(:hermes, :env) == :prod do
+      %{}
+      |> Hermes.Workers.ModelLoaderWorker.new(queue: :media)
+      |> Oban.insert()
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration
