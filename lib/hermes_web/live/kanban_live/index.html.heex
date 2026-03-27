@@ -27,17 +27,11 @@
 
       <%!-- Action Buttons --%>
       <div class="flex items-center gap-2">
-        <.link
-          navigate={~p"/boards/#{board_id}"}
-          class="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium bg-(--color-primary) hover:opacity-90 text-(--color-primary-content) transition-all duration-150"
-        >
+        <.link navigate={~p"/boards/#{board_id}"} class="btn btn-primary btn-sm flex-1">
           <.icon name="hero-queue-list" class="size-4" />
           {gettext("Board")}
         </.link>
-        <.link
-          navigate={~p"/boards/#{board_id}/metrics"}
-          class="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium bg-base-200 hover:bg-base-300 text-base-content transition-colors duration-150"
-        >
+        <.link navigate={~p"/boards/#{board_id}/metrics"} class="btn btn-ghost btn-sm flex-1">
           <.icon name="hero-chart-bar" class="size-4" />
           {gettext("Metrics")}
         </.link>
