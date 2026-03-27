@@ -92,21 +92,21 @@
         </button>
         <button
           phx-click="sort"
-          phx-value-by="priority"
-          class="flex items-center gap-1 hover:text-primary text-left"
-        >
-          {gettext("Priority")}
-          <%= if @sort_by == :priority do %>
-            <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
-          <% end %>
-        </button>
-        <button
-          phx-click="sort"
           phx-value-by="requesting_team_id"
           class="flex items-center gap-1 hover:text-primary text-left"
         >
           {gettext("Requesting Team")}
           <%= if @sort_by == :requesting_team_id do %>
+            <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
+          <% end %>
+        </button>
+        <button
+          phx-click="sort"
+          phx-value-by="priority"
+          class="flex items-center gap-1 hover:text-primary text-left"
+        >
+          {gettext("Priority")}
+          <%= if @sort_by == :priority do %>
             <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
           <% end %>
         </button>
@@ -159,8 +159,8 @@
                   {request.title}
                 </div>
               </div>
-              <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate">{request.requesting_team.name}</div>
+              <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate">
                 {if request.assigned_to_team,
                   do: request.assigned_to_team.name,
@@ -215,6 +215,16 @@
         </button>
         <button
           phx-click="sort"
+          phx-value-by="requesting_team_id"
+          class="flex items-center gap-1 hover:text-primary text-left"
+        >
+          {gettext("Requesting Team")}
+          <%= if @sort_by == :requesting_team_id do %>
+            <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
+          <% end %>
+        </button>
+        <button
+          phx-click="sort"
           phx-value-by="priority"
           class="flex items-center gap-1 hover:text-primary text-left"
         >
@@ -230,16 +240,6 @@
         >
           {gettext("Status")}
           <%= if @sort_by == :status do %>
-            <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
-          <% end %>
-        </button>
-        <button
-          phx-click="sort"
-          phx-value-by="requesting_team_id"
-          class="flex items-center gap-1 hover:text-primary text-left"
-        >
-          {gettext("Requesting Team")}
-          <%= if @sort_by == :requesting_team_id do %>
             <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
           <% end %>
         </button>
@@ -292,9 +292,9 @@
                   {request.title}
                 </div>
               </div>
+              <div class="text-sm truncate">{request.requesting_team.name}</div>
               <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div><.status_badge status={request.status} size="sm" /></div>
-              <div class="text-sm truncate">{request.requesting_team.name}</div>
               <div class="text-sm truncate">
                 {if request.assigned_to_team,
                   do: request.assigned_to_team.name,
@@ -349,21 +349,21 @@
         </button>
         <button
           phx-click="sort"
-          phx-value-by="priority"
-          class="flex items-center gap-1 hover:text-primary text-left"
-        >
-          {gettext("Priority")}
-          <%= if @sort_by == :priority do %>
-            <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
-          <% end %>
-        </button>
-        <button
-          phx-click="sort"
           phx-value-by="requesting_team_id"
           class="flex items-center gap-1 hover:text-primary text-left"
         >
           {gettext("Requesting Team")}
           <%= if @sort_by == :requesting_team_id do %>
+            <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
+          <% end %>
+        </button>
+        <button
+          phx-click="sort"
+          phx-value-by="priority"
+          class="flex items-center gap-1 hover:text-primary text-left"
+        >
+          {gettext("Priority")}
+          <%= if @sort_by == :priority do %>
             <span class="text-xs">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
           <% end %>
         </button>
@@ -416,8 +416,8 @@
                   {request.title}
                 </div>
               </div>
-              <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate">{request.requesting_team.name}</div>
+              <div><.priority_badge priority={request.priority} size="sm" /></div>
               <div class="text-sm truncate">
                 {if request.assigned_to_team,
                   do: request.assigned_to_team.name,
