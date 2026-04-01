@@ -80,28 +80,34 @@ defmodule Hermes.Kanbans do
     columns = [
       %{id: 1, name: Gettext.gettext(HermesWeb.Gettext, "New"), position: 0, status: "new"},
       %{
+        id: 7,
+        name: Gettext.gettext(HermesWeb.Gettext, "Draft"),
+        position: 1,
+        status: "draft"
+      },
+      %{
         id: 2,
         name: Gettext.gettext(HermesWeb.Gettext, "Pending"),
-        position: 1,
+        position: 2,
         status: "pending"
       },
       %{
         id: 3,
         name: Gettext.gettext(HermesWeb.Gettext, "In Progress"),
-        position: 2,
+        position: 3,
         status: "in_progress"
       },
-      %{id: 4, name: Gettext.gettext(HermesWeb.Gettext, "Review"), position: 3, status: "review"},
+      %{id: 4, name: Gettext.gettext(HermesWeb.Gettext, "Review"), position: 4, status: "review"},
       %{
         id: 5,
         name: Gettext.gettext(HermesWeb.Gettext, "Blocked"),
-        position: 4,
+        position: 5,
         status: "blocked"
       },
       %{
         id: 6,
         name: Gettext.gettext(HermesWeb.Gettext, "Completed"),
-        position: 5,
+        position: 6,
         status: "completed"
       }
     ]
