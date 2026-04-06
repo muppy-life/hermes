@@ -216,6 +216,12 @@ defmodule HermesWeb.RequestLive.Show do
     {:noreply, assign(socket, :request, updated_request)}
   end
 
+  # Catch-all for Presence diff broadcasts and other system messages
+  # Every LiveView is tracked via Presence on "users:online", which sends
+  # %Phoenix.Socket.Broadcast{} messages on joins/leaves. Without this
+  # catch-all, unmatched messages cause a FunctionClauseError crash.
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp humanize_field(field) when is_binary(field) do
     field
     |> String.replace("_", " ")
