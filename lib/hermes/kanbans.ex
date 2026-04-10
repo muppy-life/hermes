@@ -16,9 +16,12 @@ defmodule Hermes.Kanbans do
     team = Accounts.get_team!(team_id)
     requests = Requests.list_requests_by_team(team_id)
 
-    # Find all unique team pairs
+    # Find all unique team pairs (exclude self-assigned requests)
     team_pairs =
       requests
+      |> Enum.filter(fn request ->
+        request.requesting_team_id != request.assigned_to_team_id
+      end)
       |> Enum.flat_map(fn request ->
         other_team_id =
           cond do
@@ -68,12 +71,13 @@ defmodule Hermes.Kanbans do
         {team_b, team_a}
       end
 
-    # Get all requests between these two teams
+    # Get all requests between these two teams (exclude self-assigned requests)
     requests =
       Requests.list_requests_by_team(current_user_team_id)
       |> Enum.filter(fn request ->
         request.requesting_team_id in [team_a_id, team_b_id] and
-          request.assigned_to_team_id in [team_a_id, team_b_id]
+          request.assigned_to_team_id in [team_a_id, team_b_id] and
+          request.requesting_team_id != request.assigned_to_team_id
       end)
 
     # Define columns for all status types
