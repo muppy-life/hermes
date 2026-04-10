@@ -22,6 +22,12 @@ defmodule HermesWeb.RequestLive.Show do
 
     current_user = socket.assigns[:current_user]
     can_set_deadline = request.assigned_to_team_id == current_user.team_id
+    all_users = Accounts.list_users()
+
+    mentionable_users =
+      Enum.map(all_users, fn u ->
+        %{id: u.id, username: u.email |> String.split("@") |> List.first(), email: u.email}
+      end)
 
     {:ok,
      socket
@@ -30,7 +36,6 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:request, request)
      |> assign(:changes, changes)
      |> assign(:comments, comments)
-     |> assign(:comment_content, "")
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:show_deadline_modal, false)
@@ -39,6 +44,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:solution_tab, "goal")
      |> assign(:diagram_feature_enabled, Requests.diagram_generation_enabled?())
      |> assign(:teams, Accounts.list_teams())
+     |> assign(:mentionable_users, mentionable_users)
      |> assign(:form, to_form(Requests.change_request(request)))}
   end
 
@@ -174,15 +180,11 @@ defmodule HermesWeb.RequestLive.Show do
         {:noreply,
          socket
          |> assign(:comments, comments)
-         |> assign(:comment_content, "")}
+         |> push_event("clear_comment_input", %{})}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to add comment")}
     end
-  end
-
-  def handle_event("update_comment", %{"content" => content}, socket) do
-    {:noreply, assign(socket, :comment_content, content)}
   end
 
   def handle_event("change_status", %{"status" => new_status}, socket) do
@@ -214,6 +216,24 @@ defmodule HermesWeb.RequestLive.Show do
     updated_request = Requests.get_request!(request_id)
 
     {:noreply, assign(socket, :request, updated_request)}
+  end
+
+  defp render_comment_content(content) do
+    segments =
+      ~r/(@[\w.+-]+)/
+      |> Regex.split(content, include_captures: true)
+
+    html =
+      Enum.map_join(segments, fn segment ->
+        if String.starts_with?(segment, "@") do
+          escaped = Phoenix.HTML.html_escape(segment) |> Phoenix.HTML.safe_to_string()
+          ~s(<span class="text-primary font-semibold">#{escaped}</span>)
+        else
+          Phoenix.HTML.html_escape(segment) |> Phoenix.HTML.safe_to_string()
+        end
+      end)
+
+    Phoenix.HTML.raw(html)
   end
 
   defp humanize_field(field) when is_binary(field) do

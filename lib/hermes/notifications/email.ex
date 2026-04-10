@@ -52,6 +52,36 @@ defmodule Hermes.Notifications.Email do
   end
 
   @doc """
+  Sends a mention notification email to a user who was @mentioned in a comment.
+
+  ## Parameters
+
+    * `comment` - The `%Hermes.Requests.RequestComment{}` struct with `:user` and
+      `:request` (including `:requesting_team`, `:assigned_to_team`, `:created_by`) preloaded
+    * `mentioned_user` - The `%Hermes.Accounts.User{}` struct for the mentioned user
+
+  ## Returns
+
+    * `{:ok, email}` on success
+    * `{:error, reason}` on failure
+  """
+  def send_mention_notification(comment, mentioned_user) do
+    Logger.info(
+      "Sending mention notification for comment #{comment.id} to user #{mentioned_user.id}"
+    )
+
+    new()
+    |> from(@from)
+    |> to(mentioned_user.email)
+    |> put_provider_option(:template_id, comment_notification_template_id())
+    |> put_provider_option(
+      :dynamic_template_data,
+      build_mention_template_data(comment, mentioned_user)
+    )
+    |> Hermes.Mailer.deliver()
+  end
+
+  @doc """
   Sends a request creation notification email to the assigned team and responsible team.
 
   ## Parameters
@@ -81,6 +111,22 @@ defmodule Hermes.Notifications.Email do
       |> put_provider_option(:dynamic_template_data, build_request_created_template_data(request))
       |> Hermes.Mailer.deliver()
     end
+  end
+
+  defp build_mention_template_data(%{request: request} = comment, mentioned_user) do
+    %{
+      request_id: request.id,
+      request_title: request.title,
+      request_status: request.status,
+      request_priority: request.priority,
+      requesting_team: request.requesting_team && request.requesting_team.name,
+      assigned_team: request.assigned_to_team && request.assigned_to_team.name,
+      comment_author_email: comment.user.email,
+      comment_content: comment.content,
+      comment_inserted_at: comment.inserted_at,
+      mentioned_user_email: mentioned_user.email,
+      notification_type: "mention"
+    }
   end
 
   defp build_comment_template_data(%{request: request} = comment) do

@@ -175,6 +175,118 @@ const Hooks = {
       })
     }
   },
+  MentionInput: {
+    mounted() {
+      this.users = JSON.parse(this.el.dataset.users || '[]')
+      this.textarea = this.el.querySelector('textarea')
+      this.dropdown = this.el.querySelector('#mention-dropdown')
+      this.mentionStart = -1
+
+      this.textarea.addEventListener('input', (e) => this.handleInput(e))
+      this.textarea.addEventListener('keydown', (e) => this.handleKeydown(e))
+      this.textarea.addEventListener('blur', () => this.hideDropdown())
+      this.handleEvent('clear_comment_input', () => {
+        this.textarea.value = ''
+        this.hideDropdown()
+      })
+
+      // Single delegated listener — survives innerHTML rebuilds
+      this.dropdown.addEventListener('mousedown', (e) => {
+        // Prevent blur on textarea so the selection can complete
+        e.preventDefault()
+        const item = e.target.closest('li[data-username]')
+        if (item) this.insertMention(item.dataset.username)
+      })
+    },
+
+    updated() {
+      this.users = JSON.parse(this.el.dataset.users || '[]')
+    },
+
+    handleInput(e) {
+      const text = this.textarea.value
+      const cursor = this.textarea.selectionStart
+      const textBeforeCursor = text.slice(0, cursor)
+      const match = textBeforeCursor.match(/(^|[\s\n])@([\w.]*)$/)
+
+      if (match) {
+        this.mentionStart = textBeforeCursor.lastIndexOf('@')
+        this.showDropdown(match[2].toLowerCase())
+      } else {
+        this.mentionStart = -1
+        this.hideDropdown()
+      }
+    },
+
+    handleKeydown(e) {
+      if (this.dropdown.classList.contains('hidden')) return
+
+      const items = this.dropdown.querySelectorAll('li')
+      const active = this.dropdown.querySelector('li.bg-base-300')
+      const activeIndex = active ? Array.from(items).indexOf(active) : -1
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const next = items[activeIndex + 1] || items[0]
+        active && active.classList.remove('bg-base-300')
+        next && next.classList.add('bg-base-300')
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const prev = items[activeIndex - 1] || items[items.length - 1]
+        active && active.classList.remove('bg-base-300')
+        prev && prev.classList.add('bg-base-300')
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        const highlighted = this.dropdown.querySelector('li.bg-base-300') || items[0]
+        if (highlighted) {
+          e.preventDefault()
+          this.insertMention(highlighted.dataset.username)
+        }
+      } else if (e.key === 'Escape') {
+        this.hideDropdown()
+      }
+    },
+
+    showDropdown(query) {
+      const matches = this.users.filter(u =>
+        u.username.toLowerCase().startsWith(query) ||
+        u.email.toLowerCase().startsWith(query)
+      ).slice(0, 8)
+
+      if (matches.length === 0) {
+        this.hideDropdown()
+        return
+      }
+
+      this.dropdown.innerHTML = matches.map((u, i) =>
+        `<li data-username="${u.username}"
+             class="px-3 py-1.5 text-xs cursor-pointer hover:bg-base-300 flex items-center gap-2 ${i === 0 ? 'bg-base-300' : ''}">
+           <span class="font-semibold">@${u.username}</span>
+         </li>`
+      ).join('')
+
+      this.dropdown.classList.remove('hidden')
+    },
+
+    hideDropdown() {
+      this.dropdown.classList.add('hidden')
+      this.dropdown.innerHTML = ''
+    },
+
+    insertMention(username) {
+      const before = this.textarea.value.slice(0, this.mentionStart)
+      const after = this.textarea.value.slice(this.textarea.selectionStart)
+      const newText = `${before}@${username} ${after}`
+
+      this.textarea.value = newText
+
+      const newCursor = this.mentionStart + username.length + 2
+      this.textarea.setSelectionRange(newCursor, newCursor)
+      this.textarea.focus()
+
+      this.hideDropdown()
+      this.mentionStart = -1
+    }
+  },
   MermaidDiagram: {
     mounted() {
       this.renderDiagram()
