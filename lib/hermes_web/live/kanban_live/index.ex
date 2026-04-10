@@ -27,11 +27,17 @@ defmodule HermesWeb.KanbanLive.Index do
 
   defp calculate_board_stats(board, all_requests) do
     # Filter requests for this specific board (team pair)
+    # For cross-team boards, exclude same-team requests to prevent them from leaking into the wrong board
+    cross_team_board? = board.team_id != board.team_b_id
+
     board_requests =
       all_requests
       |> Enum.filter(fn request ->
         team_ids = [board.team_id, board.team_b_id]
-        request.requesting_team_id in team_ids and request.assigned_to_team_id in team_ids
+
+        request.requesting_team_id in team_ids and
+          request.assigned_to_team_id in team_ids and
+          (not cross_team_board? or request.requesting_team_id != request.assigned_to_team_id)
       end)
 
     # Count by status

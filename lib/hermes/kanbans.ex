@@ -17,6 +17,8 @@ defmodule Hermes.Kanbans do
     requests = Requests.list_requests_by_team(team_id)
 
     # Find all unique team pairs
+    # For same-team requests (requesting_team_id == assigned_to_team_id), the "other" team is the
+    # same team, generating a same-team board for internal tasks
     team_pairs =
       requests
       |> Enum.flat_map(fn request ->
@@ -69,11 +71,15 @@ defmodule Hermes.Kanbans do
       end
 
     # Get all requests between these two teams
+    # For cross-team boards, exclude same-team requests to prevent them from leaking into the wrong board
+    cross_team_board? = team_a_id != team_b_id
+
     requests =
       Requests.list_requests_by_team(current_user_team_id)
       |> Enum.filter(fn request ->
         request.requesting_team_id in [team_a_id, team_b_id] and
-          request.assigned_to_team_id in [team_a_id, team_b_id]
+          request.assigned_to_team_id in [team_a_id, team_b_id] and
+          (not cross_team_board? or request.requesting_team_id != request.assigned_to_team_id)
       end)
 
     # Define columns for all status types
