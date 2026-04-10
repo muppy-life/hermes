@@ -13,8 +13,8 @@ Elixir/Phoenix application. Always use the Makefile for running commands.
 ## Rules
 - Always use zsh when running terminal commands
 - Never run `mix test` directly, use `make test`
-- Never run `iex` directly, use `make shell`
-- Never modify the Makefile
+- Never run `iex` directly; use `make iex` to start an interactive Elixir shell with the Phoenix server, and use `make shell` only to connect to an already running node via remote shell
+- Do not modify the Makefile unless the user explicitly asks for it
 
 ## Makefile Commands
 - `make db` - Start the database

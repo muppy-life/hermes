@@ -32,13 +32,16 @@ test:
 	@echo "Running tests..."
 	mix test $(filter-out $@,$(MAKECMDGOALS))
 
+%:
+	@:
+
 consistency:
 	@echo "Formatting code and running static analysis..."
 	mix format && mix credo --strict
 
 shell:
 	@echo "Starting interactive Elixir shell..."
-	iex --remsh hermes
+	iex --cookie hermes_cookie --remsh hermes
 
 start:
 	@echo "Setting up development environment..."
@@ -46,8 +49,7 @@ start:
 
 start_ia:
 	@echo "Setting up development environment on a free port..."
-	@cd assets && npm install && cd .. && \
-	PORT=$$(python3 -c "import socket; s = socket.socket(); s.bind(('', 0)); print(s.getsockname()[1])") && \
+	@PORT=$${PORT:-$$(elixir -e '{:ok, socket} = :gen_tcp.listen(0, [:binary, {:active, false}, {:reuseaddr, true}]); {:ok, port} = :inet.port(socket); :gen_tcp.close(socket); IO.puts(port)')} && \
 	NODENAME="hermes_ia_$$(date +%s)" && \
 	echo "Using port $$PORT with node $$NODENAME" && \
 	PORT=$$PORT elixir --sname $$NODENAME -S mix phx.server
