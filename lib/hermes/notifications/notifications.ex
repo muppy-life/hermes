@@ -93,4 +93,31 @@ defmodule Hermes.Notifications do
     )
     |> Repo.one()
   end
+
+  @doc """
+  Marks all unread notifications as read for a user.
+  """
+  def mark_all_as_read(user_id) do
+    from(n in Notification,
+      where: n.user_id == ^user_id and is_nil(n.read_at)
+    )
+    |> Repo.update_all(set: [read_at: DateTime.utc_now() |> DateTime.truncate(:second)])
+  end
+
+  @doc """
+  Builds a human-readable display message for a notification at runtime.
+  """
+  def format_message(%Notification{type: "mention", mention_detail: detail})
+      when not is_nil(detail) do
+    author =
+      if detail.mentioned_by_user,
+        do: detail.mentioned_by_user.email |> String.split("@") |> List.first(),
+        else: "Someone"
+
+    request_title = if detail.request, do: detail.request.title, else: "##{detail.request_id}"
+
+    "#{author} mentioned you in a comment on \"#{request_title}\""
+  end
+
+  def format_message(%Notification{type: type}), do: "New #{type} notification"
 end

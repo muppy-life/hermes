@@ -449,7 +449,7 @@
                   {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
                 </span>
               </div>
-              <p class="text-xs whitespace-pre-wrap"><%= render_comment_content(comment.content) %></p>
+              <p class="text-xs whitespace-pre-wrap">{render_comment_content(comment.content)}</p>
             </div>
           <% end %>
         <% end %>
