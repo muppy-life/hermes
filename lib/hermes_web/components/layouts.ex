@@ -31,6 +31,7 @@ defmodule HermesWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :current_user, :map, default: nil, doc: "the current user"
+  attr :unread_notifications_count, :integer, default: 0, doc: "number of unread notifications"
 
   attr :current_scope, :map,
     default: nil,
@@ -94,6 +95,18 @@ defmodule HermesWeb.Layouts do
               <.theme_toggle />
             </li>
             <%= if @current_user do %>
+              <li>
+                <.link href={~p"/notifications"} class="btn btn-ghost relative">
+                  <.icon name="hero-bell" class="size-5" />
+                  <%= if @unread_notifications_count > 0 do %>
+                    <span class="badge badge-primary badge-xs absolute -top-0.5 -right-0.5">
+                      {if @unread_notifications_count > 99,
+                        do: "99+",
+                        else: @unread_notifications_count}
+                    </span>
+                  <% end %>
+                </.link>
+              </li>
               <li>
                 <.link href={~p"/logout"} method="delete" class="btn btn-ghost">
                   <.icon name="hero-arrow-right-on-rectangle" class="size-5" />
