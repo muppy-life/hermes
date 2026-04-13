@@ -253,7 +253,10 @@ defmodule Hermes.Requests do
 
     case result do
       {:ok, comment} ->
-        trigger_comment_notification(comment)
+        mentioned_users = resolve_mentions(comment.content)
+        excluded_ids = Enum.map(mentioned_users, & &1.id)
+        trigger_comment_notification(comment, excluded_ids)
+        trigger_mention_notifications(comment, mentioned_users)
 
         {:ok, comment}
 
@@ -262,14 +265,51 @@ defmodule Hermes.Requests do
     end
   end
 
+  @doc """
+  Parses @username mentions from comment content and returns the matching users.
+  Usernames are the part of the email before the @ sign.
+  """
+  def resolve_mentions(content) when is_binary(content) do
+    usernames =
+      ~r/(?:^|\s)@([\w.+-]+)/
+      |> Regex.scan(content)
+      |> Enum.map(fn [_full, username] -> String.downcase(username) end)
+      |> Enum.uniq()
+
+    if usernames == [] do
+      []
+    else
+      alias Hermes.Accounts.User
+
+      from(u in User,
+        where: fragment("lower(split_part(?, '@', 1))", u.email) in ^usernames
+      )
+      |> Repo.all()
+    end
+  end
+
+  def resolve_mentions(_), do: []
+
+  defp trigger_mention_notifications(_comment, []), do: :ok
+
+  defp trigger_mention_notifications(comment, mentioned_users) do
+    Enum.each(mentioned_users, fn user ->
+      if user.id != comment.user_id do
+        %{comment_id: comment.id, mentioned_user_id: user.id}
+        |> Hermes.Workers.MentionNotificationWorker.new()
+        |> Oban.insert()
+      end
+    end)
+  end
+
   defp trigger_request_created_notification(request) do
     %{request_id: request.id, type: "created"}
     |> Hermes.Workers.RequestNotificationWorker.new()
     |> Oban.insert()
   end
 
-  defp trigger_comment_notification(comment) do
-    %{comment_id: comment.id}
+  defp trigger_comment_notification(comment, exclude_user_ids) do
+    %{comment_id: comment.id, exclude_user_ids: exclude_user_ids}
     |> Hermes.Workers.CommentNotificationWorker.new()
     |> Oban.insert()
   end
