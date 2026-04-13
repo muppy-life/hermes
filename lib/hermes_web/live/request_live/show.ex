@@ -23,18 +23,6 @@ defmodule HermesWeb.RequestLive.Show do
     current_user = socket.assigns[:current_user]
     can_set_deadline = request.assigned_to_team_id == current_user.team_id
 
-    relevant_team_ids =
-      [request.requesting_team_id, request.assigned_to_team_id]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.uniq()
-
-    mentionable_users =
-      Accounts.list_users()
-      |> Enum.filter(fn u -> u.team_id in relevant_team_ids end)
-      |> Enum.map(fn u ->
-        %{id: u.id, username: u.email |> String.split("@") |> List.first()}
-      end)
-
     {:ok,
      socket
      |> NavigationHistory.assign_return_path(default: ~p"/backlog")
@@ -42,6 +30,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:request, request)
      |> assign(:changes, changes)
      |> assign(:comments, comments)
+     |> assign(:comment_content, "")
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:show_deadline_modal, false)
@@ -50,7 +39,6 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:solution_tab, "goal")
      |> assign(:diagram_feature_enabled, Requests.diagram_generation_enabled?())
      |> assign(:teams, Accounts.list_teams())
-     |> assign(:mentionable_users, mentionable_users)
      |> assign(:form, to_form(Requests.change_request(request)))}
   end
 
@@ -186,11 +174,15 @@ defmodule HermesWeb.RequestLive.Show do
         {:noreply,
          socket
          |> assign(:comments, comments)
-         |> push_event("clear_comment_input", %{})}
+         |> assign(:comment_content, "")}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to add comment")}
     end
+  end
+
+  def handle_event("update_comment", %{"content" => content}, socket) do
+    {:noreply, assign(socket, :comment_content, content)}
   end
 
   def handle_event("change_status", %{"status" => new_status}, socket) do
@@ -222,29 +214,6 @@ defmodule HermesWeb.RequestLive.Show do
     updated_request = Requests.get_request!(request_id)
 
     {:noreply, assign(socket, :request, updated_request)}
-  end
-
-  defp render_comment_content(content) do
-    mention_regex = ~r/((?:^|\s)@[\w.+-]+)/
-
-    segments =
-      mention_regex
-      |> Regex.split(content, include_captures: true)
-
-    html =
-      Enum.map_join(segments, fn segment ->
-        case Regex.run(~r/^(\s*)(@[\w.+-]+)$/, segment) do
-          [_, whitespace, mention] ->
-            escaped_ws = Phoenix.HTML.html_escape(whitespace) |> Phoenix.HTML.safe_to_string()
-            escaped_mention = Phoenix.HTML.html_escape(mention) |> Phoenix.HTML.safe_to_string()
-            escaped_ws <> ~s(<span class="text-primary font-semibold">#{escaped_mention}</span>)
-
-          _ ->
-            Phoenix.HTML.html_escape(segment) |> Phoenix.HTML.safe_to_string()
-        end
-      end)
-
-    Phoenix.HTML.raw(html)
   end
 
   defp humanize_field(field) when is_binary(field) do
