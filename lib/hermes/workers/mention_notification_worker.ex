@@ -2,7 +2,7 @@ defmodule Hermes.Workers.MentionNotificationWorker do
   @moduledoc """
   Worker for handling mention notifications when a user is @mentioned in a comment.
 
-  Creates a persistent notification record and sends an email to the mentioned user.
+  Creates a persistent in-app notification record for the mentioned user.
   The commenter is never notified of their own mentions.
 
   ## Usage
@@ -21,7 +21,6 @@ defmodule Hermes.Workers.MentionNotificationWorker do
 
   alias Hermes.Accounts
   alias Hermes.Notifications
-  alias Hermes.Notifications.Email
   alias Hermes.Repo
   alias Hermes.Requests.RequestComment
 
@@ -40,14 +39,10 @@ defmodule Hermes.Workers.MentionNotificationWorker do
 
     mentioned_user = Accounts.get_user!(mentioned_user_id)
 
-    with {:ok, _email_result} <- Email.send_mention_notification(comment, mentioned_user),
-         {:ok, notification} <-
-           Notifications.create_mention_notification(
-             mentioned_user.id,
-             comment,
-             comment.user_id
-           ) do
-      {:ok, notification}
-    end
+    Notifications.create_mention_notification(
+      mentioned_user.id,
+      comment,
+      comment.user_id
+    )
   end
 end
