@@ -43,11 +43,7 @@
     </script>
   </head>
   <body class="m-0 p-0">
-    <.app
-      current_user={assigns[:current_user]}
-      flash={@flash}
-      unread_notifications_count={assigns[:unread_notifications_count] || 0}
-    >
+    <.app current_user={assigns[:current_user]} flash={@flash}>
       {@inner_content}
     </.app>
   </body>

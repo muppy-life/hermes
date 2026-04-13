@@ -6,7 +6,6 @@ defmodule HermesWeb.Plugs.Auth do
   import Phoenix.Controller
 
   alias Hermes.Accounts
-  alias Hermes.Notifications
 
   def on_mount(:mount_current_user, _params, session, socket) do
     {:cont, mount_current_user(socket, session)}
@@ -76,18 +75,9 @@ defmodule HermesWeb.Plugs.Auth do
   end
 
   defp mount_current_user(socket, session) do
-    socket =
-      Phoenix.Component.assign_new(socket, :current_user, fn ->
-        if user_id = session["user_id"] do
-          Accounts.get_user!(user_id)
-        end
-      end)
-
-    Phoenix.Component.assign_new(socket, :unread_notifications_count, fn ->
-      if user = socket.assigns[:current_user] do
-        Notifications.unread_count(user.id)
-      else
-        0
+    Phoenix.Component.assign_new(socket, :current_user, fn ->
+      if user_id = session["user_id"] do
+        Accounts.get_user!(user_id)
       end
     end)
   end
@@ -141,7 +131,6 @@ defmodule HermesWeb.Plugs.Auth do
       HermesWeb.KanbanLive.Board -> "Kanban Board"
       HermesWeb.Admin.DashboardLive.Index -> "Admin Dashboard"
       HermesWeb.Admin.UserLive.Index -> "User Management"
-      HermesWeb.NotificationLive.Index -> "Notifications"
       _ -> "Unknown"
     end
   end

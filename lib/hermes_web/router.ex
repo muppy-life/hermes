@@ -53,8 +53,6 @@ defmodule HermesWeb.Router do
       live "/boards", KanbanLive.Index, :index
       live "/boards/:id", KanbanLive.Board, :show
       live "/boards/:id/metrics", KanbanLive.Metrics, :index
-
-      live "/notifications", NotificationLive.Index, :index
     end
 
     # Admin routes - require admin access
