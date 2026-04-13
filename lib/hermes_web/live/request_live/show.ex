@@ -22,11 +22,17 @@ defmodule HermesWeb.RequestLive.Show do
 
     current_user = socket.assigns[:current_user]
     can_set_deadline = request.assigned_to_team_id == current_user.team_id
-    all_users = Accounts.list_users()
+
+    relevant_team_ids =
+      [request.requesting_team_id, request.assigned_to_team_id]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
 
     mentionable_users =
-      Enum.map(all_users, fn u ->
-        %{id: u.id, username: u.email |> String.split("@") |> List.first(), email: u.email}
+      Accounts.list_users()
+      |> Enum.filter(fn u -> u.team_id in relevant_team_ids end)
+      |> Enum.map(fn u ->
+        %{id: u.id, username: u.email |> String.split("@") |> List.first()}
       end)
 
     {:ok,
@@ -219,17 +225,22 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   defp render_comment_content(content) do
+    mention_regex = ~r/((?:^|\s)@[\w.+-]+)/
+
     segments =
-      ~r/(@[\w.+-]+)/
+      mention_regex
       |> Regex.split(content, include_captures: true)
 
     html =
       Enum.map_join(segments, fn segment ->
-        if String.starts_with?(segment, "@") do
-          escaped = Phoenix.HTML.html_escape(segment) |> Phoenix.HTML.safe_to_string()
-          ~s(<span class="text-primary font-semibold">#{escaped}</span>)
-        else
-          Phoenix.HTML.html_escape(segment) |> Phoenix.HTML.safe_to_string()
+        case Regex.run(~r/^(\s*)(@[\w.+-]+)$/, segment) do
+          [_, whitespace, mention] ->
+            escaped_ws = Phoenix.HTML.html_escape(whitespace) |> Phoenix.HTML.safe_to_string()
+            escaped_mention = Phoenix.HTML.html_escape(mention) |> Phoenix.HTML.safe_to_string()
+            escaped_ws <> ~s(<span class="text-primary font-semibold">#{escaped_mention}</span>)
+
+          _ ->
+            Phoenix.HTML.html_escape(segment) |> Phoenix.HTML.safe_to_string()
         end
       end)
 

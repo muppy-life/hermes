@@ -248,8 +248,7 @@ const Hooks = {
 
     showDropdown(query) {
       const matches = this.users.filter(u =>
-        u.username.toLowerCase().startsWith(query) ||
-        u.email.toLowerCase().startsWith(query)
+        u.username.toLowerCase().startsWith(query)
       ).slice(0, 8)
 
       if (matches.length === 0) {
@@ -257,12 +256,20 @@ const Hooks = {
         return
       }
 
-      this.dropdown.innerHTML = matches.map((u, i) =>
-        `<li data-username="${u.username}"
-             class="px-3 py-1.5 text-xs cursor-pointer hover:bg-base-300 flex items-center gap-2 ${i === 0 ? 'bg-base-300' : ''}">
-           <span class="font-semibold">@${u.username}</span>
-         </li>`
-      ).join('')
+      this.dropdown.innerHTML = ''
+
+      matches.forEach((u, i) => {
+        const item = document.createElement('li')
+        item.dataset.username = u.username
+        item.className = `px-3 py-1.5 text-xs cursor-pointer hover:bg-base-300 flex items-center gap-2 ${i === 0 ? 'bg-base-300' : ''}`
+
+        const usernameSpan = document.createElement('span')
+        usernameSpan.className = 'font-semibold'
+        usernameSpan.textContent = `@${u.username}`
+
+        item.appendChild(usernameSpan)
+        this.dropdown.appendChild(item)
+      })
 
       this.dropdown.classList.remove('hidden')
     },
@@ -273,6 +280,7 @@ const Hooks = {
     },
 
     insertMention(username) {
+      if (this.mentionStart < 0) return
       const before = this.textarea.value.slice(0, this.mentionStart)
       const after = this.textarea.value.slice(this.textarea.selectionStart)
       const newText = `${before}@${username} ${after}`

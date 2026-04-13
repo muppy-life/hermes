@@ -40,13 +40,14 @@ defmodule Hermes.Workers.MentionNotificationWorker do
 
     mentioned_user = Accounts.get_user!(mentioned_user_id)
 
-    {:ok, _notification} =
-      Notifications.create_mention_notification(
-        mentioned_user.id,
-        comment,
-        comment.user_id
-      )
-
-    Email.send_mention_notification(comment, mentioned_user)
+    with {:ok, _email_result} <- Email.send_mention_notification(comment, mentioned_user),
+         {:ok, notification} <-
+           Notifications.create_mention_notification(
+             mentioned_user.id,
+             comment,
+             comment.user_id
+           ) do
+      {:ok, notification}
+    end
   end
 end

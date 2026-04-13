@@ -254,7 +254,8 @@ defmodule Hermes.Requests do
     case result do
       {:ok, comment} ->
         mentioned_users = resolve_mentions(comment.content)
-        trigger_comment_notification(comment)
+        excluded_ids = Enum.map(mentioned_users, & &1.id)
+        trigger_comment_notification(comment, excluded_ids)
         trigger_mention_notifications(comment, mentioned_users)
 
         {:ok, comment}
@@ -270,7 +271,7 @@ defmodule Hermes.Requests do
   """
   def resolve_mentions(content) when is_binary(content) do
     usernames =
-      ~r/@([\w.+-]+)/
+      ~r/(?:^|\s)@([\w.+-]+)/
       |> Regex.scan(content)
       |> Enum.map(fn [_full, username] -> String.downcase(username) end)
       |> Enum.uniq()
@@ -307,8 +308,8 @@ defmodule Hermes.Requests do
     |> Oban.insert()
   end
 
-  defp trigger_comment_notification(comment) do
-    %{comment_id: comment.id}
+  defp trigger_comment_notification(comment, exclude_user_ids) do
+    %{comment_id: comment.id, exclude_user_ids: exclude_user_ids}
     |> Hermes.Workers.CommentNotificationWorker.new()
     |> Oban.insert()
   end
