@@ -76,7 +76,8 @@ defmodule Hermes.Accounts do
     from(t in Team,
       join: u in User,
       on: u.team_id == t.id,
-      where: u.role in ["dev_team", "admin"],
+      where: u.role == "dev_team",
+      order_by: [asc: t.id],
       limit: 1
     )
     |> Repo.one()

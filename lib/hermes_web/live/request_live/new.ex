@@ -121,6 +121,11 @@ defmodule HermesWeb.RequestLive.New do
 
     dev_team = Accounts.get_dev_team()
 
+    if is_nil(dev_team) do
+      require Logger
+      Logger.warning("No dev team found — new request will have no assigned team")
+    end
+
     # Set defaults
     final_params =
       form_data
