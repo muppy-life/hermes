@@ -16,15 +16,17 @@ defmodule Hermes.Workers.OrphanImageCleanupWorker do
 
   @impl Oban.Worker
   def perform(_job) do
-    unless local_adapter?(), do: :ok
+    if local_adapter?() do
+      case File.ls(@uploads_dir) do
+        {:error, :enoent} ->
+          :ok
 
-    case File.ls(@uploads_dir) do
-      {:error, :enoent} ->
-        :ok
-
-      {:ok, request_dirs} ->
-        Enum.each(request_dirs, &cleanup_request_dir/1)
-        :ok
+        {:ok, request_dirs} ->
+          Enum.each(request_dirs, &cleanup_request_dir/1)
+          :ok
+      end
+    else
+      :ok
     end
   end
 

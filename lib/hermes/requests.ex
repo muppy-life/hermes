@@ -4,6 +4,9 @@ defmodule Hermes.Requests do
   """
 
   import Ecto.Query, warn: false
+
+  require Logger
+
   alias Hermes.Repo
   alias Hermes.Requests.DraftStore
   alias Hermes.Requests.Request
@@ -189,7 +192,17 @@ defmodule Hermes.Requests do
 
   def delete_request(%Request{} = request) do
     images = list_request_images(request.id)
-    Enum.each(images, fn image -> Storage.delete(image.key) end)
+
+    Enum.each(images, fn image ->
+      case Storage.delete(image.key) do
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("Failed to delete image #{image.key}: #{inspect(reason)}")
+      end
+    end)
+
     Repo.delete(request)
   end
 

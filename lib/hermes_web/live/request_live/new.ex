@@ -143,13 +143,27 @@ defmodule HermesWeb.RequestLive.New do
 
     case Requests.create_request(final_params, current_user.id) do
       {:ok, request} ->
-        consume_uploaded_entries(socket, :images, fn %{path: path}, entry ->
-          Requests.upload_request_image(request.id, %{
-            path: path,
-            client_name: entry.client_name,
-            content_type: entry.client_type
-          })
-        end)
+        upload_results =
+          consume_uploaded_entries(socket, :images, fn %{path: path}, entry ->
+            Requests.upload_request_image(request.id, %{
+              path: path,
+              client_name: entry.client_name,
+              content_type: entry.client_type
+            })
+          end)
+
+        errors = Enum.filter(upload_results, &match?({:error, _}, &1))
+
+        socket =
+          if errors != [] do
+            put_flash(
+              socket,
+              :error,
+              gettext("Request created, but some images failed to upload")
+            )
+          else
+            socket
+          end
 
         clear_draft(current_user.id)
 

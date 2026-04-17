@@ -103,3 +103,11 @@ config :hermes, :features,
 
 # Use local filesystem instead of S3 in dev
 config :hermes, :storage_adapter, Hermes.Storage.Local
+
+config :hermes, Oban,
+  plugins: [
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 3 * * *", Hermes.Workers.OrphanImageCleanupWorker}
+     ]}
+  ]

@@ -15,13 +15,7 @@ config :hermes,
 config :hermes, Oban,
   engine: Oban.Engines.Basic,
   queues: [default: 10, events: 50, media: 20],
-  repo: Hermes.Repo,
-  plugins: [
-    {Oban.Plugins.Cron,
-     crontab: [
-       {"0 3 * * *", Hermes.Workers.OrphanImageCleanupWorker}
-     ]}
-  ]
+  repo: Hermes.Repo
 
 # Configures the endpoint
 config :hermes, HermesWeb.Endpoint,
