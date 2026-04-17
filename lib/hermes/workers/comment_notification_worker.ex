@@ -2,9 +2,8 @@ defmodule Hermes.Workers.CommentNotificationWorker do
   @moduledoc """
   Worker for sending email notifications when a comment is added to a request.
 
-  Notifies all involved parties: members of the requesting team, members of
-  the assigned team, and the request creator. The comment author is excluded
-  from notifications to avoid self-notification.
+  Only notifies users explicitly mentioned via @handle in the comment content.
+  The comment author is excluded from notifications to avoid self-notification.
 
   ## Usage
 
@@ -20,13 +19,13 @@ defmodule Hermes.Workers.CommentNotificationWorker do
 
   require Logger
 
-  alias Hermes.Accounts
   alias Hermes.Notifications.Email
   alias Hermes.Repo
+  alias Hermes.Requests
   alias Hermes.Requests.RequestComment
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"comment_id" => comment_id} = args}) do
+  def perform(%Oban.Job{args: %{"comment_id" => comment_id}}) do
     Logger.info("Processing comment notification for comment #{comment_id}")
 
     comment =
@@ -34,27 +33,14 @@ defmodule Hermes.Workers.CommentNotificationWorker do
       |> Repo.get!(comment_id)
       |> Repo.preload([:user, request: [:requesting_team, :assigned_to_team, :created_by]])
 
-    exclude_user_ids = Map.get(args, "exclude_user_ids", [])
-    recipients = build_recipients(comment.request, comment.user_id, exclude_user_ids)
+    recipients = build_recipients(comment.content, comment.user_id)
 
     Email.send_comment_notification(comment, recipients)
   end
 
-  defp build_recipients(request, commenter_user_id, exclude_user_ids) do
-    requesting_team_users =
-      if request.requesting_team_id,
-        do: Accounts.list_users_by_team(request.requesting_team_id),
-        else: []
-
-    assigned_team_users =
-      if request.assigned_to_team_id,
-        do: Accounts.list_users_by_team(request.assigned_to_team_id),
-        else: []
-
-    creator = if request.created_by, do: [request.created_by], else: []
-
-    (requesting_team_users ++ assigned_team_users ++ creator)
+  defp build_recipients(content, commenter_user_id) do
+    Requests.resolve_mentions(content)
     |> Enum.uniq_by(& &1.id)
-    |> Enum.reject(&(&1.id == commenter_user_id || &1.id in exclude_user_ids))
+    |> Enum.reject(&(&1.id == commenter_user_id))
   end
 end
