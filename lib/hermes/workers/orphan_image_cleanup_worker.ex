@@ -38,19 +38,17 @@ defmodule Hermes.Workers.OrphanImageCleanupWorker do
         :ok
 
       {:ok, filenames} ->
-        Enum.each(filenames, fn filename ->
-          key = "requests/#{request_id_str}/#{filename}"
-
-          unless Hermes.Repo.exists?(
-                   from(i in Hermes.Requests.RequestImage, where: i.key == ^key)
-                 ) do
-            Logger.info("Removing orphan image file: #{key}")
-            File.rm(Path.join(dir, filename))
-          end
-        end)
-
-        # Remove empty dir
+        Enum.each(filenames, &maybe_delete_orphan(dir, request_id_str, &1))
         File.rmdir(dir)
+    end
+  end
+
+  defp maybe_delete_orphan(dir, request_id_str, filename) do
+    key = "requests/#{request_id_str}/#{filename}"
+
+    unless Hermes.Repo.exists?(from(i in Hermes.Requests.RequestImage, where: i.key == ^key)) do
+      Logger.info("Removing orphan image file: #{key}")
+      File.rm(Path.join(dir, filename))
     end
   end
 
