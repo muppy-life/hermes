@@ -26,7 +26,7 @@ defmodule Hermes.Workers.CommentNotificationWorker do
   alias Hermes.Requests.RequestComment
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"comment_id" => comment_id}}) do
+  def perform(%Oban.Job{args: %{"comment_id" => comment_id} = args}) do
     Logger.info("Processing comment notification for comment #{comment_id}")
 
     comment =
@@ -34,12 +34,13 @@ defmodule Hermes.Workers.CommentNotificationWorker do
       |> Repo.get!(comment_id)
       |> Repo.preload([:user, request: [:requesting_team, :assigned_to_team, :created_by]])
 
-    recipients = build_recipients(comment.request, comment.user_id)
+    exclude_user_ids = Map.get(args, "exclude_user_ids", [])
+    recipients = build_recipients(comment.request, comment.user_id, exclude_user_ids)
 
     Email.send_comment_notification(comment, recipients)
   end
 
-  defp build_recipients(request, commenter_user_id) do
+  defp build_recipients(request, commenter_user_id, exclude_user_ids) do
     requesting_team_users =
       if request.requesting_team_id,
         do: Accounts.list_users_by_team(request.requesting_team_id),
@@ -54,6 +55,6 @@ defmodule Hermes.Workers.CommentNotificationWorker do
 
     (requesting_team_users ++ assigned_team_users ++ creator)
     |> Enum.uniq_by(& &1.id)
-    |> Enum.reject(&(&1.id == commenter_user_id))
+    |> Enum.reject(&(&1.id == commenter_user_id || &1.id in exclude_user_ids))
   end
 end
