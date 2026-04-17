@@ -4,8 +4,8 @@ defmodule HermesWeb.RequestLive.New do
   alias Hermes.Accounts
   alias Hermes.Requests
 
-  # Auto-save interval in milliseconds (5 seconds)
   @auto_save_interval 5_000
+  @max_image_size 14 * 1_024 * 1_024
 
   @impl true
   def mount(_params, _session, socket) do
@@ -23,12 +23,18 @@ defmodule HermesWeb.RequestLive.New do
       |> assign(:return_to, ~p"/backlog")
       |> assign(:form, to_form(form_data, as: :request))
 
-    # Schedule periodic auto-save only on connected mount
     if connected?(socket) do
       schedule_auto_save()
     end
 
-    {:ok, socket}
+    {:ok,
+     socket
+     |> allow_upload(:images,
+       accept: ~w(.jpg .jpeg .png),
+       max_entries: 10,
+       max_file_size: @max_image_size,
+       auto_upload: true
+     )}
   end
 
   @impl true
@@ -115,11 +121,18 @@ defmodule HermesWeb.RequestLive.New do
      |> assign(:form, to_form(socket.assigns.form_data, as: :request))}
   end
 
+  def handle_event("validate_images", _params, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :images, ref)}
+  end
+
   def handle_event("save", %{"request" => request_params}, socket) do
     current_user = socket.assigns[:current_user]
     form_data = Map.merge(socket.assigns.form_data, request_params)
 
-    # Set defaults
     final_params =
       form_data
       |> Map.put("created_by_id", current_user.id)
@@ -129,8 +142,15 @@ defmodule HermesWeb.RequestLive.New do
       |> Map.put("description", form_data["current_situation"] || "")
 
     case Requests.create_request(final_params, current_user.id) do
-      {:ok, _request} ->
-        # Clear draft after successful creation
+      {:ok, request} ->
+        consume_uploaded_entries(socket, :images, fn %{path: path}, entry ->
+          Requests.upload_request_image(request.id, %{
+            path: path,
+            client_name: entry.client_name,
+            content_type: entry.client_type
+          })
+        end)
+
         clear_draft(current_user.id)
 
         {:noreply,
@@ -150,4 +170,9 @@ defmodule HermesWeb.RequestLive.New do
     situation = form_data["current_situation"] || "Untitled"
     String.slice(situation, 0..50)
   end
+
+  defp upload_error_to_string(:too_large), do: gettext("File exceeds 14 MB limit")
+  defp upload_error_to_string(:not_accepted), do: gettext("Only JPG and PNG files are allowed")
+  defp upload_error_to_string(:too_many_files), do: gettext("Too many files selected")
+  defp upload_error_to_string(_), do: gettext("Upload failed")
 end

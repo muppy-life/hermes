@@ -15,7 +15,13 @@ config :hermes,
 config :hermes, Oban,
   engine: Oban.Engines.Basic,
   queues: [default: 10, events: 50, media: 20],
-  repo: Hermes.Repo
+  repo: Hermes.Repo,
+  plugins: [
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 3 * * *", Hermes.Workers.OrphanImageCleanupWorker}
+     ]}
+  ]
 
 # Configures the endpoint
 config :hermes, HermesWeb.Endpoint,
@@ -78,6 +84,11 @@ config :nx, :default_backend, Nx.BinaryBackend
 # Configure Claude API
 # API key will be loaded from environment variable in runtime.exs
 config :hermes, :anthropic_api_key, nil
+
+# Configure S3 image uploads
+config :ex_aws,
+  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
+  secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
