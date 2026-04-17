@@ -254,8 +254,7 @@ defmodule Hermes.Requests do
     case result do
       {:ok, comment} ->
         mentioned_users = resolve_mentions(comment.content)
-        excluded_ids = Enum.map(mentioned_users, & &1.id)
-        trigger_comment_notification(comment, excluded_ids)
+        trigger_comment_notification(comment)
         trigger_mention_notifications(comment, mentioned_users)
 
         {:ok, comment}
@@ -308,8 +307,8 @@ defmodule Hermes.Requests do
     |> Oban.insert()
   end
 
-  defp trigger_comment_notification(comment, exclude_user_ids) do
-    %{comment_id: comment.id, exclude_user_ids: exclude_user_ids}
+  defp trigger_comment_notification(comment) do
+    %{comment_id: comment.id}
     |> Hermes.Workers.CommentNotificationWorker.new()
     |> Oban.insert()
   end
