@@ -1,0 +1,51 @@
+<div class="py-6 max-w-2xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-lg font-bold">{gettext("Notifications")}</h1>
+  </div>
+
+  <%= if Enum.empty?(@notifications) do %>
+    <div class="flex flex-col items-center justify-center py-16 text-base-content/50">
+      <.icon name="hero-bell-slash" class="size-10 mb-3" />
+      <p class="text-sm">{gettext("No notifications yet.")}</p>
+    </div>
+  <% else %>
+    <ul class="space-y-2">
+      <%= for notification <- @notifications do %>
+        <li class={[
+          "p-4 rounded-lg border flex items-start gap-3 transition-colors",
+          if(is_nil(notification.read_at),
+            do: "bg-base-200 border-primary/30",
+            else: "bg-base-100 border-base-300"
+          )
+        ]}>
+          <div class="mt-0.5 flex-shrink-0">
+            <%= if notification.type == "mention" do %>
+              <.icon name="hero-at-symbol" class="size-4 text-primary" />
+            <% else %>
+              <.icon name="hero-bell" class="size-4 text-base-content/50" />
+            <% end %>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm">{Notifications.format_message(notification)}</p>
+            <p class="text-[11px] text-base-content/50 mt-1">
+              {Calendar.strftime(notification.inserted_at, "%b %d, %Y · %H:%M")}
+            </p>
+            <%= if notification.type == "mention" and notification.mention_detail do %>
+              <.link
+                href={~p"/backlog/#{notification.mention_detail.request_id}"}
+                class="text-xs text-primary hover:underline mt-1 inline-block"
+              >
+                {gettext("View request")} →
+              </.link>
+            <% end %>
+          </div>
+          <%= if is_nil(notification.read_at) do %>
+            <div class="flex-shrink-0">
+              <span class="badge badge-primary badge-xs">{gettext("New")}</span>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

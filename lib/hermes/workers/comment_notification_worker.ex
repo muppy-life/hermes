@@ -25,7 +25,7 @@ defmodule Hermes.Workers.CommentNotificationWorker do
   alias Hermes.Requests.RequestComment
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"comment_id" => comment_id}}) do
+  def perform(%Oban.Job{args: %{"comment_id" => comment_id} = args}) do
     Logger.info("Processing comment notification for comment #{comment_id}")
 
     comment =
@@ -33,17 +33,18 @@ defmodule Hermes.Workers.CommentNotificationWorker do
       |> Repo.get!(comment_id)
       |> Repo.preload([:user, request: [:requesting_team, :assigned_to_team, :created_by]])
 
-    recipients = build_recipients(comment.content, comment.user_id)
+    exclude_user_ids = Map.get(args, "exclude_user_ids", [])
+    recipients = build_recipients(comment.content, comment.user_id, exclude_user_ids)
 
     Email.send_comment_notification(comment, recipients)
   end
 
-  defp build_recipients(content, commenter_user_id) do
+  defp build_recipients(content, commenter_user_id, exclude_user_ids) do
     mentioned_prefixes = extract_mention_prefixes(content)
 
     Accounts.list_users_by_email_prefixes(mentioned_prefixes)
     |> Enum.uniq_by(& &1.id)
-    |> Enum.reject(&(&1.id == commenter_user_id))
+    |> Enum.reject(&(&1.id == commenter_user_id || &1.id in exclude_user_ids))
   end
 
   defp extract_mention_prefixes(content) do

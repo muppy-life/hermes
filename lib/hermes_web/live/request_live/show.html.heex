@@ -449,7 +449,7 @@
                   {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
                 </span>
               </div>
-              <p class="text-xs whitespace-pre-wrap">{comment.content}</p>
+              <p class="text-xs whitespace-pre-wrap">{render_comment_content(comment.content)}</p>
             </div>
           <% end %>
         <% end %>
@@ -457,14 +457,26 @@
       
 <!-- Comment Input -->
       <form phx-submit="add_comment" class="flex-shrink-0">
-        <textarea
-          name="content"
-          rows="2"
-          class="textarea textarea-bordered textarea-sm w-full text-xs"
-          placeholder={gettext("Add a comment...")}
-          phx-change="update_comment"
-          value={@comment_content}
-        ><%= @comment_content %></textarea>
+        <div
+          id="mention-input-wrapper"
+          class="relative"
+          phx-hook="MentionInput"
+          data-users={Jason.encode!(@mentionable_users)}
+        >
+          <textarea
+            id="comment-textarea"
+            name="content"
+            rows="2"
+            class="textarea textarea-bordered textarea-sm w-full text-xs"
+            placeholder={gettext("Add a comment... (type @ to mention someone)")}
+            phx-update="ignore"
+          ></textarea>
+          <ul
+            id="mention-dropdown"
+            class="hidden absolute bottom-full left-0 mb-1 w-56 bg-base-100 border border-base-300 rounded shadow-lg z-50 max-h-40 overflow-y-auto"
+          >
+          </ul>
+        </div>
         <button type="submit" class="btn btn-primary btn-sm w-full mt-2">
           {gettext("Send")}
         </button>
