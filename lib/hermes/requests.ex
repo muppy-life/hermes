@@ -4,11 +4,16 @@ defmodule Hermes.Requests do
   """
 
   import Ecto.Query, warn: false
+
+  require Logger
+
   alias Hermes.Repo
   alias Hermes.Requests.DraftStore
   alias Hermes.Requests.Request
   alias Hermes.Requests.RequestChange
   alias Hermes.Requests.RequestComment
+  alias Hermes.Requests.RequestImage
+  alias Hermes.Storage
 
   def list_requests do
     Request
@@ -121,8 +126,7 @@ defmodule Hermes.Requests do
       request.current_situation,
       request.expected_output
     ]
-    |> Enum.reject(&is_nil/1)
-    |> Enum.reject(&(&1 == ""))
+    |> Enum.reject(&(is_nil(&1) or &1 == ""))
     |> Enum.join(" ")
   end
 
@@ -186,6 +190,18 @@ defmodule Hermes.Requests do
   end
 
   def delete_request(%Request{} = request) do
+    images = list_request_images(request.id)
+
+    Enum.each(images, fn image ->
+      case Storage.delete(image.key) do
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("Failed to delete image #{image.key}: #{inspect(reason)}")
+      end
+    end)
+
     Repo.delete(request)
   end
 
@@ -340,4 +356,42 @@ defmodule Hermes.Requests do
   def delete_draft(user_id) do
     DraftStore.delete(user_id)
   end
+
+  # Image functions
+
+  def list_request_images(request_id) do
+    from(i in RequestImage, where: i.request_id == ^request_id, order_by: [asc: i.inserted_at])
+    |> Repo.all()
+  end
+
+  def upload_request_image(request_id, %{
+        path: path,
+        client_name: filename,
+        content_type: content_type
+      }) do
+    binary = File.read!(path)
+    size = byte_size(binary)
+    key = "requests/#{request_id}/#{Ecto.UUID.generate()}-#{filename}"
+
+    with {:ok, _} <- Storage.upload(key, binary, content_type) do
+      %RequestImage{}
+      |> RequestImage.changeset(%{
+        request_id: request_id,
+        key: key,
+        filename: filename,
+        content_type: content_type,
+        size: size
+      })
+      |> Repo.insert()
+    end
+  end
+
+  def delete_request_image(%RequestImage{} = image) do
+    with {:ok, _} <- Storage.delete(image.key),
+         {:ok, _} <- Repo.delete(image) do
+      :ok
+    end
+  end
+
+  def image_url(%RequestImage{key: key}), do: Storage.public_url(key)
 end

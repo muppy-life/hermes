@@ -5,11 +5,14 @@ defmodule HermesWeb.RequestLive.Show do
   alias Hermes.Requests
   alias HermesWeb.NavigationHistory
 
+  @max_image_size 14 * 1_024 * 1_024
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     request = Requests.get_request!(id)
     changes = Requests.list_request_changes(id)
     comments = Requests.list_request_comments(id)
+    images = Requests.list_request_images(id)
 
     # Subscribe to updates for this request
     Phoenix.PubSub.subscribe(Hermes.PubSub, "request:#{id}")
@@ -42,6 +45,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:request, request)
      |> assign(:changes, changes)
      |> assign(:comments, comments)
+     |> assign(:images, images)
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:show_deadline_modal, false)
@@ -51,7 +55,13 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:diagram_feature_enabled, Requests.diagram_generation_enabled?())
      |> assign(:teams, Accounts.list_teams())
      |> assign(:mentionable_users, mentionable_users)
-     |> assign(:form, to_form(Requests.change_request(request)))}
+     |> assign(:form, to_form(Requests.change_request(request)))
+     |> allow_upload(:images,
+       accept: ~w(.jpg .jpeg .png),
+       max_entries: 10,
+       max_file_size: @max_image_size,
+       auto_upload: true
+     )}
   end
 
   @impl true
@@ -80,6 +90,8 @@ defmodule HermesWeb.RequestLive.Show do
     changeset = Requests.change_request(socket.assigns.request, request_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
+
+  def handle_event("validate", _params, socket), do: {:noreply, socket}
 
   def handle_event("save", %{"request" => request_params}, socket) do
     current_user = socket.assigns[:current_user]
@@ -216,6 +228,60 @@ defmodule HermesWeb.RequestLive.Show do
     end
   end
 
+  def handle_event("validate_images", _params, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :images, ref)}
+  end
+
+  def handle_event("upload_images", _params, socket) do
+    request_id = socket.assigns.request.id
+
+    upload_results =
+      consume_uploaded_entries(socket, :images, fn %{path: path}, entry ->
+        case Requests.upload_request_image(request_id, %{
+               path: path,
+               client_name: entry.client_name,
+               content_type: entry.client_type
+             }) do
+          {:ok, image} -> {:ok, image}
+          {:error, _} = err -> err
+        end
+      end)
+
+    errors = Enum.filter(upload_results, &match?({:error, _}, &1))
+
+    socket =
+      if errors == [] do
+        images = Requests.list_request_images(request_id)
+        socket |> assign(:images, images) |> put_flash(:info, gettext("Images uploaded"))
+      else
+        put_flash(socket, :error, gettext("Some images failed to upload"))
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("delete_image", %{"id" => image_id}, socket) do
+    request_id = socket.assigns.request.id
+    image = Enum.find(socket.assigns.images, &(to_string(&1.id) == image_id))
+
+    if image do
+      case Requests.delete_request_image(image) do
+        :ok ->
+          images = Requests.list_request_images(request_id)
+          {:noreply, assign(socket, :images, images)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete image"))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_info({:diagram_generated, request_id}, socket) do
     # Reload the request to get the updated diagram
@@ -246,6 +312,11 @@ defmodule HermesWeb.RequestLive.Show do
 
     Phoenix.HTML.raw(html)
   end
+
+  defp upload_error_to_string(:too_large), do: gettext("File exceeds 14 MB limit")
+  defp upload_error_to_string(:not_accepted), do: gettext("Only JPG and PNG files are allowed")
+  defp upload_error_to_string(:too_many_files), do: gettext("Too many files selected")
+  defp upload_error_to_string(_), do: gettext("Upload failed")
 
   defp humanize_field(field) when is_binary(field) do
     field

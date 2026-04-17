@@ -95,6 +95,8 @@ jobs:
             -var="certificate_arn=${{ secrets.ACM_CERTIFICATE_ARN }}" \
             -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
             -var="phx_host=${{ secrets.PHX_HOST }}" \
+            -var="aws_s3_bucket=${{ secrets.AWS_S3_BUCKET }}" \
+            -var="aws_s3_host=${{ secrets.AWS_S3_HOST }}" \
             -out=tfplan
 
       - name: Terraform Apply
@@ -217,8 +219,13 @@ jobs:
         env:
           IMAGE: ${{ needs.build-and-push.outputs.image }}
           INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.instance_ids }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_S3_HOST: ${{ secrets.AWS_S3_HOST }}
         run: |
-          # Get first instance to run migrations
           INSTANCE_ID=$(echo "$INSTANCE_IDS" | jq -r '.[0]')
 
           echo "Running migrations on $INSTANCE_ID..."
@@ -227,7 +234,12 @@ jobs:
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --parameters commands="[
-              \"set -e && aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }} && docker pull ${{ needs.build-and-push.outputs.image }} && printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nSENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}\\nPOOL_SIZE=2\\n' > /tmp/migrate.env && docker run --rm --env-file /tmp/migrate.env ${{ needs.build-and-push.outputs.image }} /app/bin/hermes eval 'Hermes.Release.migrate()'; rm -f /tmp/migrate.env\"
+              \"set -e\",
+              \"aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $ECR_REGISTRY\",
+              \"docker pull $IMAGE\",
+              \"printf 'DATABASE_URL=$DATABASE_URL\\nSECRET_KEY_BASE=$SECRET_KEY_BASE\\nSENDGRID_API_KEY=$SENDGRID_API_KEY\\nAWS_S3_BUCKET=$AWS_S3_BUCKET\\nAWS_S3_HOST=$AWS_S3_HOST\\nAWS_REGION=${{ env.AWS_REGION }}\\nPOOL_SIZE=2\\n' > /tmp/migrate.env\",
+              \"docker run --rm --env-file /tmp/migrate.env $IMAGE /app/bin/hermes eval 'Hermes.Release.migrate()'\",
+              \"rm -f /tmp/migrate.env\"
             ]" \
             --query 'Command.CommandId' \
             --output text)
@@ -288,6 +300,14 @@ jobs:
           INSTANCE_IDS: ${{ needs.deploy-infrastructure.outputs.instance_ids }}
           TARGET_GROUP_ARN: ${{ needs.deploy-infrastructure.outputs.target_group_arn }}
           ASSETS_URL: ${{ needs.deploy-infrastructure.outputs.assets_url }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          PHX_HOST: ${{ secrets.PHX_HOST }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_S3_HOST: ${{ secrets.AWS_S3_HOST }}
         run: |
           echo "Starting rolling deployment..."
 
@@ -325,12 +345,12 @@ jobs:
               --instance-ids "$INSTANCE_ID" \
               --document-name "AWS-RunShellScript" \
               --parameters commands="[
-                \"aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}\",
-                \"docker pull ${{ needs.build-and-push.outputs.image }}\",
+                \"aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $ECR_REGISTRY\",
+                \"docker pull $IMAGE\",
                 \"docker stop hermes || true\",
                 \"docker rm hermes || true\",
-                \"printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}\\nSENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}\\nPHX_HOST=${{ secrets.PHX_HOST }}\\nSTATIC_URL=${{ needs.deploy-infrastructure.outputs.assets_url }}\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\nPOOL_SIZE=5\\n' > /opt/hermes/.env\",
-                \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env ${{ needs.build-and-push.outputs.image }}\",
+                \"printf 'DATABASE_URL=$DATABASE_URL\\nSECRET_KEY_BASE=$SECRET_KEY_BASE\\nANTHROPIC_API_KEY=$ANTHROPIC_API_KEY\\nSENDGRID_API_KEY=$SENDGRID_API_KEY\\nPHX_HOST=$PHX_HOST\\nSTATIC_URL=$ASSETS_URL\\nAWS_S3_BUCKET=$AWS_S3_BUCKET\\nAWS_S3_HOST=$AWS_S3_HOST\\nAWS_REGION=${{ env.AWS_REGION }}\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\nPOOL_SIZE=5\\n' > /opt/hermes/.env\",
+                \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env $IMAGE\",
                 \"sleep 15\",
                 \"docker logs hermes 2>&1 | tail -50 || true\",
                 \"curl -f http://localhost:4000/health || (docker logs hermes 2>&1 | tail -100 && exit 1)\"
