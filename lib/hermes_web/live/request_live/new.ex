@@ -119,11 +119,14 @@ defmodule HermesWeb.RequestLive.New do
     current_user = socket.assigns[:current_user]
     form_data = Map.merge(socket.assigns.form_data, request_params)
 
+    dev_team = Accounts.get_dev_team()
+
     # Set defaults
     final_params =
       form_data
       |> Map.put("created_by_id", current_user.id)
       |> Map.put("requesting_team_id", current_user.team_id)
+      |> Map.put("assigned_to_team_id", dev_team && dev_team.id)
       |> Map.put("status", "pending")
       |> Map.put("title", generate_title(form_data))
       |> Map.put("description", form_data["current_situation"] || "")
