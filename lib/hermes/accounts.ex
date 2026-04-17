@@ -72,6 +72,15 @@ defmodule Hermes.Accounts do
     |> Repo.all()
   end
 
+  def list_users_by_email_prefixes(prefixes) when is_list(prefixes) do
+    normalized = Enum.map(prefixes, &String.downcase/1)
+
+    from(u in User,
+      where: fragment("split_part(lower(?), '@', 1)", u.email) in ^normalized
+    )
+    |> Repo.all()
+  end
+
   def list_recently_active_users(days \\ 7) do
     cutoff = DateTime.utc_now() |> DateTime.add(-days * 24 * 60 * 60, :second)
 

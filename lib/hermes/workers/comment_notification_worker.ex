@@ -2,9 +2,8 @@ defmodule Hermes.Workers.CommentNotificationWorker do
   @moduledoc """
   Worker for sending email notifications when a comment is added to a request.
 
-  Notifies all involved parties: members of the requesting team, members of
-  the assigned team, and the request creator. The comment author is excluded
-  from notifications to avoid self-notification.
+  Only notifies users explicitly mentioned via @handle in the comment content.
+  The comment author is excluded from notifications to avoid self-notification.
 
   ## Usage
 
@@ -34,26 +33,23 @@ defmodule Hermes.Workers.CommentNotificationWorker do
       |> Repo.get!(comment_id)
       |> Repo.preload([:user, request: [:requesting_team, :assigned_to_team, :created_by]])
 
-    recipients = build_recipients(comment.request, comment.user_id)
+    recipients = build_recipients(comment.content, comment.user_id)
 
     Email.send_comment_notification(comment, recipients)
   end
 
-  defp build_recipients(request, commenter_user_id) do
-    requesting_team_users =
-      if request.requesting_team_id,
-        do: Accounts.list_users_by_team(request.requesting_team_id),
-        else: []
+  defp build_recipients(content, commenter_user_id) do
+    mentioned_prefixes = extract_mention_prefixes(content)
 
-    assigned_team_users =
-      if request.assigned_to_team_id,
-        do: Accounts.list_users_by_team(request.assigned_to_team_id),
-        else: []
-
-    creator = if request.created_by, do: [request.created_by], else: []
-
-    (requesting_team_users ++ assigned_team_users ++ creator)
+    Accounts.list_users_by_email_prefixes(mentioned_prefixes)
     |> Enum.uniq_by(& &1.id)
     |> Enum.reject(&(&1.id == commenter_user_id))
+  end
+
+  defp extract_mention_prefixes(content) do
+    ~r/@([\w.-]+)/
+    |> Regex.scan(content)
+    |> Enum.map(fn [_full, handle] -> String.downcase(handle) end)
+    |> Enum.uniq()
   end
 end
