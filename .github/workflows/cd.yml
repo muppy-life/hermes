@@ -227,7 +227,7 @@ jobs:
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --parameters commands="[
-              \"set -e && aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }} && docker pull ${{ needs.build-and-push.outputs.image }} && printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nPOOL_SIZE=2\\n' > /tmp/migrate.env && docker run --rm --env-file /tmp/migrate.env ${{ needs.build-and-push.outputs.image }} /app/bin/hermes eval 'Hermes.Release.migrate()'; rm -f /tmp/migrate.env\"
+              \"set -e && aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }} && docker pull ${{ needs.build-and-push.outputs.image }} && printf 'DATABASE_URL=${{ secrets.DATABASE_URL }}\\nSECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}\\nSENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}\\nPOOL_SIZE=2\\n' > /tmp/migrate.env && docker run --rm --env-file /tmp/migrate.env ${{ needs.build-and-push.outputs.image }} /app/bin/hermes eval 'Hermes.Release.migrate()'; rm -f /tmp/migrate.env\"
             ]" \
             --query 'Command.CommandId' \
             --output text)
