@@ -207,7 +207,7 @@ const Hooks = {
       const text = this.textarea.value
       const cursor = this.textarea.selectionStart
       const textBeforeCursor = text.slice(0, cursor)
-      const match = textBeforeCursor.match(/(^|[\s\n])@([\w.]*)$/)
+      const match = textBeforeCursor.match(/(^|[\s\n])@([\w.+-]*)$/)
 
       if (match) {
         this.mentionStart = textBeforeCursor.lastIndexOf('@')
