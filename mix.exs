@@ -69,6 +69,9 @@ defmodule Hermes.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
+      {:ex_aws, "~> 2.5"},
+      {:ex_aws_s3, "~> 2.5"},
+      {:hackney, "~> 1.20"},
 
       # Code quality and security tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

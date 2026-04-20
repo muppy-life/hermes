@@ -142,4 +142,15 @@ if config_env() == :prod do
     api_key:
       System.get_env("SENDGRID_API_KEY") ||
         raise("environment variable SENDGRID_API_KEY is missing.")
+
+  config :hermes, :s3,
+    bucket:
+      System.get_env("AWS_S3_BUCKET") ||
+        raise("environment variable AWS_S3_BUCKET is missing."),
+    host:
+      System.get_env("AWS_S3_HOST") ||
+        raise("environment variable AWS_S3_HOST is missing."),
+    region:
+      System.get_env("AWS_REGION") ||
+        raise("environment variable AWS_REGION is missing.")
 end

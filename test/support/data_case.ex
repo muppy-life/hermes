@@ -29,6 +29,7 @@ defmodule Hermes.DataCase do
 
   setup tags do
     Hermes.DataCase.setup_sandbox(tags)
+    Hermes.Storage.Stub.reset()
     :ok
   end
 

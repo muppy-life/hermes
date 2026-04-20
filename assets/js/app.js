@@ -28,6 +28,15 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 const Hooks = {
+  ScrollToTop: {
+    mounted() { this.step = this.el.dataset.step },
+    updated() {
+      if (this.el.dataset.step !== this.step) {
+        this.step = this.el.dataset.step
+        window.scrollTo(0, 0)
+      }
+    }
+  },
   ScrollIndicator: {
     mounted() {
       this.updateIndicators = () => {

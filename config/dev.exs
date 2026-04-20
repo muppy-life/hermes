@@ -100,3 +100,14 @@ config :hermes, :anthropic_api_key, System.get_env("ANTHROPIC_API_KEY")
 config :hermes, :features,
   # Set to true to enable AI-generated solution diagrams
   solution_diagram_generation: false
+
+# Use local filesystem instead of S3 in dev
+config :hermes, :storage_adapter, Hermes.Storage.Local
+
+config :hermes, Oban,
+  plugins: [
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 3 * * *", Hermes.Workers.OrphanImageCleanupWorker}
+     ]}
+  ]

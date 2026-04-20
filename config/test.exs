@@ -40,6 +40,9 @@ config :phoenix, :plug_init_mode, :runtime
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
 
+# Use stub storage adapter in tests — no S3 calls, no filesystem I/O
+config :hermes, :storage_adapter, Hermes.Storage.Stub
+
 # Feature flags
 config :hermes, :features,
   # Disabled in tests to avoid API calls
