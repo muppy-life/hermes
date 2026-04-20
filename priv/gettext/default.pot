@@ -597,6 +597,10 @@ msgstr ""
 #: lib/hermes_web/live/dashboard_live.html.heex:37
 #: lib/hermes_web/live/request_live/show.html.heex:346
 #, elixir-autogen, elixir-format
+msgid "Draft"
+msgstr ""
+
+#, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr ""
 
@@ -901,6 +905,10 @@ msgid "new"
 msgstr ""
 
 #: lib/hermes_web/live/dashboard_live.html.heex:135
+#, elixir-autogen, elixir-format
+msgid "draft"
+msgstr ""
+
 #, elixir-autogen, elixir-format
 msgid "pending"
 msgstr ""
