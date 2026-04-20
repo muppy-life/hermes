@@ -29,7 +29,13 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 
 const Hooks = {
   ScrollToTop: {
-    updated() { window.scrollTo(0, 0) }
+    mounted() { this.step = this.el.dataset.step },
+    updated() {
+      if (this.el.dataset.step !== this.step) {
+        this.step = this.el.dataset.step
+        window.scrollTo(0, 0)
+      }
+    }
   },
   ScrollIndicator: {
     mounted() {

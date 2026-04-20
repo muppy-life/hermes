@@ -13,7 +13,7 @@ defmodule Hermes.Storage.Stub do
       # Simulate a storage failure for the next call
       Hermes.Storage.Stub.fail_next(:upload)
 
-      # Reset between tests (done automatically via DataCase)
+      # Reset between tests (called in DataCase setup)
       Hermes.Storage.Stub.reset()
   """
 

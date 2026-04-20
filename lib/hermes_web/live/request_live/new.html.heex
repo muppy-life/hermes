@@ -35,8 +35,8 @@
   for={@form}
   id="request-form"
   phx-submit={if @current_step == 7, do: "save", else: "next_step"}
-  phx-change="validate_images"
   phx-hook="ScrollToTop"
+  data-step={@current_step}
 >
   <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
@@ -320,7 +320,11 @@
                   </span>
                   <span class="text-xs opacity-40">{gettext("JPG, PNG — max 14 MB each")}</span>
                 </div>
-                <.live_file_input upload={@uploads.images} class="hidden" />
+                <.live_file_input
+                  upload={@uploads.images}
+                  class="hidden"
+                  phx-change="validate_images"
+                />
               </label>
             </div>
 
@@ -386,7 +390,12 @@
             {gettext("Next")} →
           </button>
         <% @current_step == 7 -> %>
-          <button type="submit" class="btn btn-success" phx-disable-with={gettext("Creating...")}>
+          <button
+            type="submit"
+            class="btn btn-success"
+            phx-disable-with={gettext("Creating...")}
+            disabled={Enum.any?(@uploads.images.entries, &(&1.progress < 100))}
+          >
             {gettext("Create Request")}
           </button>
       <% end %>
