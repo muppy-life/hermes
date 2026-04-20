@@ -369,20 +369,23 @@ defmodule Hermes.Requests do
         client_name: filename,
         content_type: content_type
       }) do
-    binary = File.read!(path)
-    size = byte_size(binary)
-    key = "requests/#{request_id}/#{Ecto.UUID.generate()}-#{filename}"
+    safe_filename = Path.basename(filename) |> String.replace(~r/[^\w.\-]/, "_")
 
-    with {:ok, _} <- Storage.upload(key, binary, content_type) do
-      %RequestImage{}
-      |> RequestImage.changeset(%{
-        request_id: request_id,
-        key: key,
-        filename: filename,
-        content_type: content_type,
-        size: size
-      })
-      |> Repo.insert()
+    with {:ok, binary} <- File.read(path) do
+      size = byte_size(binary)
+      key = "requests/#{request_id}/#{Ecto.UUID.generate()}-#{safe_filename}"
+
+      with {:ok, _} <- Storage.upload(key, binary, content_type) do
+        %RequestImage{}
+        |> RequestImage.changeset(%{
+          request_id: request_id,
+          key: key,
+          filename: filename,
+          content_type: content_type,
+          size: size
+        })
+        |> Repo.insert()
+      end
     end
   end
 
