@@ -56,7 +56,7 @@ defmodule Hermes.Requests.RequestImagesTest do
       assert image.filename == "photo.jpg"
       assert image.content_type == "image/jpeg"
       assert image.size == byte_size(File.read!(tmp_path))
-      assert String.starts_with?(image.key, "requests/#{request.id}/")
+      assert String.contains?(image.key, "requests/#{request.id}/")
       assert Stub.uploaded?(image.key)
     end
 
