@@ -95,8 +95,6 @@ jobs:
             -var="certificate_arn=${{ secrets.ACM_CERTIFICATE_ARN }}" \
             -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
             -var="phx_host=${{ secrets.PHX_HOST }}" \
-            -var="aws_s3_bucket=${{ secrets.AWS_S3_BUCKET }}" \
-            -var="aws_s3_host=${{ secrets.AWS_S3_HOST }}" \
             -out=tfplan
 
       - name: Terraform Apply
