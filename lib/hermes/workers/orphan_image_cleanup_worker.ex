@@ -12,7 +12,7 @@ defmodule Hermes.Workers.OrphanImageCleanupWorker do
 
   require Logger
 
-  @uploads_base "priv/static/uploads"
+  @uploads_base "priv/static/uploads/hermes"
 
   @impl Oban.Worker
   def perform(_job) do
