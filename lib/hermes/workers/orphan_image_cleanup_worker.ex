@@ -12,17 +12,19 @@ defmodule Hermes.Workers.OrphanImageCleanupWorker do
 
   require Logger
 
-  @uploads_dir "priv/static/uploads/requests"
+  @uploads_base "priv/static/uploads/hermes"
 
   @impl Oban.Worker
   def perform(_job) do
     if local_adapter?() do
-      case File.ls(@uploads_dir) do
+      uploads_dir = Path.join([@uploads_base, to_string(env()), "requests"])
+
+      case File.ls(uploads_dir) do
         {:error, :enoent} ->
           :ok
 
         {:ok, request_dirs} ->
-          Enum.each(request_dirs, &cleanup_request_dir/1)
+          Enum.each(request_dirs, &cleanup_request_dir(uploads_dir, &1))
           :ok
       end
     else
@@ -30,8 +32,8 @@ defmodule Hermes.Workers.OrphanImageCleanupWorker do
     end
   end
 
-  defp cleanup_request_dir(request_id_str) do
-    dir = Path.join(@uploads_dir, request_id_str)
+  defp cleanup_request_dir(uploads_dir, request_id_str) do
+    dir = Path.join(uploads_dir, request_id_str)
 
     case File.ls(dir) do
       {:error, _} ->
@@ -44,13 +46,15 @@ defmodule Hermes.Workers.OrphanImageCleanupWorker do
   end
 
   defp maybe_delete_orphan(dir, request_id_str, filename) do
-    key = "requests/#{request_id_str}/#{filename}"
+    key = "hermes/#{env()}/requests/#{request_id_str}/#{filename}"
 
     unless Hermes.Repo.exists?(from(i in Hermes.Requests.RequestImage, where: i.key == ^key)) do
       Logger.info("Removing orphan image file: #{key}")
       File.rm(Path.join(dir, filename))
     end
   end
+
+  defp env, do: Application.get_env(:hermes, :env, :prod)
 
   defp local_adapter? do
     Application.get_env(:hermes, :storage_adapter) == Hermes.Storage.Local

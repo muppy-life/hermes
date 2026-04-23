@@ -373,7 +373,7 @@ defmodule Hermes.Requests do
 
     with {:ok, binary} <- File.read(path) do
       size = byte_size(binary)
-      key = "requests/#{request_id}/#{Ecto.UUID.generate()}-#{safe_filename}"
+      key = "hermes/#{env()}/requests/#{request_id}/#{Ecto.UUID.generate()}-#{safe_filename}"
 
       with {:ok, _} <- Storage.upload(key, binary, content_type) do
         %RequestImage{}
@@ -397,4 +397,6 @@ defmodule Hermes.Requests do
   end
 
   def image_url(%RequestImage{key: key}), do: Storage.public_url(key)
+
+  defp env, do: Application.get_env(:hermes, :env, :prod)
 end
