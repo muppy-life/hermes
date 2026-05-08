@@ -178,7 +178,7 @@ defmodule HermesWeb.DashboardLive do
 
   def roadmap_status_icon(%{status: "need_requirement"} = assigns) do
     ~H"""
-    <span class="text-purple-600" title={gettext("Need requirement")}>
+    <span class="text-orange-600" title={gettext("Need requirement")}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="h-3 w-3"

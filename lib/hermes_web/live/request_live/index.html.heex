@@ -151,7 +151,7 @@
           <% end %>
         </button>
       </div>
-
+      
 <!-- Card-style Rows -->
       <div class="space-y-2 mt-2">
         <%= for {request, index} <- Enum.with_index(@new_requests, 1) do %>
@@ -193,7 +193,7 @@
       </div>
     <% end %>
   </div>
-
+  
 <!-- ON-GOING REQUESTS TABLE -->
   <div class={[@active_tab != "ongoing" && "hidden"]}>
     <%= if Enum.empty?(@ongoing_requests) do %>
