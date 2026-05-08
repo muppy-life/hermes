@@ -61,6 +61,7 @@ defmodule Hermes.Requests.Request do
     |> validate_inclusion(:priority, 1..4)
     |> validate_inclusion(:status, [
       "new",
+      "need_requirement",
       "pending",
       "in_progress",
       "review",
