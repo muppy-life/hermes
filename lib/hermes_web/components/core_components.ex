@@ -617,6 +617,7 @@ defmodule HermesWeb.CoreComponents do
 
   defp status_label(status) do
     case status do
+      "need_requirement" -> gettext("Need requirement")
       "pending" -> gettext("Pending")
       "in_progress" -> gettext("In Progress")
       "completed" -> gettext("Completed")
@@ -629,8 +630,11 @@ defmodule HermesWeb.CoreComponents do
 
   defp status_color_class(status) do
     case status do
+      "new" -> "bg-cyan-200 text-cyan-900 border-cyan-300"
+      "need_requirement" -> "bg-purple-200 text-purple-900 border-purple-300"
       "pending" -> "bg-yellow-200 text-yellow-900 border-yellow-300"
       "in_progress" -> "bg-blue-200 text-blue-900 border-blue-300"
+      "review" -> "bg-indigo-500 text-white border-indigo-600"
       "completed" -> "bg-green-200 text-green-900 border-green-300"
       "blocked" -> "bg-red-200 text-red-900 border-red-300"
       _ -> "badge-ghost"
@@ -803,6 +807,12 @@ defmodule HermesWeb.CoreComponents do
                   {gettext("All Statuses")}
                 </option>
                 <option value="new" selected={@filter_status == "new"}>{gettext("New")}</option>
+                <option
+                  value="need_requirement"
+                  selected={@filter_status == "need_requirement"}
+                >
+                  {gettext("Need requirement")}
+                </option>
                 <option value="pending" selected={@filter_status == "pending"}>
                   {gettext("Pending")}
                 </option>
