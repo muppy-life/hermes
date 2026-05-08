@@ -12,7 +12,7 @@ defmodule Hermes.Storage.S3 do
     size = byte_size(binary)
 
     Logger.info(
-      "S3.upload start bucket=#{bucket} key=#{key} content_type=#{content_type} size=#{size}"
+      "S3.upload start bucket=#{bucket} key=#{key} content_type=#{inspect(content_type)} size=#{size}"
     )
 
     result =
