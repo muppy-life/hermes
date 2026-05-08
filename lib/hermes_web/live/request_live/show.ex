@@ -49,6 +49,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:show_deadline_modal, false)
+     |> assign(:editing_comment_id, nil)
      |> assign(:selected_date, request.deadline || Date.utc_today())
      |> assign(:can_set_deadline, can_set_deadline)
      |> assign(:solution_tab, "goal")
@@ -202,6 +203,56 @@ defmodule HermesWeb.RequestLive.Show do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to add comment")}
+    end
+  end
+
+  def handle_event("start_edit_comment", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :editing_comment_id, String.to_integer(id))}
+  end
+
+  def handle_event("cancel_edit_comment", _params, socket) do
+    {:noreply, assign(socket, :editing_comment_id, nil)}
+  end
+
+  def handle_event("save_edit_comment", %{"id" => id, "content" => content}, socket) do
+    current_user = socket.assigns[:current_user]
+    comment = Requests.get_comment!(id)
+
+    cond do
+      comment.user_id != current_user.id ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized"))}
+
+      true ->
+        case Requests.update_comment(comment, %{content: content}) do
+          {:ok, _comment} ->
+            comments = Requests.list_request_comments(socket.assigns.request.id)
+
+            {:noreply,
+             socket
+             |> assign(:comments, comments)
+             |> assign(:editing_comment_id, nil)}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to update comment"))}
+        end
+    end
+  end
+
+  def handle_event("delete_comment", %{"id" => id}, socket) do
+    current_user = socket.assigns[:current_user]
+    comment = Requests.get_comment!(id)
+
+    if comment.user_id != current_user.id do
+      {:noreply, put_flash(socket, :error, gettext("Not authorized"))}
+    else
+      case Requests.delete_comment(comment) do
+        {:ok, _} ->
+          comments = Requests.list_request_comments(socket.assigns.request.id)
+          {:noreply, assign(socket, :comments, comments)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete comment"))}
+      end
     end
   end
 

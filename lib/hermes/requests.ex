@@ -329,6 +329,18 @@ defmodule Hermes.Requests do
     |> Oban.insert()
   end
 
+  def get_comment!(id) do
+    RequestComment
+    |> Repo.get!(id)
+    |> Repo.preload(:user)
+  end
+
+  def update_comment(%RequestComment{} = comment, attrs) do
+    comment
+    |> RequestComment.update_changeset(attrs)
+    |> Repo.update()
+  end
+
   def delete_comment(%RequestComment{} = comment) do
     Repo.delete(comment)
   end
