@@ -1001,14 +1001,14 @@ msgstr ""
 
 #: lib/hermes_web/components/layouts.ex:76
 #: lib/hermes_web/live/request_live/index.html.heex:3
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Backlog"
-msgstr "Back"
+msgstr ""
 
 #: lib/hermes_web/live/kanban_live/index.html.heex:32
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Board"
-msgstr "Boards"
+msgstr ""
 
 #: lib/hermes_web/live/request_live/show.html.heex:21
 #, elixir-autogen, elixir-format
@@ -1016,7 +1016,7 @@ msgid "Change Deadline"
 msgstr ""
 
 #: lib/hermes_web/live/request_live/show.html.heex:755
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Choose a team"
 msgstr ""
 
@@ -1026,9 +1026,9 @@ msgid "Comment actions"
 msgstr "Comment actions"
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:258
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Completed At"
-msgstr "Completed"
+msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:153
 #, elixir-autogen, elixir-format
@@ -1074,7 +1074,7 @@ msgid "Diagram is being generated..."
 msgstr ""
 
 #: lib/hermes_web/live/kanban_live/index.html.heex:23
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Done"
 msgstr ""
 
@@ -1148,7 +1148,7 @@ msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:183
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:284
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No completed requests yet"
 msgstr ""
 
@@ -1186,7 +1186,7 @@ msgid "Notifications"
 msgstr ""
 
 #: lib/hermes_web/live/request_live/index.html.heex:44
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Ongoing"
 msgstr ""
 
@@ -1203,9 +1203,9 @@ msgid "Priority Distribution"
 msgstr ""
 
 #: lib/hermes_web/live/dashboard_live.html.heex:169
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Priority:"
-msgstr "Priority"
+msgstr ""
 
 #: lib/hermes_web/live/request_live/show.html.heex:147
 #, elixir-autogen, elixir-format
@@ -1229,29 +1229,29 @@ msgid "Related Business Data (optional)"
 msgstr ""
 
 #: lib/hermes_web/live/request_live/show.html.heex:65
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Reported At"
-msgstr "Created At"
+msgstr ""
 
 #: lib/hermes_web/live/request_live/show.html.heex:58
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Reported By"
-msgstr "Created By"
+msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:254
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Request"
-msgstr "Requests"
+msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:91
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Request Type Distribution"
-msgstr "Requesting Team"
+msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:38
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Request Types"
-msgstr "Requesting Team"
+msgstr ""
 
 #: lib/hermes_web/live/request_live/new.ex:171
 #, elixir-autogen, elixir-format
@@ -1259,9 +1259,9 @@ msgid "Request created, but some images failed to upload"
 msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:201
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Requests Created"
-msgstr "Requests"
+msgstr ""
 
 #: lib/hermes_web/live/dashboard_live.html.heex:73
 #, elixir-autogen, elixir-format
@@ -1345,9 +1345,9 @@ msgstr ""
 
 # Request actions
 #: lib/hermes_web/live/notification_live/index.html.heex:38
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "View request"
-msgstr "New Request"
+msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:40
 #, elixir-autogen, elixir-format
@@ -1355,6 +1355,6 @@ msgid "different types"
 msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:32
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "priority levels"
-msgstr "Priority"
+msgstr ""
