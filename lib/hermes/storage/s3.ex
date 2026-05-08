@@ -42,14 +42,10 @@ defmodule Hermes.Storage.S3 do
     bucket = config(:bucket)
     region = config(:region)
 
-    Logger.info("S3.public_url start bucket=#{bucket} region=#{region} key=#{key}")
-
     {:ok, url} =
       ExAws.S3.presigned_url(ExAws.Config.new(:s3, region: region), :get, bucket, key,
         expires_in: @signed_url_expires
       )
-
-    Logger.info("S3.public_url result key=#{key} status=ok")
 
     url
   end
