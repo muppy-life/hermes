@@ -49,7 +49,7 @@ defmodule Hermes.Storage.S3 do
         expires_in: @signed_url_expires
       )
 
-    Logger.info("S3.public_url result key=#{key} url=#{url}")
+    Logger.info("S3.public_url result key=#{key} status=ok")
 
     url
   end
