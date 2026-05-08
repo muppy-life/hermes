@@ -16,7 +16,7 @@
 
 <div class="mt-6">
   <h2 class="text-2xl font-semibold mb-4">{gettext("Statistics")}</h2>
-  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
     <.link navigate={~p"/backlog"} class="block">
       <div class="bg-blue-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
         <div class="text-3xl font-bold text-blue-900">{@stats.total_requests}</div>
@@ -27,6 +27,12 @@
       <div class="bg-cyan-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
         <div class="text-3xl font-bold text-cyan-900">{@stats.new}</div>
         <div class="text-cyan-700 mt-1">{gettext("New")}</div>
+      </div>
+    </.link>
+    <.link navigate={~p"/backlog?status=need_requirement&tab=new"} class="block">
+      <div class="bg-purple-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-purple-900">{@stats.need_requirement}</div>
+        <div class="text-purple-700 mt-1">{gettext("Need requirement")}</div>
       </div>
     </.link>
     <.link navigate={~p"/backlog?status=pending&tab=ongoing"} class="block">
@@ -266,6 +272,10 @@
                   <span class="flex items-center gap-1 text-cyan-700">
                     <span class="font-semibold">{board.task_stats.new}</span>
                     <span class="opacity-60">{gettext("new")}</span>
+                  </span>
+                  <span class="flex items-center gap-1 text-purple-700">
+                    <span class="font-semibold">{board.task_stats.need_requirement}</span>
+                    <span class="opacity-60">{gettext("need requirement")}</span>
                   </span>
                   <span class="flex items-center gap-1 text-yellow-700">
                     <span class="font-semibold">{board.task_stats.pending}</span>
