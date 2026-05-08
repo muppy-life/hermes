@@ -600,6 +600,10 @@ msgstr ""
 msgid "Pending"
 msgstr "Pending"
 
+#, elixir-autogen, elixir-format
+msgid "Need requirement"
+msgstr "Need requirement"
+
 #: lib/hermes_web/live/request_live/new.ex:75
 #, elixir-autogen, elixir-format
 msgid "Please check the form for errors"
@@ -907,6 +911,10 @@ msgstr ""
 #, elixir-autogen, elixir-format, fuzzy
 msgid "pending"
 msgstr "Pending"
+
+#, elixir-autogen, elixir-format, fuzzy
+msgid "need requirement"
+msgstr "need requirement"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:143
 #, elixir-autogen, elixir-format, fuzzy
