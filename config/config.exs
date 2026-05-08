@@ -79,6 +79,13 @@ config :nx, :default_backend, Nx.BinaryBackend
 # API key will be loaded from environment variable in runtime.exs
 config :hermes, :anthropic_api_key, nil
 
+# GitHub integration. Values loaded from env in runtime.exs.
+config :hermes, :github,
+  token: nil,
+  owner: nil,
+  default_repo: nil,
+  api_url: "https://api.github.com"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

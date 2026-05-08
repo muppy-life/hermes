@@ -25,6 +25,13 @@ if api_key = System.get_env("ANTHROPIC_API_KEY") do
   config :hermes, :anthropic_api_key, api_key
 end
 
+# Configure GitHub integration from environment variables
+config :hermes, :github,
+  token: System.get_env("GITHUB_TOKEN"),
+  owner: System.get_env("GITHUB_OWNER"),
+  default_repo: System.get_env("GITHUB_DEFAULT_REPO"),
+  api_url: System.get_env("GITHUB_API_URL") || "https://api.github.com"
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

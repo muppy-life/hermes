@@ -13,6 +13,7 @@ defmodule Hermes.Requests do
   alias Hermes.Requests.RequestChange
   alias Hermes.Requests.RequestComment
   alias Hermes.Requests.RequestImage
+  alias Hermes.Services.GitHub
   alias Hermes.Storage
 
   def list_requests do
@@ -67,6 +68,8 @@ defmodule Hermes.Requests do
         trigger_diagram_generation(request)
 
         trigger_request_created_notification(request)
+
+        trigger_github_sync(request, "create")
 
         {:ok, request}
 
@@ -182,6 +185,8 @@ defmodule Hermes.Requests do
           trigger_diagram_generation(updated_request)
         end
 
+        trigger_github_sync_on_update(updated_request, request, changes)
+
         {:ok, updated_request}
 
       error ->
@@ -272,6 +277,7 @@ defmodule Hermes.Requests do
         mentioned_users = resolve_mentions(comment.content)
         trigger_comment_notification(comment)
         trigger_mention_notifications(comment, mentioned_users)
+        trigger_github_comment_sync(comment)
 
         {:ok, comment}
 
@@ -321,6 +327,148 @@ defmodule Hermes.Requests do
     %{request_id: request.id, type: "created"}
     |> Hermes.Workers.RequestNotificationWorker.new()
     |> Oban.insert()
+  end
+
+  # GitHub sync hooks
+
+  defp trigger_github_sync(request, action, extra \\ %{}) do
+    if github_integration_enabled?() do
+      Map.merge(%{action: action, request_id: request.id}, extra)
+      |> Hermes.Workers.GitHubSyncWorker.new()
+      |> Oban.insert()
+    else
+      {:ok, :feature_disabled}
+    end
+  end
+
+  defp trigger_github_sync_on_update(updated, original, changes) do
+    cond do
+      not github_integration_enabled?() ->
+        :ok
+
+      is_nil(updated.github_issue_number) ->
+        :ok
+
+      true ->
+        if Map.has_key?(changes, :status) and updated.status != original.status do
+          trigger_github_sync(updated, "status", %{status: updated.status})
+        end
+
+        if content_fields_changed?(changes) do
+          trigger_github_sync(updated, "update")
+        end
+
+        :ok
+    end
+  end
+
+  defp content_fields_changed?(changes) do
+    Enum.any?(
+      [
+        :title,
+        :description,
+        :priority,
+        :kind,
+        :target_user_type,
+        :current_situation,
+        :goal_description,
+        :data_description,
+        :goal_target,
+        :expected_output
+      ],
+      &Map.has_key?(changes, &1)
+    )
+  end
+
+  defp trigger_github_comment_sync(comment) do
+    if github_integration_enabled?() do
+      %{action: "comment", comment_id: comment.id}
+      |> Hermes.Workers.GitHubSyncWorker.new()
+      |> Oban.insert()
+    else
+      {:ok, :feature_disabled}
+    end
+  end
+
+  @doc """
+  Returns true when a `GITHUB_TOKEN` and `GITHUB_OWNER` are configured.
+  """
+  def github_integration_enabled? do
+    cfg = Application.get_env(:hermes, :github, [])
+    cfg[:token] not in [nil, ""] and cfg[:owner] not in [nil, ""]
+  end
+
+  @doc """
+  Synchronously creates a GitHub issue for an existing request and persists
+  the link. Used by the manual "Create issue" button on the edit page.
+  """
+  def create_github_issue_for_request(%Request{} = request) do
+    cond do
+      not github_integration_enabled?() ->
+        {:error, :integration_disabled}
+
+      is_integer(request.github_issue_number) ->
+        {:error, :already_linked}
+
+      true ->
+        case GitHub.create_issue(request) do
+          {:ok, %{number: number, url: url}} ->
+            update_request(request, %{
+              "github_issue_number" => number,
+              "github_issue_url" => url
+            })
+
+          {:error, _} = err ->
+            err
+        end
+    end
+  end
+
+  @doc """
+  Links an existing GitHub issue to a request.
+
+  `reference` may be a bare number (uses default repo), `owner/repo#N`,
+  or a full `https://github.com/owner/repo/issues/N` URL.
+  """
+  def link_github_issue(%Request{} = request, reference) when is_binary(reference) do
+    with {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
+         {:ok, {resolved_owner, resolved_repo}} <- resolve_link_repo(request, owner, repo),
+         {:ok, %{"html_url" => url}} <- GitHub.get_issue(resolved_owner, resolved_repo, number) do
+      attrs = %{
+        "github_issue_number" => number,
+        "github_issue_url" => url,
+        "github_repo" => maybe_repo_override(request, resolved_repo)
+      }
+
+      update_request(request, attrs)
+    end
+  end
+
+  defp resolve_link_repo(request, nil, nil) do
+    GitHub.resolve_repo(request)
+  end
+
+  defp resolve_link_repo(_request, owner, repo) when is_binary(owner) and is_binary(repo) do
+    {:ok, {owner, repo}}
+  end
+
+  defp maybe_repo_override(request, resolved_repo) do
+    cfg = Application.get_env(:hermes, :github, [])
+
+    cond do
+      resolved_repo == cfg[:default_repo] -> request.github_repo
+      true -> resolved_repo
+    end
+  end
+
+  @doc """
+  Removes the GitHub issue link from a request. Does not touch GitHub.
+  """
+  def unlink_github_issue(%Request{} = request) do
+    update_request(request, %{
+      "github_issue_number" => nil,
+      "github_issue_url" => nil
+    })
   end
 
   defp trigger_comment_notification(comment) do

@@ -15,6 +15,8 @@ defmodule HermesWeb.RequestLive.Edit do
      |> assign(:page_title, "Edit Request")
      |> assign(:request, request)
      |> assign(:teams, Accounts.list_teams())
+     |> assign(:github_enabled, Requests.github_integration_enabled?())
+     |> assign(:link_form, to_form(%{"reference" => ""}, as: :github_link))
      |> assign(:form, to_form(Requests.change_request(request)))}
   end
 
@@ -36,4 +38,54 @@ defmodule HermesWeb.RequestLive.Edit do
         {:noreply, assign(socket, form: to_form(changeset))}
     end
   end
+
+  def handle_event("github_create_issue", _params, socket) do
+    case Requests.create_github_issue_for_request(socket.assigns.request) do
+      {:ok, request} ->
+        {:noreply,
+         socket
+         |> assign(:request, request)
+         |> put_flash(:info, "GitHub issue ##{request.github_issue_number} created")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+    end
+  end
+
+  def handle_event("github_link_issue", %{"github_link" => %{"reference" => reference}}, socket) do
+    case Requests.link_github_issue(socket.assigns.request, reference) do
+      {:ok, request} ->
+        {:noreply,
+         socket
+         |> assign(:request, request)
+         |> assign(:link_form, to_form(%{"reference" => ""}, as: :github_link))
+         |> put_flash(:info, "Linked GitHub issue ##{request.github_issue_number}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+    end
+  end
+
+  def handle_event("github_unlink", _params, socket) do
+    case Requests.unlink_github_issue(socket.assigns.request) do
+      {:ok, request} ->
+        {:noreply,
+         socket
+         |> assign(:request, request)
+         |> put_flash(:info, "GitHub issue unlinked")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Could not unlink issue")}
+    end
+  end
+
+  defp github_error_message(:integration_disabled), do: "GitHub integration is not configured"
+  defp github_error_message(:already_linked), do: "Request is already linked to an issue"
+  defp github_error_message(:invalid_reference), do: "Could not parse the issue reference"
+  defp github_error_message(:missing_config), do: "Missing GitHub owner/repo configuration"
+  defp github_error_message(:missing_token), do: "Missing GitHub token"
+  defp github_error_message({:http_error, status, _}), do: "GitHub returned status #{status}"
+  defp github_error_message({:transport_error, _}), do: "Could not reach GitHub"
+  defp github_error_message(%Ecto.Changeset{}), do: "Could not save the issue link"
+  defp github_error_message(reason), do: "GitHub error: #{inspect(reason)}"
 end
