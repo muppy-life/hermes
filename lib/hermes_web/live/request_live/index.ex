@@ -121,14 +121,12 @@ defmodule HermesWeb.RequestLive.Index do
     # Split into three categories
     new_requests =
       filtered_requests
-      |> Enum.filter(&(&1.status == "new"))
+      |> Enum.filter(&(&1.status in ["new", "need_requirement"]))
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
     ongoing_requests =
       filtered_requests
-      |> Enum.filter(
-        &(&1.status in ["need_requirement", "pending", "in_progress", "review", "blocked"])
-      )
+      |> Enum.filter(&(&1.status in ["pending", "in_progress", "review", "blocked"]))
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
     completed_requests =
