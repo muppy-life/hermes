@@ -150,6 +150,9 @@ if config_env() == :prod do
     host:
       System.get_env("AWS_S3_HOST") ||
         raise("environment variable AWS_S3_HOST is missing."),
+    cdn_host:
+      System.get_env("AWS_S3_CDN_HOST") ||
+        raise("environment variable AWS_S3_CDN_HOST is missing."),
     region:
       System.get_env("AWS_S3_REGION") ||
         raise("environment variable AWS_S3_REGION is missing."),
