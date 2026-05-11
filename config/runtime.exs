@@ -152,7 +152,13 @@ if config_env() == :prod do
         raise("environment variable AWS_S3_HOST is missing."),
     region:
       System.get_env("AWS_S3_REGION") ||
-        raise("environment variable AWS_S3_REGION is missing.")
+        raise("environment variable AWS_S3_REGION is missing."),
+    access_key_id:
+      System.get_env("AWS_S3_ACCESS_KEY_ID") ||
+        raise("environment variable AWS_S3_ACCESS_KEY_ID is missing."),
+    secret_access_key:
+      System.get_env("AWS_S3_SECRET_ACCESS_KEY") ||
+        raise("environment variable AWS_S3_SECRET_ACCESS_KEY is missing.")
 
   config :ex_aws,
     access_key_id:
@@ -160,8 +166,5 @@ if config_env() == :prod do
         raise("environment variable AWS_ACCESS_KEY_ID is missing."),
     secret_access_key:
       System.get_env("AWS_SECRET_ACCESS_KEY") ||
-        raise("environment variable AWS_SECRET_ACCESS_KEY is missing."),
-    region:
-      System.get_env("AWS_REGION") ||
-        raise("environment variable AWS_REGION is missing.")
+        raise("environment variable AWS_SECRET_ACCESS_KEY is missing.")
 end
