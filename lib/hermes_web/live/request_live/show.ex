@@ -6,6 +6,7 @@ defmodule HermesWeb.RequestLive.Show do
   alias Hermes.Accounts
   alias Hermes.Requests
   alias HermesWeb.NavigationHistory
+  alias HermesWeb.RequestLive.UploadErrors
 
   @max_image_size 14 * 1_024 * 1_024
 
@@ -353,7 +354,7 @@ defmodule HermesWeb.RequestLive.Show do
           Logger.error("Image upload failed: #{inspect(reason)}")
         end)
 
-        put_flash(socket, :error, format_upload_errors(errors))
+        put_flash(socket, :error, UploadErrors.format(errors))
       end
 
     {:noreply, socket}
@@ -374,39 +375,6 @@ defmodule HermesWeb.RequestLive.Show do
       end
     else
       {:noreply, socket}
-    end
-  end
-
-  defp format_upload_errors(errors) do
-    count = length(errors)
-    {:error, first_reason} = hd(errors)
-
-    detail =
-      case first_reason do
-        {:http_error, status, %{body: body}} when is_binary(body) ->
-          "S3 #{status}: #{extract_s3_message(body)}"
-
-        %Ecto.Changeset{} = cs ->
-          inspect(cs.errors)
-
-        other ->
-          inspect(other)
-      end
-
-    if count > 1 do
-      gettext("%{count} images failed to upload. First error: %{detail}",
-        count: count,
-        detail: detail
-      )
-    else
-      gettext("Image upload failed: %{detail}", detail: detail)
-    end
-  end
-
-  defp extract_s3_message(body) do
-    case Regex.run(~r{<Message>([^<]+)</Message>}, body) do
-      [_, msg] -> msg
-      _ -> "unknown error"
     end
   end
 

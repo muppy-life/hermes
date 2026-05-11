@@ -5,6 +5,7 @@ defmodule HermesWeb.RequestLive.New do
 
   alias Hermes.Accounts
   alias Hermes.Requests
+  alias HermesWeb.RequestLive.UploadErrors
 
   @auto_save_interval 5_000
   @max_image_size 14 * 1_024 * 1_024
@@ -177,9 +178,7 @@ defmodule HermesWeb.RequestLive.New do
             put_flash(
               socket,
               :error,
-              gettext("Request created, but %{count} image(s) failed to upload",
-                count: length(errors)
-              )
+              UploadErrors.format_with_prefix(gettext("Request created"), errors)
             )
           end
 
