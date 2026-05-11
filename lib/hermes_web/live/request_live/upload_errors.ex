@@ -3,7 +3,7 @@ defmodule HermesWeb.RequestLive.UploadErrors do
   Formats image-upload errors into user-facing flash messages.
   """
 
-  import HermesWeb.Gettext
+  use Gettext, backend: HermesWeb.Gettext
 
   require Logger
 
