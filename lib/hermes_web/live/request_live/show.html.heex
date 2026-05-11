@@ -592,17 +592,20 @@
                   <% end %>
                 </div>
               </div>
-              <%= if @editing_comment_id == comment.id do %>
-                <form
+              <%= if @editing_comment_id == comment.id and @edit_comment_form do %>
+                <.form
+                  for={@edit_comment_form}
                   phx-submit="save_edit_comment"
+                  phx-change="validate_edit_comment"
                   phx-value-id={comment.id}
                   class="space-y-1"
                 >
-                  <textarea
-                    name="content"
+                  <.input
+                    field={@edit_comment_form[:content]}
+                    type="textarea"
                     rows="2"
                     class="textarea textarea-bordered textarea-sm w-full text-xs"
-                  ><%= comment.content %></textarea>
+                  />
                   <div class="flex gap-1">
                     <button type="submit" class="btn btn-primary btn-xs">
                       {gettext("Save")}
@@ -615,7 +618,7 @@
                       {gettext("Cancel")}
                     </button>
                   </div>
-                </form>
+                </.form>
               <% else %>
                 <p phx-no-format class="text-xs whitespace-pre-wrap">{render_comment_content(comment.content)}</p>
               <% end %>

@@ -335,6 +335,19 @@ defmodule Hermes.Requests do
     |> Repo.preload(:user)
   end
 
+  def get_comment(id) do
+    case Repo.get(RequestComment, id) do
+      nil -> nil
+      comment -> Repo.preload(comment, :user)
+    end
+  rescue
+    Ecto.Query.CastError -> nil
+  end
+
+  def change_comment(%RequestComment{} = comment, attrs \\ %{}) do
+    RequestComment.update_changeset(comment, attrs)
+  end
+
   def update_comment(%RequestComment{} = comment, attrs) do
     comment
     |> RequestComment.update_changeset(attrs)
