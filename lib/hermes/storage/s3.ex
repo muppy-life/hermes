@@ -81,6 +81,7 @@ defmodule Hermes.Storage.S3 do
 
     ex_aws_opts()
     |> Keyword.merge(scheme: "#{scheme}://", host: host_only)
+    |> Keyword.delete(:port)
     |> maybe_put(:port, port)
   end
 
