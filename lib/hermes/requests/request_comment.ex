@@ -20,4 +20,12 @@ defmodule Hermes.Requests.RequestComment do
     |> foreign_key_constraint(:request_id)
     |> foreign_key_constraint(:user_id)
   end
+
+  @doc false
+  def update_changeset(request_comment, attrs) do
+    request_comment
+    |> cast(attrs, [:content])
+    |> validate_required([:content])
+    |> validate_length(:content, min: 1, max: 5000)
+  end
 end

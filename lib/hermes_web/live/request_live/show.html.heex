@@ -535,16 +535,93 @@
           <p class="text-xs opacity-60">{gettext("No comments yet.")}</p>
         <% else %>
           <%= for comment <- @comments do %>
-            <div class="p-2 bg-base-200 rounded">
+            <div class="p-2 bg-base-200 rounded group">
               <div class="flex items-start justify-between mb-1">
                 <span class="font-semibold text-xs truncate">
                   {String.split(comment.user.email, "@") |> List.first()}
                 </span>
-                <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
-                  {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
-                </span>
+                <div class="flex items-center gap-1 ml-1 flex-shrink-0">
+                  <span class="text-[10px] opacity-60">
+                    {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
+                  </span>
+                  <%= if @current_user && comment.user_id == @current_user.id && @editing_comment_id != comment.id do %>
+                    <div class="dropdown dropdown-end">
+                      <div
+                        tabindex="0"
+                        role="button"
+                        class="cursor-pointer p-0.5 rounded opacity-60 hover:opacity-100 hover:bg-base-300 leading-none"
+                        aria-label={gettext("Comment actions")}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-3 w-3"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <circle cx="12" cy="5" r="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <circle cx="12" cy="19" r="2" />
+                        </svg>
+                      </div>
+                      <ul
+                        tabindex="0"
+                        class="dropdown-content menu menu-sm bg-base-100 rounded-box shadow border border-base-300 z-50 w-36 p-1 whitespace-nowrap"
+                      >
+                        <li>
+                          <button
+                            type="button"
+                            phx-click="start_edit_comment"
+                            phx-value-id={comment.id}
+                          >
+                            {gettext("Edit")}
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            type="button"
+                            phx-click="delete_comment"
+                            phx-value-id={comment.id}
+                            data-confirm={gettext("Delete this comment?")}
+                            class="text-error"
+                          >
+                            {gettext("Delete")}
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  <% end %>
+                </div>
               </div>
-              <p class="text-xs whitespace-pre-wrap">{render_comment_content(comment.content)}</p>
+              <%= if @editing_comment_id == comment.id and @edit_comment_form do %>
+                <.form
+                  for={@edit_comment_form}
+                  phx-submit="save_edit_comment"
+                  phx-change="validate_edit_comment"
+                  phx-value-id={comment.id}
+                  class="space-y-1"
+                >
+                  <.input
+                    field={@edit_comment_form[:content]}
+                    type="textarea"
+                    rows="2"
+                    class="textarea textarea-bordered textarea-sm w-full text-xs"
+                  />
+                  <div class="flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-xs">
+                      {gettext("Save")}
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="cancel_edit_comment"
+                      class="btn btn-ghost btn-xs"
+                    >
+                      {gettext("Cancel")}
+                    </button>
+                  </div>
+                </.form>
+              <% else %>
+                <p phx-no-format class="text-xs whitespace-pre-wrap">{render_comment_content(comment.content)}</p>
+              <% end %>
             </div>
           <% end %>
         <% end %>
@@ -716,7 +793,7 @@
           {gettext("Cancel")}
         </button>
         <button type="button" phx-click="confirm_delete" class="btn btn-error">
-          {gettext("Delete")}
+          {gettext("Delete Request")}
         </button>
       </div>
     </div>

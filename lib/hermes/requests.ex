@@ -329,6 +329,31 @@ defmodule Hermes.Requests do
     |> Oban.insert()
   end
 
+  def get_comment!(id) do
+    RequestComment
+    |> Repo.get!(id)
+    |> Repo.preload(:user)
+  end
+
+  def get_comment(id) do
+    case Repo.get(RequestComment, id) do
+      nil -> nil
+      comment -> Repo.preload(comment, :user)
+    end
+  rescue
+    Ecto.Query.CastError -> nil
+  end
+
+  def change_comment(%RequestComment{} = comment, attrs \\ %{}) do
+    RequestComment.update_changeset(comment, attrs)
+  end
+
+  def update_comment(%RequestComment{} = comment, attrs) do
+    comment
+    |> RequestComment.update_changeset(attrs)
+    |> Repo.update()
+  end
+
   def delete_comment(%RequestComment{} = comment) do
     Repo.delete(comment)
   end

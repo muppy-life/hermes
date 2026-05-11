@@ -49,6 +49,8 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:show_deadline_modal, false)
+     |> assign(:editing_comment_id, nil)
+     |> assign(:edit_comment_form, nil)
      |> assign(:selected_date, request.deadline || Date.utc_today())
      |> assign(:can_set_deadline, can_set_deadline)
      |> assign(:solution_tab, "goal")
@@ -202,6 +204,95 @@ defmodule HermesWeb.RequestLive.Show do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to add comment")}
+    end
+  end
+
+  def handle_event("start_edit_comment", %{"id" => id}, socket) do
+    current_user = socket.assigns[:current_user]
+
+    case Requests.get_comment(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Comment not found"))}
+
+      %{user_id: user_id} when user_id != current_user.id ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized"))}
+
+      comment ->
+        {:noreply,
+         socket
+         |> assign(:editing_comment_id, comment.id)
+         |> assign(:edit_comment_form, to_form(Requests.change_comment(comment), as: :comment))}
+    end
+  end
+
+  def handle_event("cancel_edit_comment", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:editing_comment_id, nil)
+     |> assign(:edit_comment_form, nil)}
+  end
+
+  def handle_event("validate_edit_comment", %{"comment" => params}, socket) do
+    case Requests.get_comment(socket.assigns.editing_comment_id) do
+      nil ->
+        {:noreply, socket}
+
+      comment ->
+        changeset =
+          comment
+          |> Requests.change_comment(params)
+          |> Map.put(:action, :validate)
+
+        {:noreply, assign(socket, :edit_comment_form, to_form(changeset, as: :comment))}
+    end
+  end
+
+  def handle_event("save_edit_comment", %{"id" => id, "comment" => params}, socket) do
+    current_user = socket.assigns[:current_user]
+
+    case Requests.get_comment(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Comment not found"))}
+
+      %{user_id: user_id} when user_id != current_user.id ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized"))}
+
+      comment ->
+        case Requests.update_comment(comment, params) do
+          {:ok, _comment} ->
+            comments = Requests.list_request_comments(socket.assigns.request.id)
+
+            {:noreply,
+             socket
+             |> assign(:comments, comments)
+             |> assign(:editing_comment_id, nil)
+             |> assign(:edit_comment_form, nil)}
+
+          {:error, changeset} ->
+            {:noreply, assign(socket, :edit_comment_form, to_form(changeset, as: :comment))}
+        end
+    end
+  end
+
+  def handle_event("delete_comment", %{"id" => id}, socket) do
+    current_user = socket.assigns[:current_user]
+
+    case Requests.get_comment(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Comment not found"))}
+
+      %{user_id: user_id} when user_id != current_user.id ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized"))}
+
+      comment ->
+        case Requests.delete_comment(comment) do
+          {:ok, _} ->
+            comments = Requests.list_request_comments(socket.assigns.request.id)
+            {:noreply, assign(socket, :comments, comments)}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to delete comment"))}
+        end
     end
   end
 
