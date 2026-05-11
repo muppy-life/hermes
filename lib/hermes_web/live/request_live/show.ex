@@ -232,7 +232,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:edit_comment_form, nil)}
   end
 
-  def handle_event("validate_edit_comment", %{"request_comment" => params}, socket) do
+  def handle_event("validate_edit_comment", %{"comment" => params}, socket) do
     case Requests.get_comment(socket.assigns.editing_comment_id) do
       nil ->
         {:noreply, socket}
