@@ -359,6 +359,24 @@ defmodule HermesWeb.RequestLive.Show do
     {:noreply, socket}
   end
 
+  def handle_event("delete_image", %{"id" => image_id}, socket) do
+    request_id = socket.assigns.request.id
+    image = Enum.find(socket.assigns.images, &(to_string(&1.id) == image_id))
+
+    if image do
+      case Requests.delete_request_image(image) do
+        :ok ->
+          images = Requests.list_request_images(request_id)
+          {:noreply, assign(socket, :images, images)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete image"))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   defp format_upload_errors(errors) do
     count = length(errors)
     {:error, first_reason} = hd(errors)
@@ -389,24 +407,6 @@ defmodule HermesWeb.RequestLive.Show do
     case Regex.run(~r{<Message>([^<]+)</Message>}, body) do
       [_, msg] -> msg
       _ -> "unknown error"
-    end
-  end
-
-  def handle_event("delete_image", %{"id" => image_id}, socket) do
-    request_id = socket.assigns.request.id
-    image = Enum.find(socket.assigns.images, &(to_string(&1.id) == image_id))
-
-    if image do
-      case Requests.delete_request_image(image) do
-        :ok ->
-          images = Requests.list_request_images(request_id)
-          {:noreply, assign(socket, :images, images)}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete image"))}
-      end
-    else
-      {:noreply, socket}
     end
   end
 
