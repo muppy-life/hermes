@@ -67,7 +67,13 @@ defmodule Hermes.Storage.S3 do
     host = config(:host)
     %URI{scheme: scheme, host: host_only, port: port} = parse_host(host)
 
-    [region: config(:region), scheme: "#{scheme}://", host: host_only]
+    [
+      region: config(:region),
+      scheme: "#{scheme}://",
+      host: host_only,
+      access_key_id: config(:access_key_id),
+      secret_access_key: config(:secret_access_key)
+    ]
     |> maybe_put(:port, port)
   end
 
