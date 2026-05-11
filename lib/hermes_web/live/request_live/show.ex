@@ -1,9 +1,12 @@
 defmodule HermesWeb.RequestLive.Show do
   use HermesWeb, :live_view
 
+  require Logger
+
   alias Hermes.Accounts
   alias Hermes.Requests
   alias HermesWeb.NavigationHistory
+  alias HermesWeb.RequestLive.UploadErrors
 
   @max_image_size 14 * 1_024 * 1_024
 
@@ -332,14 +335,12 @@ defmodule HermesWeb.RequestLive.Show do
 
     upload_results =
       consume_uploaded_entries(socket, :images, fn %{path: path}, entry ->
-        case Requests.upload_request_image(request_id, %{
-               path: path,
-               client_name: entry.client_name,
-               content_type: entry.client_type
-             }) do
-          {:ok, image} -> {:ok, image}
-          {:error, _} = err -> err
-        end
+        {:ok,
+         Requests.upload_request_image(request_id, %{
+           path: path,
+           client_name: entry.client_name,
+           content_type: entry.client_type
+         })}
       end)
 
     errors = Enum.filter(upload_results, &match?({:error, _}, &1))
@@ -349,7 +350,11 @@ defmodule HermesWeb.RequestLive.Show do
         images = Requests.list_request_images(request_id)
         socket |> assign(:images, images) |> put_flash(:info, gettext("Images uploaded"))
       else
-        put_flash(socket, :error, gettext("Some images failed to upload"))
+        Enum.each(errors, fn {:error, reason} ->
+          Logger.error("Image upload failed: #{inspect(reason)}")
+        end)
+
+        put_flash(socket, :error, UploadErrors.format(errors))
       end
 
     {:noreply, socket}

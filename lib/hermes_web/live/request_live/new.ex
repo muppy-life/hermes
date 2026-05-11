@@ -5,6 +5,7 @@ defmodule HermesWeb.RequestLive.New do
 
   alias Hermes.Accounts
   alias Hermes.Requests
+  alias HermesWeb.RequestLive.UploadErrors
 
   @auto_save_interval 5_000
   @max_image_size 14 * 1_024 * 1_024
@@ -154,32 +155,34 @@ defmodule HermesWeb.RequestLive.New do
       {:ok, request} ->
         upload_results =
           consume_uploaded_entries(socket, :images, fn %{path: path}, entry ->
-            Requests.upload_request_image(request.id, %{
-              path: path,
-              client_name: entry.client_name,
-              content_type: entry.client_type
-            })
+            {:ok,
+             Requests.upload_request_image(request.id, %{
+               path: path,
+               client_name: entry.client_name,
+               content_type: entry.client_type
+             })}
           end)
 
         errors = Enum.filter(upload_results, &match?({:error, _}, &1))
 
-        socket =
-          if errors != [] do
-            put_flash(
-              socket,
-              :error,
-              gettext("Request created, but some images failed to upload")
-            )
-          else
-            socket
-          end
+        Enum.each(errors, fn {:error, reason} ->
+          Logger.error("Image upload failed: #{inspect(reason)}")
+        end)
 
         clear_draft(current_user.id)
 
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("Request created successfully"))
-         |> push_navigate(to: ~p"/backlog")}
+        flash_socket =
+          if errors == [] do
+            put_flash(socket, :info, gettext("Request created successfully"))
+          else
+            put_flash(
+              socket,
+              :error,
+              UploadErrors.format_with_prefix(gettext("Request created"), errors)
+            )
+          end
+
+        {:noreply, push_navigate(flash_socket, to: ~p"/backlog")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,

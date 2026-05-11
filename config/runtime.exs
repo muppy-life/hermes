@@ -143,10 +143,6 @@ if config_env() == :prod do
       System.get_env("SENDGRID_API_KEY") ||
         raise("environment variable SENDGRID_API_KEY is missing.")
 
-  aws_region =
-    System.get_env("AWS_REGION") ||
-      raise("environment variable AWS_REGION is missing.")
-
   config :hermes, :s3,
     bucket:
       System.get_env("AWS_S3_BUCKET") ||
@@ -154,7 +150,9 @@ if config_env() == :prod do
     host:
       System.get_env("AWS_S3_HOST") ||
         raise("environment variable AWS_S3_HOST is missing."),
-    region: aws_region
+    region:
+      System.get_env("AWS_S3_REGION") ||
+        raise("environment variable AWS_S3_REGION is missing.")
 
   config :ex_aws,
     access_key_id:
@@ -163,5 +161,7 @@ if config_env() == :prod do
     secret_access_key:
       System.get_env("AWS_SECRET_ACCESS_KEY") ||
         raise("environment variable AWS_SECRET_ACCESS_KEY is missing."),
-    region: aws_region
+    region:
+      System.get_env("AWS_REGION") ||
+        raise("environment variable AWS_REGION is missing.")
 end
