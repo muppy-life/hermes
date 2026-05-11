@@ -1,6 +1,8 @@
 defmodule HermesWeb.RequestLive.Show do
   use HermesWeb, :live_view
 
+  require Logger
+
   alias Hermes.Accounts
   alias Hermes.Requests
   alias HermesWeb.NavigationHistory
@@ -332,14 +334,12 @@ defmodule HermesWeb.RequestLive.Show do
 
     upload_results =
       consume_uploaded_entries(socket, :images, fn %{path: path}, entry ->
-        case Requests.upload_request_image(request_id, %{
-               path: path,
-               client_name: entry.client_name,
-               content_type: entry.client_type
-             }) do
-          {:ok, image} -> {:ok, image}
-          {:error, _} = err -> err
-        end
+        {:ok,
+         Requests.upload_request_image(request_id, %{
+           path: path,
+           client_name: entry.client_name,
+           content_type: entry.client_type
+         })}
       end)
 
     errors = Enum.filter(upload_results, &match?({:error, _}, &1))
@@ -349,10 +349,47 @@ defmodule HermesWeb.RequestLive.Show do
         images = Requests.list_request_images(request_id)
         socket |> assign(:images, images) |> put_flash(:info, gettext("Images uploaded"))
       else
-        put_flash(socket, :error, gettext("Some images failed to upload"))
+        Enum.each(errors, fn {:error, reason} ->
+          Logger.error("Image upload failed: #{inspect(reason)}")
+        end)
+
+        put_flash(socket, :error, format_upload_errors(errors))
       end
 
     {:noreply, socket}
+  end
+
+  defp format_upload_errors(errors) do
+    count = length(errors)
+    {:error, first_reason} = hd(errors)
+
+    detail =
+      case first_reason do
+        {:http_error, status, %{body: body}} when is_binary(body) ->
+          "S3 #{status}: #{extract_s3_message(body)}"
+
+        %Ecto.Changeset{} = cs ->
+          inspect(cs.errors)
+
+        other ->
+          inspect(other)
+      end
+
+    if count > 1 do
+      gettext("%{count} images failed to upload. First error: %{detail}",
+        count: count,
+        detail: detail
+      )
+    else
+      gettext("Image upload failed: %{detail}", detail: detail)
+    end
+  end
+
+  defp extract_s3_message(body) do
+    case Regex.run(~r{<Message>([^<]+)</Message>}, body) do
+      [_, msg] -> msg
+      _ -> "unknown error"
+    end
   end
 
   def handle_event("delete_image", %{"id" => image_id}, socket) do
