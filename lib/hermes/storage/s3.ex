@@ -54,7 +54,7 @@ defmodule Hermes.Storage.S3 do
     bucket = config(:bucket)
 
     {:ok, url} =
-      ExAws.S3.presigned_url(ExAws.Config.new(:s3, presign_opts()), :get, bucket, key,
+      ExAws.S3.presigned_url(ExAws.Config.new(:s3, ex_aws_opts()), :get, bucket, key,
         expires_in: @signed_url_expires
       )
 
@@ -73,15 +73,6 @@ defmodule Hermes.Storage.S3 do
       access_key_id: config(:access_key_id),
       secret_access_key: config(:secret_access_key)
     ]
-    |> maybe_put(:port, port)
-  end
-
-  defp presign_opts do
-    %URI{scheme: scheme, host: host_only, port: port} = parse_host(config(:cdn_host))
-
-    ex_aws_opts()
-    |> Keyword.merge(scheme: "#{scheme}://", host: host_only)
-    |> Keyword.delete(:port)
     |> maybe_put(:port, port)
   end
 
