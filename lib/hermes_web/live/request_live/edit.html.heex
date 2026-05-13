@@ -74,17 +74,17 @@
       <p class="text-sm text-gray-500 mt-2">
         GitHub integration is not configured. Set <code>GITHUB_TOKEN</code>, <code>GITHUB_OWNER</code>, and <code>GITHUB_DEFAULT_REPO</code>.
       </p>
-    <% is_integer(@request.github_issue_number) -> %>
+    <% @request.github_issue -> %>
       <div class="mt-2 flex items-center gap-3">
         <a
-          href={@request.github_issue_url}
+          href={@request.github_issue.url}
           target="_blank"
           rel="noopener"
           class="link link-primary"
         >
-          #{@request.github_issue_number}
+          {@request.github_issue.owner}/{@request.github_issue.repo}#{@request.github_issue.number}
         </a>
-        <span class="text-sm text-gray-500 truncate">{@request.github_issue_url}</span>
+        <span class="badge badge-sm">{@request.github_issue.state || "open"}</span>
         <button
           type="button"
           phx-click="github_unlink"

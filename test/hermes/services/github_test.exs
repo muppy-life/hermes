@@ -57,7 +57,7 @@ defmodule Hermes.Services.GitHubTest do
     end
   end
 
-  describe "resolve_repo/1" do
+  describe "default_target/0" do
     setup do
       original = Application.get_env(:hermes, :github)
 
@@ -72,7 +72,7 @@ defmodule Hermes.Services.GitHubTest do
       :ok
     end
 
-    test "uses request override when present" do
+    test "returns configured owner/default_repo" do
       Application.put_env(:hermes, :github,
         token: "x",
         owner: "acme",
@@ -80,20 +80,7 @@ defmodule Hermes.Services.GitHubTest do
         api_url: "https://api.github.com"
       )
 
-      request = %Request{github_repo: "other"}
-      assert {:ok, {"acme", "other"}} = GitHub.resolve_repo(request)
-    end
-
-    test "falls back to default repo" do
-      Application.put_env(:hermes, :github,
-        token: "x",
-        owner: "acme",
-        default_repo: "main",
-        api_url: "https://api.github.com"
-      )
-
-      request = %Request{github_repo: nil}
-      assert {:ok, {"acme", "main"}} = GitHub.resolve_repo(request)
+      assert {:ok, {"acme", "main"}} = GitHub.default_target()
     end
 
     test "errors without owner" do
@@ -104,7 +91,7 @@ defmodule Hermes.Services.GitHubTest do
         api_url: "https://api.github.com"
       )
 
-      assert {:error, :missing_config} = GitHub.resolve_repo(%Request{})
+      assert {:error, :missing_config} = GitHub.default_target()
     end
   end
 
@@ -159,8 +146,35 @@ defmodule Hermes.Services.GitHubTest do
         goal_description: "g"
       }
 
-      assert {:ok, %{number: 99, url: "https://github.com/acme/main/issues/99"}} =
-               GitHub.create_issue(request)
+      assert {:ok,
+              %{
+                owner: "acme",
+                repo: "main",
+                number: 99,
+                url: "https://github.com/acme/main/issues/99"
+              }} = GitHub.create_issue(request)
+    end
+
+    test "honors :repo override" do
+      Application.put_env(:hermes, :github_req_options,
+        plug: fn conn ->
+          assert conn.request_path == "/repos/acme/other/issues"
+
+          conn
+          |> Plug.Conn.put_resp_content_type("application/json")
+          |> Plug.Conn.resp(
+            201,
+            Jason.encode!(%{
+              "number" => 1,
+              "html_url" => "https://github.com/acme/other/issues/1"
+            })
+          )
+        end
+      )
+
+      request = %Request{id: 5, title: "t", goal_description: "g"}
+
+      assert {:ok, %{repo: "other"}} = GitHub.create_issue(request, repo: "other")
     end
 
     test "returns http error on non-2xx" do

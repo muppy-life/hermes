@@ -2,11 +2,16 @@ defmodule Hermes.Services.GitHub do
   @moduledoc """
   Service for the GitHub REST API.
 
-  Handles creating and updating issues that mirror Hermes requests.
-  All requests target `GITHUB_OWNER/GITHUB_DEFAULT_REPO` unless the
-  Hermes request stores its own `github_repo` override.
+  Creates and updates GitHub issues that mirror Hermes requests. Each
+  Hermes request is linked to at most one `Hermes.Requests.GitHubIssue`
+  row that stores the canonical `(owner, repo, number)` identity.
+
+  When creating a new issue, the target repo defaults to
+  `GITHUB_OWNER/GITHUB_DEFAULT_REPO`. The caller may override per request
+  by passing `repo:` to `create_issue/2`.
   """
 
+  alias Hermes.Requests.GitHubIssue
   alias Hermes.Requests.Request
 
   require Logger
@@ -14,17 +19,13 @@ defmodule Hermes.Services.GitHub do
   @api_version "2022-11-28"
 
   @doc """
-  Resolves `{owner, repo}` for a request.
-
-  Falls back to `GITHUB_DEFAULT_REPO` when the request has no override.
-  Returns `{:error, :missing_config}` when owner/repo cannot be resolved.
+  Returns the default `{owner, repo}` for new issues, or
+  `{:error, :missing_config}`.
   """
-  def resolve_repo(%Request{github_repo: repo}) do
+  def default_target do
     cfg = config()
-    owner = cfg[:owner]
-    repo = repo || cfg[:default_repo]
 
-    case {owner, repo} do
+    case {cfg[:owner], cfg[:default_repo]} do
       {nil, _} -> {:error, :missing_config}
       {_, nil} -> {:error, :missing_config}
       {o, r} -> {:ok, {o, r}}
@@ -32,10 +33,16 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
-  Creates a GitHub issue from a request. Returns `{:ok, %{number, html_url}}`.
+  Creates a GitHub issue from a request.
+
+  Options:
+    * `:owner` — overrides the configured owner
+    * `:repo`  — overrides the default repo (use for per-request repo)
+
+  Returns `{:ok, %{owner, repo, number, url}}`.
   """
-  def create_issue(%Request{} = request) do
-    with {:ok, {owner, repo}} <- resolve_repo(request) do
+  def create_issue(%Request{} = request, opts \\ []) do
+    with {:ok, {owner, repo}} <- resolve_target(opts) do
       body = %{
         "title" => issue_title(request),
         "body" => render_body(request),
@@ -44,7 +51,7 @@ defmodule Hermes.Services.GitHub do
 
       case post("/repos/#{owner}/#{repo}/issues", body) do
         {:ok, %{"number" => number, "html_url" => url}} ->
-          {:ok, %{number: number, url: url}}
+          {:ok, %{owner: owner, repo: repo, number: number, url: url}}
 
         {:error, _} = err ->
           err
@@ -55,43 +62,31 @@ defmodule Hermes.Services.GitHub do
   @doc """
   Updates the linked GitHub issue's title and body.
   """
-  def update_issue(%Request{github_issue_number: number} = request) when is_integer(number) do
-    with {:ok, {owner, repo}} <- resolve_repo(request) do
-      body = %{
-        "title" => issue_title(request),
-        "body" => render_body(request),
-        "labels" => labels_for(request)
-      }
+  def update_issue(%GitHubIssue{owner: owner, repo: repo, number: number}, %Request{} = request) do
+    body = %{
+      "title" => issue_title(request),
+      "body" => render_body(request),
+      "labels" => labels_for(request)
+    }
 
-      patch("/repos/#{owner}/#{repo}/issues/#{number}", body)
-    end
+    patch("/repos/#{owner}/#{repo}/issues/#{number}", body)
   end
-
-  def update_issue(_), do: {:error, :no_linked_issue}
 
   @doc """
   Sets the issue state. `state` is `:open` or `:closed`.
   """
-  def set_issue_state(%Request{github_issue_number: number} = request, state)
-      when is_integer(number) and state in [:open, :closed] do
-    with {:ok, {owner, repo}} <- resolve_repo(request) do
-      patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"state" => Atom.to_string(state)})
-    end
+  def set_issue_state(%GitHubIssue{owner: owner, repo: repo, number: number}, state)
+      when state in [:open, :closed] do
+    patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"state" => Atom.to_string(state)})
   end
-
-  def set_issue_state(_, _), do: {:error, :no_linked_issue}
 
   @doc """
   Adds a comment to the linked issue.
   """
-  def create_comment(%Request{github_issue_number: number} = request, body)
-      when is_integer(number) and is_binary(body) do
-    with {:ok, {owner, repo}} <- resolve_repo(request) do
-      post("/repos/#{owner}/#{repo}/issues/#{number}/comments", %{"body" => body})
-    end
+  def create_comment(%GitHubIssue{owner: owner, repo: repo, number: number}, body)
+      when is_binary(body) do
+    post("/repos/#{owner}/#{repo}/issues/#{number}/comments", %{"body" => body})
   end
-
-  def create_comment(_, _), do: {:error, :no_linked_issue}
 
   @doc """
   Fetches a single issue. Used when linking an existing issue.
@@ -102,16 +97,14 @@ defmodule Hermes.Services.GitHub do
 
   @doc """
   Parses an issue reference: full URL or bare number.
-  Returns `{:ok, {owner, repo, number}}` or `{:ok, {nil, nil, number}}`
-  for bare numbers (caller resolves with default repo).
+
+  Returns `{:ok, {owner, repo, number}}`. For bare numbers `owner`/`repo`
+  are `nil` and the caller resolves with the default target.
   """
   def parse_issue_reference(value) when is_binary(value) do
     value = String.trim(value)
 
     cond do
-      Regex.match?(~r/^\d+$/, value) ->
-        {:ok, {nil, nil, String.to_integer(value)}}
-
       match = Regex.run(~r{github\.com/([^/]+)/([^/]+)/issues/(\d+)}, value) ->
         [_, owner, repo, n] = match
         {:ok, {owner, repo, String.to_integer(n)}}
@@ -173,6 +166,18 @@ defmodule Hermes.Services.GitHub do
 
   defp add_label(list, nil), do: list
   defp add_label(list, label), do: [label | list]
+
+  defp resolve_target(opts) do
+    cfg = config()
+    owner = Keyword.get(opts, :owner) || cfg[:owner]
+    repo = Keyword.get(opts, :repo) || cfg[:default_repo]
+
+    cond do
+      is_nil(owner) -> {:error, :missing_config}
+      is_nil(repo) -> {:error, :missing_config}
+      true -> {:ok, {owner, repo}}
+    end
+  end
 
   # HTTP layer
 

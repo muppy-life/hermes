@@ -54,7 +54,7 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
   end
 
   describe "create_github_issue_for_request/1" do
-    test "creates an issue and persists number+url", %{request: request} do
+    test "creates an issue and inserts a github_issues row", %{request: request} do
       stub_github(fn conn ->
         assert conn.method == "POST"
         assert conn.request_path == "/repos/acme/main/issues"
@@ -67,19 +67,42 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
         )
       end)
 
-      assert {:ok, updated} = Requests.create_github_issue_for_request(request)
-      assert updated.github_issue_number == 42
-      assert updated.github_issue_url == "https://github.com/acme/main/issues/42"
+      assert {:ok, issue} = Requests.create_github_issue_for_request(request)
+      assert issue.owner == "acme"
+      assert issue.repo == "main"
+      assert issue.number == 42
+      assert issue.url == "https://github.com/acme/main/issues/42"
+      assert issue.request_id == request.id
     end
 
     test "rejects when already linked", %{request: request} do
-      {:ok, request} =
-        Requests.update_request(request, %{
-          "github_issue_number" => 1,
-          "github_issue_url" => "x"
-        })
+      stub_github(fn conn ->
+        Plug.Conn.resp(
+          conn,
+          201,
+          Jason.encode!(%{"number" => 1, "html_url" => "https://github.com/acme/main/issues/1"})
+        )
+        |> Plug.Conn.put_resp_content_type("application/json")
+      end)
 
+      assert {:ok, _} = Requests.create_github_issue_for_request(request)
       assert {:error, :already_linked} = Requests.create_github_issue_for_request(request)
+    end
+
+    test "passes :repo override", %{request: request} do
+      stub_github(fn conn ->
+        assert conn.request_path == "/repos/acme/other/issues"
+
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(
+          201,
+          Jason.encode!(%{"number" => 7, "html_url" => "https://github.com/acme/other/issues/7"})
+        )
+      end)
+
+      assert {:ok, issue} = Requests.create_github_issue_for_request(request, repo: "other")
+      assert issue.repo == "other"
     end
   end
 
@@ -93,15 +116,21 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
         |> Plug.Conn.put_resp_content_type("application/json")
         |> Plug.Conn.resp(
           200,
-          Jason.encode!(%{"number" => 55, "html_url" => "https://github.com/acme/main/issues/55"})
+          Jason.encode!(%{
+            "number" => 55,
+            "html_url" => "https://github.com/acme/main/issues/55",
+            "state" => "open"
+          })
         )
       end)
 
-      assert {:ok, updated} = Requests.link_github_issue(request, "55")
-      assert updated.github_issue_number == 55
+      assert {:ok, issue} = Requests.link_github_issue(request, "55")
+      assert issue.number == 55
+      assert issue.repo == "main"
+      assert issue.state == "open"
     end
 
-    test "links via full URL and stores repo override when different", %{request: request} do
+    test "links via full URL with non-default repo", %{request: request} do
       stub_github(fn conn ->
         assert conn.request_path == "/repos/acme/other/issues/3"
 
@@ -109,22 +138,44 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
         |> Plug.Conn.put_resp_content_type("application/json")
         |> Plug.Conn.resp(
           200,
-          Jason.encode!(%{"number" => 3, "html_url" => "https://github.com/acme/other/issues/3"})
+          Jason.encode!(%{
+            "number" => 3,
+            "html_url" => "https://github.com/acme/other/issues/3",
+            "state" => "closed"
+          })
         )
       end)
 
-      assert {:ok, updated} =
+      assert {:ok, issue} =
                Requests.link_github_issue(
                  request,
                  "https://github.com/acme/other/issues/3"
                )
 
-      assert updated.github_issue_number == 3
-      assert updated.github_repo == "other"
+      assert issue.repo == "other"
+      assert issue.state == "closed"
     end
 
     test "rejects garbage references", %{request: request} do
+      stub_github(fn conn -> Plug.Conn.resp(conn, 200, "{}") end)
       assert {:error, :invalid_reference} = Requests.link_github_issue(request, "nope")
+    end
+  end
+
+  describe "unlink_github_issue/1" do
+    test "deletes the link row", %{request: request} do
+      stub_github(fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.resp(
+          201,
+          Jason.encode!(%{"number" => 9, "html_url" => "https://github.com/acme/main/issues/9"})
+        )
+      end)
+
+      {:ok, _issue} = Requests.create_github_issue_for_request(request)
+      assert {:ok, _} = Requests.unlink_github_issue(request)
+      assert {:error, :not_linked} = Requests.unlink_github_issue(request)
     end
   end
 

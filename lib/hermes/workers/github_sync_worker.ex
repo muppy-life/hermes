@@ -3,7 +3,7 @@ defmodule Hermes.Workers.GitHubSyncWorker do
   Syncs Hermes requests to GitHub issues.
 
   Actions:
-    * `"create"`  — create a new issue, persist number+url on the request
+    * `"create"`  — create a new issue and store the link row
     * `"update"`  — push title/body changes to the linked issue
     * `"status"`  — open/close based on Hermes status
     * `"comment"` — mirror a Hermes comment as a GitHub issue comment
@@ -16,11 +16,9 @@ defmodule Hermes.Workers.GitHubSyncWorker do
 
   require Logger
 
-  import Ecto.Query, only: [from: 2]
-
   alias Hermes.Repo
   alias Hermes.Requests
-  alias Hermes.Requests.Request
+  alias Hermes.Requests.GitHubIssue
   alias Hermes.Requests.RequestComment
   alias Hermes.Services.GitHub
 
@@ -41,14 +39,13 @@ defmodule Hermes.Workers.GitHubSyncWorker do
       is_nil(request) ->
         {:discard, "Request not found"}
 
-      is_integer(request.github_issue_number) ->
-        # Already linked, nothing to do.
+      not is_nil(request.github_issue) ->
         :ok
 
       true ->
         case GitHub.create_issue(request) do
-          {:ok, %{number: number, url: url}} ->
-            persist_issue_link(request, number, url)
+          {:ok, attrs} ->
+            insert_issue_link(request.id, attrs)
             :ok
 
           {:error, reason} ->
@@ -62,8 +59,8 @@ defmodule Hermes.Workers.GitHubSyncWorker do
 
     cond do
       is_nil(request) -> {:discard, "Request not found"}
-      is_nil(request.github_issue_number) -> :ok
-      true -> wrap(GitHub.update_issue(request))
+      is_nil(request.github_issue) -> :ok
+      true -> wrap(GitHub.update_issue(request.github_issue, request), request)
     end
   end
 
@@ -74,13 +71,18 @@ defmodule Hermes.Workers.GitHubSyncWorker do
       is_nil(request) ->
         {:discard, "Request not found"}
 
-      is_nil(request.github_issue_number) ->
+      is_nil(request.github_issue) ->
         :ok
 
       true ->
         case state_for_status(status) do
-          nil -> :ok
-          state -> wrap(GitHub.set_issue_state(request, state))
+          nil ->
+            :ok
+
+          state ->
+            result = GitHub.set_issue_state(request.github_issue, state)
+            update_cached_state(request.github_issue, state)
+            wrap(result, request)
         end
     end
   end
@@ -97,8 +99,8 @@ defmodule Hermes.Workers.GitHubSyncWorker do
 
         cond do
           is_nil(request) -> {:discard, "Request not found"}
-          is_nil(request.github_issue_number) -> :ok
-          true -> wrap(GitHub.create_comment(request, format_comment(comment)))
+          is_nil(request.github_issue) -> :ok
+          true -> wrap(GitHub.create_comment(request.github_issue, format_comment(comment)))
         end
     end
   end
@@ -108,16 +110,44 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     {:discard, "Unknown action"}
   end
 
-  defp wrap({:ok, _}), do: :ok
-  defp wrap({:error, reason}), do: {:error, inspect(reason)}
+  defp wrap(result, request \\ nil)
+  defp wrap({:ok, _}, request), do: touch_last_synced(request)
+  defp wrap({:error, reason}, _), do: {:error, inspect(reason)}
 
-  defp persist_issue_link(%Request{} = request, number, url) do
-    from(r in Request, where: r.id == ^request.id)
-    |> Repo.update_all(set: [github_issue_number: number, github_issue_url: url])
+  defp touch_last_synced(nil), do: :ok
+
+  defp touch_last_synced(%{github_issue: nil}), do: :ok
+
+  defp touch_last_synced(%{github_issue: %GitHubIssue{} = issue}) do
+    issue
+    |> Ecto.Changeset.change(last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+
+    :ok
+  end
+
+  defp insert_issue_link(request_id, %{owner: owner, repo: repo, number: number, url: url}) do
+    %GitHubIssue{}
+    |> GitHubIssue.changeset(%{
+      request_id: request_id,
+      owner: owner,
+      repo: repo,
+      number: number,
+      url: url,
+      state: "open",
+      last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.insert()
+  end
+
+  defp update_cached_state(%GitHubIssue{} = issue, state) do
+    issue
+    |> Ecto.Changeset.change(state: Atom.to_string(state))
+    |> Repo.update()
   end
 
   defp get_request(id) do
-    Requests.get_request!(id)
+    Requests.get_request_with_github_issue(id)
   rescue
     Ecto.NoResultsError -> nil
   end

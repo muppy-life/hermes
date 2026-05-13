@@ -19,9 +19,7 @@ defmodule Hermes.Requests.Request do
     field :expected_output, :string
     field :solution_diagram, :string
 
-    field :github_issue_number, :integer
-    field :github_issue_url, :string
-    field :github_repo, :string
+    has_one :github_issue, Hermes.Requests.GitHubIssue
 
     belongs_to :requesting_team, Hermes.Accounts.Team
     belongs_to :assigned_to_team, Hermes.Accounts.Team
@@ -47,9 +45,6 @@ defmodule Hermes.Requests.Request do
       :goal_target,
       :expected_output,
       :solution_diagram,
-      :github_issue_number,
-      :github_issue_url,
-      :github_repo,
       :requesting_team_id,
       :assigned_to_team_id,
       :created_by_id

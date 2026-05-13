@@ -7,7 +7,7 @@ defmodule HermesWeb.RequestLive.Edit do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    request = Requests.get_request!(id)
+    request = Requests.get_request_with_github_issue(id)
 
     {:ok,
      socket
@@ -41,11 +41,11 @@ defmodule HermesWeb.RequestLive.Edit do
 
   def handle_event("github_create_issue", _params, socket) do
     case Requests.create_github_issue_for_request(socket.assigns.request) do
-      {:ok, request} ->
+      {:ok, issue} ->
         {:noreply,
          socket
-         |> assign(:request, request)
-         |> put_flash(:info, "GitHub issue ##{request.github_issue_number} created")}
+         |> assign(:request, %{socket.assigns.request | github_issue: issue})
+         |> put_flash(:info, "GitHub issue ##{issue.number} created")}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, github_error_message(reason))}
@@ -54,12 +54,12 @@ defmodule HermesWeb.RequestLive.Edit do
 
   def handle_event("github_link_issue", %{"github_link" => %{"reference" => reference}}, socket) do
     case Requests.link_github_issue(socket.assigns.request, reference) do
-      {:ok, request} ->
+      {:ok, issue} ->
         {:noreply,
          socket
-         |> assign(:request, request)
+         |> assign(:request, %{socket.assigns.request | github_issue: issue})
          |> assign(:link_form, to_form(%{"reference" => ""}, as: :github_link))
-         |> put_flash(:info, "Linked GitHub issue ##{request.github_issue_number}")}
+         |> put_flash(:info, "Linked GitHub issue ##{issue.number}")}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, github_error_message(reason))}
@@ -68,19 +68,20 @@ defmodule HermesWeb.RequestLive.Edit do
 
   def handle_event("github_unlink", _params, socket) do
     case Requests.unlink_github_issue(socket.assigns.request) do
-      {:ok, request} ->
+      {:ok, _issue} ->
         {:noreply,
          socket
-         |> assign(:request, request)
+         |> assign(:request, %{socket.assigns.request | github_issue: nil})
          |> put_flash(:info, "GitHub issue unlinked")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Could not unlink issue")}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, github_error_message(reason))}
     end
   end
 
   defp github_error_message(:integration_disabled), do: "GitHub integration is not configured"
   defp github_error_message(:already_linked), do: "Request is already linked to an issue"
+  defp github_error_message(:not_linked), do: "Request is not linked to an issue"
   defp github_error_message(:invalid_reference), do: "Could not parse the issue reference"
   defp github_error_message(:missing_config), do: "Missing GitHub owner/repo configuration"
   defp github_error_message(:missing_token), do: "Missing GitHub token"

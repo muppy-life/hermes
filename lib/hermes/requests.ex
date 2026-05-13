@@ -9,6 +9,7 @@ defmodule Hermes.Requests do
 
   alias Hermes.Repo
   alias Hermes.Requests.DraftStore
+  alias Hermes.Requests.GitHubIssue
   alias Hermes.Requests.Request
   alias Hermes.Requests.RequestChange
   alias Hermes.Requests.RequestComment
@@ -331,6 +332,15 @@ defmodule Hermes.Requests do
 
   # GitHub sync hooks
 
+  @doc """
+  Returns a request preloaded with its `github_issue` association.
+  """
+  def get_request_with_github_issue(id) do
+    Request
+    |> Repo.get!(id)
+    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by, :github_issue])
+  end
+
   defp trigger_github_sync(request, action, extra \\ %{}) do
     if github_integration_enabled?() do
       Map.merge(%{action: action, request_id: request.id}, extra)
@@ -346,7 +356,7 @@ defmodule Hermes.Requests do
       not github_integration_enabled?() ->
         :ok
 
-      is_nil(updated.github_issue_number) ->
+      is_nil(get_github_issue(updated.id)) ->
         :ok
 
       true ->
@@ -398,24 +408,34 @@ defmodule Hermes.Requests do
     cfg[:token] not in [nil, ""] and cfg[:owner] not in [nil, ""]
   end
 
+  defp get_github_issue(request_id) do
+    Repo.get_by(GitHubIssue, request_id: request_id)
+  end
+
   @doc """
   Synchronously creates a GitHub issue for an existing request and persists
   the link. Used by the manual "Create issue" button on the edit page.
+
+  Options:
+    * `:repo` — override the default repo
   """
-  def create_github_issue_for_request(%Request{} = request) do
+  def create_github_issue_for_request(%Request{} = request, opts \\ []) do
     cond do
       not github_integration_enabled?() ->
         {:error, :integration_disabled}
 
-      is_integer(request.github_issue_number) ->
+      not is_nil(get_github_issue(request.id)) ->
         {:error, :already_linked}
 
       true ->
-        case GitHub.create_issue(request) do
-          {:ok, %{number: number, url: url}} ->
-            update_request(request, %{
-              "github_issue_number" => number,
-              "github_issue_url" => url
+        case GitHub.create_issue(request, opts) do
+          {:ok, %{owner: owner, repo: repo, number: number, url: url}} ->
+            insert_github_issue(request.id, %{
+              owner: owner,
+              repo: repo,
+              number: number,
+              url: url,
+              state: "open"
             })
 
           {:error, _} = err ->
@@ -427,48 +447,57 @@ defmodule Hermes.Requests do
   @doc """
   Links an existing GitHub issue to a request.
 
-  `reference` may be a bare number (uses default repo), `owner/repo#N`,
-  or a full `https://github.com/owner/repo/issues/N` URL.
+  `reference` may be a bare number/`#N` (uses default repo) or a full
+  `https://github.com/owner/repo/issues/N` URL.
   """
   def link_github_issue(%Request{} = request, reference) when is_binary(reference) do
-    with {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
-         {:ok, {resolved_owner, resolved_repo}} <- resolve_link_repo(request, owner, repo),
-         {:ok, %{"html_url" => url}} <- GitHub.get_issue(resolved_owner, resolved_repo, number) do
-      attrs = %{
-        "github_issue_number" => number,
-        "github_issue_url" => url,
-        "github_repo" => maybe_repo_override(request, resolved_repo)
-      }
-
-      update_request(request, attrs)
+    with :ok <- ensure_not_linked(request),
+         {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
+         {:ok, {resolved_owner, resolved_repo}} <- resolve_link_target(owner, repo),
+         {:ok, %{"html_url" => url, "state" => state}} <-
+           GitHub.get_issue(resolved_owner, resolved_repo, number) do
+      insert_github_issue(request.id, %{
+        owner: resolved_owner,
+        repo: resolved_repo,
+        number: number,
+        url: url,
+        state: state
+      })
     end
   end
 
-  defp resolve_link_repo(request, nil, nil) do
-    GitHub.resolve_repo(request)
+  defp ensure_not_linked(%Request{} = request) do
+    case get_github_issue(request.id) do
+      nil -> :ok
+      _ -> {:error, :already_linked}
+    end
   end
 
-  defp resolve_link_repo(_request, owner, repo) when is_binary(owner) and is_binary(repo) do
+  defp resolve_link_target(nil, nil), do: GitHub.default_target()
+
+  defp resolve_link_target(owner, repo) when is_binary(owner) and is_binary(repo) do
     {:ok, {owner, repo}}
   end
 
-  defp maybe_repo_override(request, resolved_repo) do
-    cfg = Application.get_env(:hermes, :github, [])
-
-    cond do
-      resolved_repo == cfg[:default_repo] -> request.github_repo
-      true -> resolved_repo
-    end
+  defp insert_github_issue(request_id, attrs) do
+    %GitHubIssue{}
+    |> GitHubIssue.changeset(
+      Map.merge(attrs, %{
+        request_id: request_id,
+        last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+    )
+    |> Repo.insert()
   end
 
   @doc """
   Removes the GitHub issue link from a request. Does not touch GitHub.
   """
   def unlink_github_issue(%Request{} = request) do
-    update_request(request, %{
-      "github_issue_number" => nil,
-      "github_issue_url" => nil
-    })
+    case get_github_issue(request.id) do
+      nil -> {:error, :not_linked}
+      issue -> Repo.delete(issue)
+    end
   end
 
   defp trigger_comment_notification(comment) do
