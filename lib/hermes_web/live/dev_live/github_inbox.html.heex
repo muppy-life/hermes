@@ -1,0 +1,93 @@
+<.header>
+  Dev — GitHub fake inbox
+  <:subtitle>
+    Issues created by the in-memory adapter. Toggle state to simulate a GitHub-side change.
+  </:subtitle>
+  <:actions>
+    <button
+      type="button"
+      phx-click="reset"
+      data-confirm="Wipe all fake issues?"
+      class="btn btn-sm btn-warning"
+    >
+      Reset
+    </button>
+  </:actions>
+</.header>
+
+<%= if @adapter != Hermes.Services.GitHub.InMemory do %>
+  <div class="alert alert-warning mt-6">
+    The configured GitHub adapter is <code>{inspect(@adapter)}</code>. This page only renders the
+    in-memory adapter. Unset <code>GITHUB_USE_REAL_API</code> and restart the server to use it.
+  </div>
+<% else %>
+  <%= if @issues == [] do %>
+    <p class="text-sm text-gray-500 mt-6">No fake issues yet. Create a Hermes request.</p>
+  <% else %>
+    <div class="mt-6 space-y-4">
+      <%= for issue <- @issues do %>
+        <div class="card border border-base-300 shadow-sm">
+          <div class="card-body">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h2 class="card-title">
+                  {issue.owner}/{issue.repo}#{issue.number} — {issue.title}
+                </h2>
+                <p class="text-xs text-gray-500">
+                  Created {Calendar.strftime(issue.created_at, "%Y-%m-%d %H:%M:%S")} ·
+                  Updated {Calendar.strftime(issue.updated_at, "%Y-%m-%d %H:%M:%S")}
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class={
+                  "badge " <> if(issue.state == "open", do: "badge-success", else: "badge-neutral")
+                }>
+                  {issue.state}
+                </span>
+                <button
+                  type="button"
+                  phx-click="toggle_state"
+                  phx-value-owner={issue.owner}
+                  phx-value-repo={issue.repo}
+                  phx-value-number={issue.number}
+                  class="btn btn-xs"
+                >
+                  Toggle state
+                </button>
+              </div>
+            </div>
+
+            <%= if issue.labels != [] do %>
+              <div class="flex flex-wrap gap-1 mt-2">
+                <%= for label <- issue.labels do %>
+                  <span class="badge badge-sm">{label}</span>
+                <% end %>
+              </div>
+            <% end %>
+
+            <details class="mt-3">
+              <summary class="text-sm cursor-pointer">Body</summary>
+              <pre class="text-xs whitespace-pre-wrap mt-2 bg-base-200 p-3 rounded">{issue.body}</pre>
+            </details>
+
+            <%= if issue.comments != [] do %>
+              <div class="mt-3">
+                <h3 class="text-sm font-semibold">Comments ({length(issue.comments)})</h3>
+                <ul class="text-sm mt-1 space-y-2">
+                  <%= for comment <- issue.comments do %>
+                    <li class="border-l-2 pl-2">
+                      <p class="text-xs text-gray-500">
+                        {Calendar.strftime(comment.inserted_at, "%Y-%m-%d %H:%M:%S")}
+                      </p>
+                      <pre class="whitespace-pre-wrap">{comment.body}</pre>
+                    </li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

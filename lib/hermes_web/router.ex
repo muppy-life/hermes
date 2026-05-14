@@ -79,6 +79,12 @@ defmodule HermesWeb.Router do
     # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
+    scope "/dev", HermesWeb do
+      pipe_through :browser
+
+      live "/github", DevLive.GithubInbox, :index
+    end
+
     scope "/dev" do
       pipe_through :browser
 

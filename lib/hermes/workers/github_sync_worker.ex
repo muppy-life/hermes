@@ -3,10 +3,11 @@ defmodule Hermes.Workers.GitHubSyncWorker do
   Syncs Hermes requests to GitHub issues.
 
   Actions:
-    * `"create"`  — create a new issue and store the link row
     * `"update"`  — push title/body changes to the linked issue
     * `"status"`  — open/close based on Hermes status
     * `"comment"` — mirror a Hermes comment as a GitHub issue comment
+
+  Issue creation runs synchronously via `Hermes.Requests.create_github_issue_for_request/2`.
   """
 
   use Oban.Worker,
@@ -29,28 +30,6 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     else
       Logger.info("GitHub integration not configured; skipping #{action}")
       {:discard, "GitHub integration not configured"}
-    end
-  end
-
-  defp handle("create", %{"request_id" => id}) do
-    request = get_request(id)
-
-    cond do
-      is_nil(request) ->
-        {:discard, "Request not found"}
-
-      not is_nil(request.github_issue) ->
-        :ok
-
-      true ->
-        case GitHub.create_issue(request) do
-          {:ok, attrs} ->
-            insert_issue_link(request.id, attrs)
-            :ok
-
-          {:error, reason} ->
-            {:error, inspect(reason)}
-        end
     end
   end
 
@@ -126,20 +105,6 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     :ok
   end
 
-  defp insert_issue_link(request_id, %{owner: owner, repo: repo, number: number, url: url}) do
-    %GitHubIssue{}
-    |> GitHubIssue.changeset(%{
-      request_id: request_id,
-      owner: owner,
-      repo: repo,
-      number: number,
-      url: url,
-      state: "open",
-      last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second)
-    })
-    |> Repo.insert()
-  end
-
   defp update_cached_state(%GitHubIssue{} = issue, state) do
     issue
     |> Ecto.Changeset.change(state: Atom.to_string(state))
@@ -167,7 +132,13 @@ defmodule Hermes.Workers.GitHubSyncWorker do
   end
 
   defp integration_configured? do
-    cfg = Application.get_env(:hermes, :github, [])
-    cfg[:token] not in [nil, ""] and cfg[:owner] not in [nil, ""]
+    case Hermes.Services.GitHub.adapter() do
+      Hermes.Services.GitHub.InMemory ->
+        true
+
+      _ ->
+        cfg = Application.get_env(:hermes, :github, [])
+        cfg[:token] not in [nil, ""] and cfg[:owner] not in [nil, ""]
+    end
   end
 end

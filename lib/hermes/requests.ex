@@ -70,8 +70,6 @@ defmodule Hermes.Requests do
 
         trigger_request_created_notification(request)
 
-        trigger_github_sync(request, "create")
-
         {:ok, request}
 
       error ->
@@ -401,11 +399,20 @@ defmodule Hermes.Requests do
   end
 
   @doc """
-  Returns true when a `GITHUB_TOKEN` and `GITHUB_OWNER` are configured.
+  Returns true when the GitHub integration can run.
+
+  The in-memory dev adapter is always considered enabled (no creds needed).
+  The HTTP adapter requires `GITHUB_TOKEN` + `GITHUB_OWNER`.
   """
   def github_integration_enabled? do
-    cfg = Application.get_env(:hermes, :github, [])
-    cfg[:token] not in [nil, ""] and cfg[:owner] not in [nil, ""]
+    case GitHub.adapter() do
+      Hermes.Services.GitHub.InMemory ->
+        true
+
+      _ ->
+        cfg = Application.get_env(:hermes, :github, [])
+        cfg[:token] not in [nil, ""] and cfg[:owner] not in [nil, ""]
+    end
   end
 
   defp get_github_issue(request_id) do
@@ -454,7 +461,7 @@ defmodule Hermes.Requests do
     with :ok <- ensure_not_linked(request),
          {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
          {:ok, {resolved_owner, resolved_repo}} <- resolve_link_target(owner, repo),
-         {:ok, %{"html_url" => url, "state" => state}} <-
+         {:ok, %{url: url, state: state}} <-
            GitHub.get_issue(resolved_owner, resolved_repo, number) do
       insert_github_issue(request.id, %{
         owner: resolved_owner,

@@ -1,14 +1,15 @@
 defmodule Hermes.Services.GitHub do
   @moduledoc """
-  Service for the GitHub REST API.
+  Facade for the GitHub integration.
 
-  Creates and updates GitHub issues that mirror Hermes requests. Each
-  Hermes request is linked to at most one `Hermes.Requests.GitHubIssue`
-  row that stores the canonical `(owner, repo, number)` identity.
+  Renders request payloads (title, body, labels) and dispatches to the
+  configured adapter:
 
-  When creating a new issue, the target repo defaults to
-  `GITHUB_OWNER/GITHUB_DEFAULT_REPO`. The caller may override per request
-  by passing `repo:` to `create_issue/2`.
+    * `Hermes.Services.GitHub.HTTP`     — real REST API (prod, staging)
+    * `Hermes.Services.GitHub.InMemory` — Agent-backed fake (dev)
+
+  Tests can also inject a Req plug via `:github_req_options` (HTTP adapter
+  only) for tight-control HTTP stubs.
   """
 
   alias Hermes.Requests.GitHubIssue
@@ -16,7 +17,7 @@ defmodule Hermes.Services.GitHub do
 
   require Logger
 
-  @api_version "2022-11-28"
+  @default_adapter Hermes.Services.GitHub.HTTP
 
   @doc """
   Returns the default `{owner, repo}` for new issues, or
@@ -24,12 +25,22 @@ defmodule Hermes.Services.GitHub do
   """
   def default_target do
     cfg = config()
+    owner = cfg[:owner] || in_memory_default(:owner)
+    repo = cfg[:default_repo] || in_memory_default(:repo)
 
-    case {cfg[:owner], cfg[:default_repo]} do
-      {nil, _} -> {:error, :missing_config}
-      {_, nil} -> {:error, :missing_config}
-      {o, r} -> {:ok, {o, r}}
+    cond do
+      is_nil(owner) -> {:error, :missing_config}
+      is_nil(repo) -> {:error, :missing_config}
+      true -> {:ok, {owner, repo}}
     end
+  end
+
+  defp in_memory_default(:owner) do
+    if adapter() == Hermes.Services.GitHub.InMemory, do: "dev-org", else: nil
+  end
+
+  defp in_memory_default(:repo) do
+    if adapter() == Hermes.Services.GitHub.InMemory, do: "hermes-fake", else: nil
   end
 
   @doc """
@@ -42,20 +53,42 @@ defmodule Hermes.Services.GitHub do
   Returns `{:ok, %{owner, repo, number, url}}`.
   """
   def create_issue(%Request{} = request, opts \\ []) do
-    with {:ok, {owner, repo}} <- resolve_target(opts) do
-      body = %{
-        "title" => issue_title(request),
-        "body" => render_body(request),
-        "labels" => labels_for(request)
-      }
+    case resolve_target(opts) do
+      {:ok, {owner, repo}} ->
+        Logger.info(
+          "GitHub.create_issue request_id=#{request.id} target=#{owner}/#{repo} adapter=#{inspect(adapter())}"
+        )
 
-      case post("/repos/#{owner}/#{repo}/issues", body) do
-        {:ok, %{"number" => number, "html_url" => url}} ->
-          {:ok, %{owner: owner, repo: repo, number: number, url: url}}
+        payload = %{
+          owner: owner,
+          repo: repo,
+          title: issue_title(request),
+          body: render_body(request),
+          labels: labels_for(request)
+        }
 
-        {:error, _} = err ->
-          err
-      end
+        case adapter().create_issue(payload) do
+          {:ok, %{number: number, url: url}} ->
+            Logger.info(
+              "GitHub.create_issue ok request_id=#{request.id} issue=#{owner}/#{repo}##{number}"
+            )
+
+            {:ok, %{owner: owner, repo: repo, number: number, url: url}}
+
+          {:error, reason} = err ->
+            Logger.warning(
+              "GitHub.create_issue failed request_id=#{request.id} target=#{owner}/#{repo} reason=#{inspect(reason)}"
+            )
+
+            err
+        end
+
+      {:error, reason} = err ->
+        Logger.warning(
+          "GitHub.create_issue aborted request_id=#{request.id} reason=#{inspect(reason)}"
+        )
+
+        err
     end
   end
 
@@ -63,13 +96,18 @@ defmodule Hermes.Services.GitHub do
   Updates the linked GitHub issue's title and body.
   """
   def update_issue(%GitHubIssue{owner: owner, repo: repo, number: number}, %Request{} = request) do
-    body = %{
-      "title" => issue_title(request),
-      "body" => render_body(request),
-      "labels" => labels_for(request)
-    }
+    Logger.info("GitHub.update_issue request_id=#{request.id} issue=#{owner}/#{repo}##{number}")
 
-    patch("/repos/#{owner}/#{repo}/issues/#{number}", body)
+    %{
+      owner: owner,
+      repo: repo,
+      number: number,
+      title: issue_title(request),
+      body: render_body(request),
+      labels: labels_for(request)
+    }
+    |> adapter().update_issue()
+    |> log_result("update_issue", "#{owner}/#{repo}##{number}")
   end
 
   @doc """
@@ -77,7 +115,11 @@ defmodule Hermes.Services.GitHub do
   """
   def set_issue_state(%GitHubIssue{owner: owner, repo: repo, number: number}, state)
       when state in [:open, :closed] do
-    patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"state" => Atom.to_string(state)})
+    Logger.info("GitHub.set_issue_state issue=#{owner}/#{repo}##{number} state=#{state}")
+
+    %{owner: owner, repo: repo, number: number}
+    |> adapter().set_issue_state(state)
+    |> log_result("set_issue_state", "#{owner}/#{repo}##{number}")
   end
 
   @doc """
@@ -85,14 +127,24 @@ defmodule Hermes.Services.GitHub do
   """
   def create_comment(%GitHubIssue{owner: owner, repo: repo, number: number}, body)
       when is_binary(body) do
-    post("/repos/#{owner}/#{repo}/issues/#{number}/comments", %{"body" => body})
+    Logger.info("GitHub.create_comment issue=#{owner}/#{repo}##{number} bytes=#{byte_size(body)}")
+
+    %{owner: owner, repo: repo, number: number}
+    |> adapter().create_comment(body)
+    |> log_result("create_comment", "#{owner}/#{repo}##{number}")
   end
 
   @doc """
   Fetches a single issue. Used when linking an existing issue.
+
+  Returns `{:ok, %{number, url, state}}`.
   """
   def get_issue(owner, repo, number) when is_integer(number) do
-    get("/repos/#{owner}/#{repo}/issues/#{number}")
+    Logger.info("GitHub.get_issue issue=#{owner}/#{repo}##{number}")
+
+    owner
+    |> adapter().get_issue(repo, number)
+    |> log_result("get_issue", "#{owner}/#{repo}##{number}")
   end
 
   @doc """
@@ -146,6 +198,13 @@ defmodule Hermes.Services.GitHub do
     Enum.join(sections, "\n\n") <> footer
   end
 
+  @doc """
+  Returns the configured adapter module. Defaults to the HTTP adapter.
+  """
+  def adapter do
+    Application.get_env(:hermes, :github_adapter, @default_adapter)
+  end
+
   defp section(_label, nil), do: nil
   defp section(_label, ""), do: nil
   defp section(label, value), do: "### #{label}\n\n#{value}"
@@ -169,8 +228,8 @@ defmodule Hermes.Services.GitHub do
 
   defp resolve_target(opts) do
     cfg = config()
-    owner = Keyword.get(opts, :owner) || cfg[:owner]
-    repo = Keyword.get(opts, :repo) || cfg[:default_repo]
+    owner = Keyword.get(opts, :owner) || cfg[:owner] || in_memory_default(:owner)
+    repo = Keyword.get(opts, :repo) || cfg[:default_repo] || in_memory_default(:repo)
 
     cond do
       is_nil(owner) -> {:error, :missing_config}
@@ -179,54 +238,15 @@ defmodule Hermes.Services.GitHub do
     end
   end
 
-  # HTTP layer
-
-  defp post(path, body), do: request(:post, path, json: body)
-  defp patch(path, body), do: request(:patch, path, json: body)
-  defp get(path), do: request(:get, path, [])
-
-  defp request(method, path, opts) do
-    cfg = config()
-    token = cfg[:token]
-
-    if is_nil(token) or token == "" do
-      {:error, :missing_token}
-    else
-      url = cfg[:api_url] <> path
-
-      headers = [
-        {"authorization", "Bearer #{token}"},
-        {"accept", "application/vnd.github+json"},
-        {"x-github-api-version", @api_version},
-        {"user-agent", "hermes-app"}
-      ]
-
-      opts =
-        [headers: headers, retry: false]
-        |> Keyword.merge(opts)
-        |> maybe_put_test_plug()
-
-      case apply(Req, method, [url, opts]) do
-        {:ok, %Req.Response{status: status, body: resp_body}} when status in 200..299 ->
-          {:ok, resp_body}
-
-        {:ok, %Req.Response{status: status, body: resp_body}} ->
-          Logger.warning("GitHub #{method} #{path} -> #{status}: #{inspect(resp_body)}")
-          {:error, {:http_error, status, resp_body}}
-
-        {:error, reason} ->
-          Logger.warning("GitHub #{method} #{path} transport error: #{inspect(reason)}")
-          {:error, {:transport_error, reason}}
-      end
-    end
-  end
-
   defp config, do: Application.get_env(:hermes, :github, [])
 
-  defp maybe_put_test_plug(opts) do
-    case Application.get_env(:hermes, :github_req_options) do
-      nil -> opts
-      extra when is_list(extra) -> Keyword.merge(opts, extra)
-    end
+  defp log_result({:ok, _} = ok, op, ref) do
+    Logger.info("GitHub.#{op} ok issue=#{ref}")
+    ok
+  end
+
+  defp log_result({:error, reason} = err, op, ref) do
+    Logger.warning("GitHub.#{op} failed issue=#{ref} reason=#{inspect(reason)}")
+    err
   end
 end

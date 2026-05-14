@@ -9,7 +9,7 @@ defmodule HermesWeb.RequestLive.Show do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    request = Requests.get_request!(id)
+    request = Requests.get_request_with_github_issue(id)
     changes = Requests.list_request_changes(id)
     comments = Requests.list_request_comments(id)
     images = Requests.list_request_images(id)
@@ -55,6 +55,8 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:diagram_feature_enabled, Requests.diagram_generation_enabled?())
      |> assign(:teams, Accounts.list_teams())
      |> assign(:mentionable_users, mentionable_users)
+     |> assign(:github_enabled, Requests.github_integration_enabled?())
+     |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
      |> assign(:form, to_form(Requests.change_request(request)))
      |> allow_upload(:images,
        accept: ~w(.jpg .jpeg .png),
@@ -101,7 +103,7 @@ defmodule HermesWeb.RequestLive.Show do
       {:ok, _updated_request} ->
         # Reload the request with all associations preloaded
         request_id = socket.assigns.request.id
-        updated_request = Requests.get_request!(request_id)
+        updated_request = Requests.get_request_with_github_issue(request_id)
         changes = Requests.list_request_changes(request_id)
 
         {:noreply,
@@ -213,7 +215,7 @@ defmodule HermesWeb.RequestLive.Show do
       {:ok, _updated_request} ->
         # Reload the request with all associations preloaded
         request_id = socket.assigns.request.id
-        updated_request = Requests.get_request!(request_id)
+        updated_request = Requests.get_request_with_github_issue(request_id)
         changes = Requests.list_request_changes(request_id)
 
         {:noreply,
@@ -282,13 +284,64 @@ defmodule HermesWeb.RequestLive.Show do
     end
   end
 
+  def handle_event("github_create_issue", _params, socket) do
+    case Requests.create_github_issue_for_request(socket.assigns.request) do
+      {:ok, issue} ->
+        {:noreply,
+         socket
+         |> assign(:request, %{socket.assigns.request | github_issue: issue})
+         |> put_flash(:info, "GitHub issue ##{issue.number} created")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+    end
+  end
+
+  def handle_event("github_link_issue", %{"github_link" => %{"reference" => reference}}, socket) do
+    case Requests.link_github_issue(socket.assigns.request, reference) do
+      {:ok, issue} ->
+        {:noreply,
+         socket
+         |> assign(:request, %{socket.assigns.request | github_issue: issue})
+         |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
+         |> put_flash(:info, "Linked GitHub issue ##{issue.number}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+    end
+  end
+
+  def handle_event("github_unlink", _params, socket) do
+    case Requests.unlink_github_issue(socket.assigns.request) do
+      {:ok, _issue} ->
+        {:noreply,
+         socket
+         |> assign(:request, %{socket.assigns.request | github_issue: nil})
+         |> put_flash(:info, "GitHub issue unlinked")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+    end
+  end
+
   @impl true
   def handle_info({:diagram_generated, request_id}, socket) do
     # Reload the request to get the updated diagram
-    updated_request = Requests.get_request!(request_id)
+    updated_request = Requests.get_request_with_github_issue(request_id)
 
     {:noreply, assign(socket, :request, updated_request)}
   end
+
+  defp github_error_message(:integration_disabled), do: "GitHub integration is not configured"
+  defp github_error_message(:already_linked), do: "Request is already linked to an issue"
+  defp github_error_message(:not_linked), do: "Request is not linked to an issue"
+  defp github_error_message(:invalid_reference), do: "Could not parse the issue reference"
+  defp github_error_message(:missing_config), do: "Missing GitHub owner/repo configuration"
+  defp github_error_message(:missing_token), do: "Missing GitHub token"
+  defp github_error_message({:http_error, status, _}), do: "GitHub returned status #{status}"
+  defp github_error_message({:transport_error, _}), do: "Could not reach GitHub"
+  defp github_error_message(%Ecto.Changeset{}), do: "Could not save the issue link"
+  defp github_error_message(reason), do: "GitHub error: #{inspect(reason)}"
 
   defp render_comment_content(content) do
     mention_regex = ~r/((?:^|\s)@[\w.+-]+)/

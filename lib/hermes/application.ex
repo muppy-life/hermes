@@ -7,17 +7,21 @@ defmodule Hermes.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      HermesWeb.Telemetry,
-      Hermes.Repo,
-      {Oban, Application.fetch_env!(:hermes, Oban)},
-      {DNSCluster, query: Application.get_env(:hermes, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Hermes.PubSub},
-      HermesWeb.Presence,
-      Hermes.Requests.DraftStore,
-      # Start to serve requests, typically the last entry
-      HermesWeb.Endpoint
-    ]
+    children =
+      [
+        HermesWeb.Telemetry,
+        Hermes.Repo,
+        {Oban, Application.fetch_env!(:hermes, Oban)},
+        {DNSCluster, query: Application.get_env(:hermes, :dns_cluster_query) || :ignore},
+        {Phoenix.PubSub, name: Hermes.PubSub},
+        HermesWeb.Presence,
+        Hermes.Requests.DraftStore
+      ] ++
+        github_in_memory_child() ++
+        [
+          # Start to serve requests, typically the last entry
+          HermesWeb.Endpoint
+        ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -28,6 +32,14 @@ defmodule Hermes.Application do
     schedule_model_loading()
 
     result
+  end
+
+  defp github_in_memory_child do
+    if Application.get_env(:hermes, :github_adapter) == Hermes.Services.GitHub.InMemory do
+      [Hermes.Services.GitHub.InMemory]
+    else
+      []
+    end
   end
 
   defp schedule_model_loading do
