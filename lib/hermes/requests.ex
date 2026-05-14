@@ -508,6 +508,9 @@ defmodule Hermes.Requests do
       not is_nil(issue.project_item_id) ->
         issue
 
+      not project_configured?() ->
+        issue
+
       true ->
         with {:ok, node_id} <- GitHub.get_issue_node_id(issue.owner, issue.repo, issue.number),
              {:ok, item_id} <- GitHub.add_issue_to_project(node_id) do
@@ -528,6 +531,17 @@ defmodule Hermes.Requests do
 
             issue
         end
+    end
+  end
+
+  defp project_configured? do
+    case GitHub.adapter() do
+      Hermes.Services.GitHub.InMemory ->
+        true
+
+      _ ->
+        cfg = Application.get_env(:hermes, :github, [])
+        cfg[:project_id] not in [nil, ""]
     end
   end
 
