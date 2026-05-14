@@ -78,8 +78,14 @@ defmodule HermesWeb.Admin.GithubLive.Index do
 
   def handle_event("delete", %{"id" => id}, socket) do
     mapping = Requests.get_status_mapping!(id)
-    {:ok, _} = Requests.delete_status_mapping(mapping)
-    {:noreply, load_mappings(socket)}
+
+    case Requests.delete_status_mapping(mapping) do
+      {:ok, _} ->
+        {:noreply, load_mappings(socket)}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Delete failed: #{inspect(reason)}")}
+    end
   end
 
   defp load_mappings(socket) do

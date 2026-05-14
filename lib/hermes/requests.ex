@@ -604,9 +604,17 @@ defmodule Hermes.Requests do
               :ok
 
             mapping ->
-              mapping
-              |> GitHubStatusMapping.changeset(%{"github_option_name" => name})
-              |> Repo.update()
+              case mapping
+                   |> GitHubStatusMapping.changeset(%{"github_option_name" => name})
+                   |> Repo.update() do
+                {:ok, _} ->
+                  :ok
+
+                {:error, reason} ->
+                  Logger.warning(
+                    "sync_status_mappings_from_github: failed to update option #{id}: #{inspect(reason)}"
+                  )
+              end
           end
         end)
 
@@ -725,32 +733,37 @@ defmodule Hermes.Requests do
   end
 
   defp apply_status_to_request(request_id, hermes_status) do
-    request = Repo.get!(Request, request_id)
+    case Repo.get(Request, request_id) do
+      nil ->
+        Logger.warning("GitHub webhook: request #{request_id} not found, skipping status update")
 
-    if request.status == hermes_status do
-      :ok
-    else
-      request
-      |> Request.changeset(%{status: hermes_status})
-      |> Repo.update()
-      |> case do
-        {:ok, _} ->
-          log_change(request_id, nil, "updated", %{
-            field: "status",
-            old_value: request.status,
-            new_value: hermes_status,
-            changes: %{"source" => "github_webhook"}
-          })
+        :ok
 
-          :ok
+      %Request{status: ^hermes_status} ->
+        :ok
 
-        {:error, changeset} ->
-          Logger.warning(
-            "GitHub webhook could not update request #{request_id} status: #{inspect(changeset.errors)}"
-          )
+      request ->
+        request
+        |> Request.changeset(%{status: hermes_status})
+        |> Repo.update()
+        |> case do
+          {:ok, _} ->
+            log_change(request_id, nil, "updated", %{
+              field: "status",
+              old_value: request.status,
+              new_value: hermes_status,
+              changes: %{"source" => "github_webhook"}
+            })
 
-          :error
-      end
+            :ok
+
+          {:error, changeset} ->
+            Logger.warning(
+              "GitHub webhook could not update request #{request_id} status: #{inspect(changeset.errors)}"
+            )
+
+            :error
+        end
     end
   end
 

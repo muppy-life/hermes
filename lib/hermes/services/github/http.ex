@@ -135,23 +135,21 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
-  def list_status_options(project_id, field_id) do
+  def list_status_options(_project_id, field_id) do
+    # The Projects v2 GraphQL schema does not support `ProjectV2.field(id:)`,
+    # but the status field has its own GraphQL node ID we can fetch directly.
     query = """
-    query($projectId: ID!, $fieldId: ID!) {
-      node(id: $projectId) {
-        ... on ProjectV2 {
-          field(id: $fieldId) {
-            ... on ProjectV2SingleSelectField {
-              options { id name }
-            }
-          }
+    query($fieldId: ID!) {
+      node(id: $fieldId) {
+        ... on ProjectV2SingleSelectField {
+          options { id name }
         }
       }
     }
     """
 
-    case graphql(query, %{"projectId" => project_id, "fieldId" => field_id}) do
-      {:ok, %{"data" => %{"node" => %{"field" => %{"options" => options}}}}} ->
+    case graphql(query, %{"fieldId" => field_id}) do
+      {:ok, %{"data" => %{"node" => %{"options" => options}}}} ->
         {:ok, Enum.map(options, fn %{"id" => id, "name" => name} -> %{id: id, name: name} end)}
 
       {:ok, %{"errors" => errors}} ->

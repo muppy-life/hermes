@@ -33,7 +33,14 @@ defmodule HermesWeb.GitHubWebhookController do
        when action in ["edited", "reordered", "created"] do
     # Merge `changes` from the top-level payload into the item map so the
     # reverse-sync handler sees both the item and the field_value transition.
-    enriched = Map.put(item, "changes", payload["changes"])
+    # Normalize the GraphQL node ID into `"id"` — the webhook payload uses
+    # `id` for the numeric DB id and `node_id` for the GraphQL node id; we
+    # store the latter as `project_item_id`.
+    enriched =
+      item
+      |> Map.put("changes", payload["changes"])
+      |> normalize_item_id()
+
     Requests.handle_project_item_event(enriched)
   end
 
@@ -52,4 +59,10 @@ defmodule HermesWeb.GitHubWebhookController do
   defp handle_event("ping", _params), do: :ok
 
   defp handle_event(_event, _params), do: :ignored
+
+  defp normalize_item_id(%{"node_id" => node_id} = item) when is_binary(node_id) do
+    Map.put(item, "id", node_id)
+  end
+
+  defp normalize_item_id(item), do: item
 end
