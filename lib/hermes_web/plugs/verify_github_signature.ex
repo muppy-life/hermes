@@ -1,7 +1,7 @@
 defmodule HermesWeb.Plugs.VerifyGitHubSignature do
   @moduledoc """
   Verifies the `X-Hub-Signature-256` header against the raw request body
-  using HMAC-SHA256 and the configured `GITHUB_WEBHOOK_SECRET`.
+  using HMAC-SHA256 and the configured `HERMES_GITHUB_WEBHOOK_SECRET`.
 
   Halts with 401 on missing or invalid signature.
   """
@@ -19,7 +19,7 @@ defmodule HermesWeb.Plugs.VerifyGitHubSignature do
 
     cond do
       is_nil(secret) or secret == "" ->
-        Logger.warning("GitHub webhook rejected: GITHUB_WEBHOOK_SECRET not set")
+        Logger.warning("GitHub webhook rejected: HERMES_GITHUB_WEBHOOK_SECRET not set")
         send_resp(conn, 503, "webhook not configured") |> halt()
 
       is_nil(signature) ->

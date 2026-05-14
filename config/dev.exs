@@ -105,8 +105,8 @@ config :hermes, :features,
 config :hermes, :storage_adapter, Hermes.Storage.Local
 
 # Use the in-memory GitHub adapter in dev. Fake issues are visible at
-# /dev/github. Set GITHUB_USE_REAL_API=1 to opt back into the real REST API.
-if System.get_env("GITHUB_USE_REAL_API") in [nil, ""] do
+# /dev/github. Set HERMES_GITHUB_USE_REAL_API=1 to opt back into the real REST API.
+if System.get_env("HERMES_GITHUB_USE_REAL_API") in [nil, ""] do
   config :hermes, :github_adapter, Hermes.Services.GitHub.InMemory
 end
 

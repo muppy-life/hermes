@@ -403,7 +403,7 @@ defmodule Hermes.Requests do
   Returns true when the GitHub integration can run.
 
   The in-memory dev adapter is always considered enabled (no creds needed).
-  The HTTP adapter requires `GITHUB_TOKEN` + `GITHUB_OWNER`.
+  The HTTP adapter requires `HERMES_GITHUB_TOKEN` + `HERMES_GITHUB_OWNER`.
   """
   def github_integration_enabled? do
     case GitHub.adapter() do
@@ -513,12 +513,11 @@ defmodule Hermes.Requests do
 
       true ->
         with {:ok, node_id} <- GitHub.get_issue_node_id(issue.owner, issue.repo, issue.number),
-             {:ok, item_id} <- GitHub.add_issue_to_project(node_id) do
-          {:ok, updated} =
-            issue
-            |> GitHubIssue.changeset(%{project_item_id: item_id})
-            |> Repo.update()
-
+             {:ok, item_id} <- GitHub.add_issue_to_project(node_id),
+             {:ok, updated} <-
+               issue
+               |> GitHubIssue.changeset(%{project_item_id: item_id})
+               |> Repo.update() do
           updated
         else
           {:error, :missing_project_config} ->
@@ -768,7 +767,7 @@ defmodule Hermes.Requests do
               "GitHub webhook could not update request #{request_id} status: #{inspect(changeset.errors)}"
             )
 
-            :error
+            {:error, changeset.errors}
         end
     end
   end
