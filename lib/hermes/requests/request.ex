@@ -19,6 +19,8 @@ defmodule Hermes.Requests.Request do
     field :expected_output, :string
     field :solution_diagram, :string
 
+    has_one :github_issue, Hermes.Requests.GitHubIssue
+
     belongs_to :requesting_team, Hermes.Accounts.Team
     belongs_to :assigned_to_team, Hermes.Accounts.Team
     belongs_to :created_by, Hermes.Accounts.User

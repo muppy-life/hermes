@@ -24,6 +24,12 @@ defmodule HermesWeb.Router do
     get "/", HealthController, :index
   end
 
+  # GitHub webhook (HMAC-verified, no auth)
+  scope "/api/github", HermesWeb do
+    pipe_through [:api, HermesWeb.Plugs.VerifyGitHubSignature]
+    post "/webhook", GitHubWebhookController, :create
+  end
+
   # Public routes
   scope "/", HermesWeb do
     pipe_through :browser
@@ -62,6 +68,7 @@ defmodule HermesWeb.Router do
       on_mount: [{HermesWeb.Plugs.Auth, :ensure_admin}] do
       live "/admin", Admin.DashboardLive.Index, :index
       live "/admin/users", Admin.UserLive.Index, :index
+      live "/admin/github", Admin.GithubLive.Index, :index
     end
   end
 
@@ -78,6 +85,12 @@ defmodule HermesWeb.Router do
     # you can use Plug.BasicAuth to set up some basic authentication
     # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
+
+    scope "/dev", HermesWeb do
+      pipe_through :browser
+
+      live "/github", DevLive.GithubInbox, :index
+    end
 
     scope "/dev" do
       pipe_through :browser

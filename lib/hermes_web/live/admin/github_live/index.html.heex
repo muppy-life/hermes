@@ -1,0 +1,112 @@
+<HermesWeb.Layouts.flash_group flash={@flash} id="lv-flash" />
+
+<.header>
+  GitHub Status Mappings
+  <:subtitle>
+    Map each GitHub Projects v2 Status option to a Hermes request status.
+  </:subtitle>
+  <:actions>
+    <button type="button" phx-click="sync" class="btn btn-primary btn-sm">
+      Sync from GitHub
+    </button>
+  </:actions>
+</.header>
+
+<%= if @sync_error do %>
+  <div class="alert alert-error mt-4">
+    Sync failed: <code>{@sync_error}</code>
+  </div>
+<% end %>
+
+<div class="mt-6">
+  <h2 class="font-semibold mb-2">Configured mappings</h2>
+
+  <%= if @mappings == [] do %>
+    <p class="text-sm opacity-60">No mappings yet. Click "Sync from GitHub" to load options.</p>
+  <% else %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>GitHub option</th>
+          <th>Option ID</th>
+          <th>Hermes status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for m <- @mappings do %>
+          <tr>
+            <td>{m.github_option_name}</td>
+            <td><code class="text-xs">{m.github_option_id}</code></td>
+            <td>
+              <form phx-change="update_mapping">
+                <input type="hidden" name="mapping_id" value={m.id} />
+                <select
+                  name="hermes_status"
+                  class="select select-bordered select-sm"
+                >
+                  <%= for s <- @hermes_statuses do %>
+                    <option value={s} selected={s == m.hermes_status}>
+                      {HermesWeb.CoreComponents.status_label(s)}
+                    </option>
+                  <% end %>
+                </select>
+              </form>
+            </td>
+            <td>
+              <button
+                type="button"
+                phx-click="delete"
+                phx-value-id={m.id}
+                data-confirm="Delete this mapping?"
+                class="btn btn-xs btn-error"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>
+
+<%= if @pending_options != [] do %>
+  <div class="mt-8">
+    <h2 class="font-semibold mb-2">New options without a mapping</h2>
+
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>GitHub option</th>
+          <th>Option ID</th>
+          <th>Hermes status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for opt <- @pending_options do %>
+          <tr>
+            <td>{opt.name}</td>
+            <td><code class="text-xs">{opt.id}</code></td>
+            <td colspan="2">
+              <form phx-submit="create_mapping" class="flex gap-2 items-center">
+                <input type="hidden" name="mapping[github_option_id]" value={opt.id} />
+                <input type="hidden" name="mapping[github_option_name]" value={opt.name} />
+                <select
+                  name="mapping[hermes_status]"
+                  class="select select-bordered select-sm"
+                >
+                  <%= for s <- @hermes_statuses do %>
+                    <option value={s}>{HermesWeb.CoreComponents.status_label(s)}</option>
+                  <% end %>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+              </form>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

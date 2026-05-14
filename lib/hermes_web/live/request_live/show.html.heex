@@ -654,6 +654,76 @@
         </button>
       </form>
     </div>
+    
+<!-- GitHub Issue -->
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-3 flex-shrink-0">
+      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300">
+        {gettext("GitHub Issue")}
+      </h2>
+
+      <%= cond do %>
+        <% not @github_enabled -> %>
+          <p class="text-xs opacity-60">
+            {gettext("GitHub integration is not configured.")}
+          </p>
+        <% @request.github_issue -> %>
+          <div class="flex items-center gap-2 flex-wrap text-xs">
+            <a
+              href={@request.github_issue.url}
+              target="_blank"
+              rel="noopener"
+              class="link link-primary truncate"
+            >
+              {@request.github_issue.owner}/{@request.github_issue.repo}#{@request.github_issue.number}
+            </a>
+            <span class={
+              "badge badge-xs " <>
+                if(@request.github_issue.state == "closed",
+                  do: "badge-neutral",
+                  else: "badge-success"
+                )
+            }>
+              {@request.github_issue.state || "open"}
+            </span>
+            <button
+              type="button"
+              phx-click="github_unlink"
+              data-confirm={gettext("Unlink this issue from the request?")}
+              class="btn btn-xs btn-ghost ml-auto"
+            >
+              {gettext("Unlink")}
+            </button>
+          </div>
+        <% true -> %>
+          <div class="space-y-2">
+            <button
+              type="button"
+              phx-click="github_create_issue"
+              phx-disable-with={gettext("Creating...")}
+              class="btn btn-primary btn-xs w-full"
+            >
+              {gettext("Create GitHub issue")}
+            </button>
+
+            <.form
+              for={@github_link_form}
+              phx-submit="github_link_issue"
+              class="space-y-2"
+            >
+              <input
+                type="text"
+                name="github_link[reference]"
+                value={Phoenix.HTML.Form.input_value(@github_link_form, :reference)}
+                placeholder="123 or full URL"
+                class="input input-bordered input-xs w-full"
+              />
+              <button type="submit" class="btn btn-xs w-full">
+                {gettext("Link existing")}
+              </button>
+            </.form>
+          </div>
+      <% end %>
+    </div>
   </div>
 </div>
 
@@ -743,6 +813,7 @@
             label={gettext("Status")}
             prompt={gettext("Choose a status")}
             options={[
+              {gettext("New"), "new"},
               {gettext("Need requirement"), "need_requirement"},
               {gettext("Pending"), "pending"},
               {gettext("In Progress"), "in_progress"},

@@ -9,10 +9,13 @@ defmodule Hermes.Requests do
 
   alias Hermes.Repo
   alias Hermes.Requests.DraftStore
+  alias Hermes.Requests.GitHubIssue
+  alias Hermes.Requests.GitHubStatusMapping
   alias Hermes.Requests.Request
   alias Hermes.Requests.RequestChange
   alias Hermes.Requests.RequestComment
   alias Hermes.Requests.RequestImage
+  alias Hermes.Services.GitHub
   alias Hermes.Storage
 
   def list_requests do
@@ -182,6 +185,8 @@ defmodule Hermes.Requests do
           trigger_diagram_generation(updated_request)
         end
 
+        trigger_github_sync_on_update(updated_request, request, changes)
+
         {:ok, updated_request}
 
       error ->
@@ -272,6 +277,7 @@ defmodule Hermes.Requests do
         mentioned_users = resolve_mentions(comment.content)
         trigger_comment_notification(comment)
         trigger_mention_notifications(comment, mentioned_users)
+        trigger_github_comment_sync(comment)
 
         {:ok, comment}
 
@@ -321,6 +327,449 @@ defmodule Hermes.Requests do
     %{request_id: request.id, type: "created"}
     |> Hermes.Workers.RequestNotificationWorker.new()
     |> Oban.insert()
+  end
+
+  # GitHub sync hooks
+
+  @doc """
+  Returns a request preloaded with its `github_issue` association.
+  """
+  def get_request_with_github_issue(id) do
+    Request
+    |> Repo.get!(id)
+    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by, :github_issue])
+  end
+
+  defp trigger_github_sync(request, action, extra \\ %{}) do
+    if github_integration_enabled?() do
+      Map.merge(%{action: action, request_id: request.id}, extra)
+      |> Hermes.Workers.GitHubSyncWorker.new()
+      |> Oban.insert()
+    else
+      {:ok, :feature_disabled}
+    end
+  end
+
+  defp trigger_github_sync_on_update(updated, original, changes) do
+    cond do
+      not github_integration_enabled?() ->
+        :ok
+
+      is_nil(get_github_issue(updated.id)) ->
+        :ok
+
+      true ->
+        if Map.has_key?(changes, :status) and updated.status != original.status do
+          trigger_github_sync(updated, "project_move", %{status: updated.status})
+        end
+
+        if content_fields_changed?(changes) do
+          trigger_github_sync(updated, "update")
+        end
+
+        :ok
+    end
+  end
+
+  defp content_fields_changed?(changes) do
+    Enum.any?(
+      [
+        :title,
+        :description,
+        :priority,
+        :kind,
+        :target_user_type,
+        :current_situation,
+        :goal_description,
+        :data_description,
+        :goal_target,
+        :expected_output
+      ],
+      &Map.has_key?(changes, &1)
+    )
+  end
+
+  defp trigger_github_comment_sync(comment) do
+    if github_integration_enabled?() do
+      %{action: "comment", comment_id: comment.id}
+      |> Hermes.Workers.GitHubSyncWorker.new()
+      |> Oban.insert()
+    else
+      {:ok, :feature_disabled}
+    end
+  end
+
+  @doc """
+  Returns true when the GitHub integration can run.
+
+  The in-memory dev adapter is always considered enabled (no creds needed).
+  The HTTP adapter requires `HERMES_GITHUB_TOKEN` + `HERMES_GITHUB_OWNER`.
+  """
+  def github_integration_enabled? do
+    case GitHub.adapter() do
+      Hermes.Services.GitHub.InMemory ->
+        true
+
+      _ ->
+        cfg = Application.get_env(:hermes, :github, [])
+        cfg[:token] not in [nil, ""] and cfg[:owner] not in [nil, ""]
+    end
+  end
+
+  defp get_github_issue(request_id) do
+    Repo.get_by(GitHubIssue, request_id: request_id)
+  end
+
+  @doc """
+  Synchronously creates a GitHub issue for an existing request and persists
+  the link. Used by the manual "Create issue" button on the edit page.
+
+  Options:
+    * `:repo` — override the default repo
+  """
+  def create_github_issue_for_request(%Request{} = request, opts \\ []) do
+    cond do
+      not github_integration_enabled?() ->
+        {:error, :integration_disabled}
+
+      not is_nil(get_github_issue(request.id)) ->
+        {:error, :already_linked}
+
+      true ->
+        case GitHub.create_issue(request, opts) do
+          {:ok, %{owner: owner, repo: repo, number: number, url: url}} ->
+            insert_github_issue(request.id, %{
+              owner: owner,
+              repo: repo,
+              number: number,
+              url: url,
+              state: "open"
+            })
+
+          {:error, _} = err ->
+            err
+        end
+    end
+  end
+
+  @doc """
+  Links an existing GitHub issue to a request.
+
+  `reference` may be a bare number/`#N` (uses default repo) or a full
+  `https://github.com/owner/repo/issues/N` URL.
+  """
+  def link_github_issue(%Request{} = request, reference) when is_binary(reference) do
+    with :ok <- ensure_not_linked(request),
+         {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
+         {:ok, {resolved_owner, resolved_repo}} <- resolve_link_target(owner, repo),
+         {:ok, %{url: url, state: state}} <-
+           GitHub.get_issue(resolved_owner, resolved_repo, number) do
+      insert_github_issue(request.id, %{
+        owner: resolved_owner,
+        repo: resolved_repo,
+        number: number,
+        url: url,
+        state: state
+      })
+    end
+  end
+
+  defp ensure_not_linked(%Request{} = request) do
+    case get_github_issue(request.id) do
+      nil -> :ok
+      _ -> {:error, :already_linked}
+    end
+  end
+
+  defp resolve_link_target(nil, nil), do: GitHub.default_target()
+
+  defp resolve_link_target(owner, repo) when is_binary(owner) and is_binary(repo) do
+    {:ok, {owner, repo}}
+  end
+
+  defp insert_github_issue(request_id, attrs) do
+    result =
+      %GitHubIssue{}
+      |> GitHubIssue.changeset(
+        Map.merge(attrs, %{
+          request_id: request_id,
+          last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+      )
+      |> Repo.insert()
+
+    with {:ok, issue} <- result do
+      {:ok, maybe_add_to_project(issue)}
+    end
+  end
+
+  defp maybe_add_to_project(%GitHubIssue{} = issue) do
+    cond do
+      not is_nil(issue.project_item_id) ->
+        issue
+
+      not project_configured?() ->
+        issue
+
+      true ->
+        with {:ok, node_id} <- GitHub.get_issue_node_id(issue.owner, issue.repo, issue.number),
+             {:ok, item_id} <- GitHub.add_issue_to_project(node_id),
+             {:ok, updated} <-
+               issue
+               |> GitHubIssue.changeset(%{project_item_id: item_id})
+               |> Repo.update() do
+          updated
+        else
+          {:error, :missing_project_config} ->
+            issue
+
+          {:error, reason} ->
+            Logger.warning(
+              "GitHub.add_issue_to_project failed issue=#{issue.owner}/#{issue.repo}##{issue.number} reason=#{inspect(reason)}"
+            )
+
+            issue
+        end
+    end
+  end
+
+  defp project_configured? do
+    case GitHub.adapter() do
+      Hermes.Services.GitHub.InMemory ->
+        true
+
+      _ ->
+        cfg = Application.get_env(:hermes, :github, [])
+        cfg[:project_id] not in [nil, ""]
+    end
+  end
+
+  @doc """
+  Removes the GitHub issue link from a request. Does not touch GitHub.
+  """
+  def unlink_github_issue(%Request{} = request) do
+    case get_github_issue(request.id) do
+      nil -> {:error, :not_linked}
+      issue -> Repo.delete(issue)
+    end
+  end
+
+  # --- Status mappings (Hermes <-> GitHub Projects v2) ---
+
+  def list_status_mappings do
+    GitHubStatusMapping
+    |> order_by([m], asc: m.hermes_status)
+    |> Repo.all()
+  end
+
+  def get_status_mapping!(id), do: Repo.get!(GitHubStatusMapping, id)
+
+  def upsert_status_mapping(attrs) do
+    option_id = Map.get(attrs, "github_option_id") || Map.get(attrs, :github_option_id)
+
+    case option_id && Repo.get_by(GitHubStatusMapping, github_option_id: option_id) do
+      %GitHubStatusMapping{} = existing ->
+        existing |> GitHubStatusMapping.changeset(attrs) |> Repo.update()
+
+      _ ->
+        %GitHubStatusMapping{} |> GitHubStatusMapping.changeset(attrs) |> Repo.insert()
+    end
+  end
+
+  def delete_status_mapping(%GitHubStatusMapping{} = mapping), do: Repo.delete(mapping)
+
+  def change_status_mapping(%GitHubStatusMapping{} = mapping, attrs \\ %{}),
+    do: GitHubStatusMapping.changeset(mapping, attrs)
+
+  @doc """
+  Calls GitHub to list status field options for the configured project and
+  upserts a mapping row for each option (hermes_status left blank if new).
+  """
+  def sync_status_mappings_from_github do
+    case GitHub.list_status_options() do
+      {:ok, options} ->
+        existing_by_option =
+          GitHubStatusMapping
+          |> Repo.all()
+          |> Map.new(&{&1.github_option_id, &1})
+
+        new_options =
+          options
+          |> Enum.reject(fn %{id: id} -> Map.has_key?(existing_by_option, id) end)
+
+        Enum.each(options, fn %{id: id, name: name} ->
+          case Map.get(existing_by_option, id) do
+            nil ->
+              :ok
+
+            mapping ->
+              case mapping
+                   |> GitHubStatusMapping.changeset(%{"github_option_name" => name})
+                   |> Repo.update() do
+                {:ok, _} ->
+                  :ok
+
+                {:error, reason} ->
+                  Logger.warning(
+                    "sync_status_mappings_from_github: failed to update option #{id}: #{inspect(reason)}"
+                  )
+              end
+          end
+        end)
+
+        {:ok, %{existing: list_status_mappings(), pending_options: new_options}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  # --- Reverse-sync (GitHub webhook -> Hermes) ---
+
+  @doc """
+  Handles an `issues` webhook event payload. Updates the linked
+  `github_issues.state` so the request view reflects the GitHub state.
+
+  Accepts the issue map directly (with `repository_url`, `number`, `state`).
+  """
+  def handle_issue_event(%{"number" => number, "state" => state} = issue) do
+    {owner, repo} = parse_repo_from_issue(issue)
+
+    case Repo.get_by(GitHubIssue, owner: owner, repo: repo, number: number) do
+      nil ->
+        :ok
+
+      %GitHubIssue{} = link ->
+        link
+        |> GitHubIssue.changeset(%{
+          state: state,
+          last_sync_source: "webhook",
+          last_sync_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+        |> case do
+          {:ok, _} -> :ok
+          {:error, changeset} -> {:error, changeset.errors}
+        end
+    end
+  end
+
+  def handle_issue_event(_), do: :ok
+
+  defp parse_repo_from_issue(%{"repository_url" => url}) when is_binary(url) do
+    case Regex.run(~r{repos/([^/]+)/([^/]+)$}, url) do
+      [_, o, r] -> {o, r}
+      _ -> {nil, nil}
+    end
+  end
+
+  defp parse_repo_from_issue(%{"owner" => o, "repo" => r}), do: {o, r}
+  defp parse_repo_from_issue(_), do: {nil, nil}
+
+  @doc """
+  Handles a `projects_v2_item` webhook payload. Resolves the linked
+  Hermes request via the project_item_id and updates its status when
+  the status column moved.
+
+  Accepts the raw `projects_v2_item` map from the webhook plus optional
+  `changes` data (when called from controller, pass the top-level payload).
+  """
+  def handle_project_item_event(payload) when is_map(payload) do
+    with %{"id" => item_id} <- payload,
+         %GitHubIssue{} = link <- Repo.get_by(GitHubIssue, project_item_id: item_id) do
+      apply_project_item_change(link, payload)
+    else
+      _ -> :ok
+    end
+  end
+
+  defp apply_project_item_change(link, payload) do
+    option_id = extract_status_option_id(payload)
+    option_name = extract_status_option_name(payload)
+
+    cond do
+      is_nil(option_id) ->
+        :ok
+
+      true ->
+        mapping = Repo.get_by(GitHubStatusMapping, github_option_id: option_id)
+
+        case mapping do
+          %GitHubStatusMapping{hermes_status: hermes_status} ->
+            with :ok <- update_link_from_webhook(link, option_id, option_name),
+                 :ok <- apply_status_to_request(link.request_id, hermes_status) do
+              :ok
+            end
+
+          nil ->
+            Logger.warning(
+              "GitHub webhook status mapping missing option_id=#{option_id} name=#{inspect(option_name)}"
+            )
+
+            update_link_from_webhook(link, option_id, option_name)
+        end
+    end
+  end
+
+  defp extract_status_option_id(%{"changes" => %{"field_value" => %{"to" => %{"id" => id}}}}),
+    do: id
+
+  defp extract_status_option_id(_), do: nil
+
+  defp extract_status_option_name(%{
+         "changes" => %{"field_value" => %{"to" => %{"name" => name}}}
+       }),
+       do: name
+
+  defp extract_status_option_name(_), do: nil
+
+  defp update_link_from_webhook(%GitHubIssue{} = link, option_id, option_name) do
+    link
+    |> GitHubIssue.changeset(%{
+      project_status: option_name || option_id,
+      last_sync_source: "webhook",
+      last_sync_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
+    |> case do
+      {:ok, _} -> :ok
+      {:error, changeset} -> {:error, changeset.errors}
+    end
+  end
+
+  defp apply_status_to_request(request_id, hermes_status) do
+    case Repo.get(Request, request_id) do
+      nil ->
+        Logger.warning("GitHub webhook: request #{request_id} not found, skipping status update")
+
+        :ok
+
+      %Request{status: ^hermes_status} ->
+        :ok
+
+      request ->
+        request
+        |> Request.changeset(%{status: hermes_status})
+        |> Repo.update()
+        |> case do
+          {:ok, _} ->
+            log_change(request_id, nil, "updated", %{
+              field: "status",
+              old_value: request.status,
+              new_value: hermes_status,
+              changes: %{"source" => "github_webhook"}
+            })
+
+            :ok
+
+          {:error, changeset} ->
+            Logger.warning(
+              "GitHub webhook could not update request #{request_id} status: #{inspect(changeset.errors)}"
+            )
+
+            {:error, changeset.errors}
+        end
+    end
   end
 
   defp trigger_comment_notification(comment) do

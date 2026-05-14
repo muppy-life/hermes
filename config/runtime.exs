@@ -25,6 +25,19 @@ if api_key = System.get_env("ANTHROPIC_API_KEY") do
   config :hermes, :anthropic_api_key, api_key
 end
 
+# Configure GitHub integration from environment variables.
+# The HERMES_ prefix avoids GitHub Actions' reserved GITHUB_* namespace
+# so the same names can be stored as repository secrets.
+config :hermes, :github,
+  token: System.get_env("HERMES_GITHUB_TOKEN"),
+  owner: System.get_env("HERMES_GITHUB_OWNER"),
+  default_repo: System.get_env("HERMES_GITHUB_DEFAULT_REPO"),
+  api_url: System.get_env("HERMES_GITHUB_API_URL") || "https://api.github.com",
+  graphql_url: System.get_env("HERMES_GITHUB_GRAPHQL_URL") || "https://api.github.com/graphql",
+  project_id: System.get_env("HERMES_GITHUB_PROJECT_ID"),
+  status_field_id: System.get_env("HERMES_GITHUB_STATUS_FIELD_ID"),
+  webhook_secret: System.get_env("HERMES_GITHUB_WEBHOOK_SECRET")
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
