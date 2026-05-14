@@ -19,8 +19,10 @@ yum install -y awscli unzip
 mkdir -p /opt/hermes
 cd /opt/hermes
 
-# Create environment file
-cat > /opt/hermes/.env << EOF
+# Create environment file. Quote the heredoc delimiter so bash does not
+# re-expand shell metacharacters (e.g. `$`, backticks) in secret values
+# after Terraform has already substituted the $${...} template variables.
+cat > /opt/hermes/.env << 'EOF'
 DATABASE_URL=${database_url}
 SECRET_KEY_BASE=${secret_key_base}
 ANTHROPIC_API_KEY=${anthropic_api_key}
