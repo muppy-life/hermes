@@ -648,8 +648,10 @@ defmodule Hermes.Requests do
           last_sync_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Repo.update()
-
-        :ok
+        |> case do
+          {:ok, _} -> :ok
+          {:error, changeset} -> {:error, changeset.errors}
+        end
     end
   end
 
@@ -695,9 +697,10 @@ defmodule Hermes.Requests do
 
         case mapping do
           %GitHubStatusMapping{hermes_status: hermes_status} ->
-            update_link_from_webhook(link, option_id, option_name)
-            apply_status_to_request(link.request_id, hermes_status)
-            :ok
+            with :ok <- update_link_from_webhook(link, option_id, option_name),
+                 :ok <- apply_status_to_request(link.request_id, hermes_status) do
+              :ok
+            end
 
           nil ->
             Logger.warning(
@@ -705,7 +708,6 @@ defmodule Hermes.Requests do
             )
 
             update_link_from_webhook(link, option_id, option_name)
-            :ok
         end
     end
   end
@@ -730,6 +732,10 @@ defmodule Hermes.Requests do
       last_sync_at: DateTime.utc_now() |> DateTime.truncate(:second)
     })
     |> Repo.update()
+    |> case do
+      {:ok, _} -> :ok
+      {:error, changeset} -> {:error, changeset.errors}
+    end
   end
 
   defp apply_status_to_request(request_id, hermes_status) do
