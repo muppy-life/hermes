@@ -69,3 +69,41 @@ variable "phx_host" {
   type        = string
   default     = "localhost"
 }
+
+variable "hermes_github_token" {
+  description = "GitHub PAT"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "hermes_github_owner" {
+  description = "GitHub owner login"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_default_repo" {
+  description = "Default GitHub repo"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_project_id" {
+  description = "GitHub Projects v2 board node ID"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_status_field_id" {
+  description = "GitHub Projects v2 Status field node ID"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_webhook_secret" {
+  description = "GitHub webhook HMAC secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

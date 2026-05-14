@@ -164,12 +164,18 @@ resource "aws_launch_template" "app" {
   vpc_security_group_ids = [aws_security_group.app.id]
 
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    database_url      = var.database_url
-    secret_key_base   = var.secret_key_base
-    anthropic_api_key = var.anthropic_api_key
-    sendgrid_api_key  = var.sendgrid_api_key
-    environment       = var.environment
-    phx_host          = var.phx_host
+    database_url                  = var.database_url
+    secret_key_base               = var.secret_key_base
+    anthropic_api_key             = var.anthropic_api_key
+    sendgrid_api_key              = var.sendgrid_api_key
+    environment                   = var.environment
+    phx_host                      = var.phx_host
+    hermes_github_token           = var.hermes_github_token
+    hermes_github_owner           = var.hermes_github_owner
+    hermes_github_default_repo    = var.hermes_github_default_repo
+    hermes_github_project_id      = var.hermes_github_project_id
+    hermes_github_status_field_id = var.hermes_github_status_field_id
+    hermes_github_webhook_secret  = var.hermes_github_webhook_secret
   }))
 
   tag_specifications {

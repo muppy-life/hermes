@@ -95,6 +95,12 @@ jobs:
             -var="certificate_arn=${{ secrets.ACM_CERTIFICATE_ARN }}" \
             -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
             -var="phx_host=${{ secrets.PHX_HOST }}" \
+            -var="hermes_github_token=${{ secrets.HERMES_GITHUB_TOKEN }}" \
+            -var="hermes_github_owner=${{ secrets.HERMES_GITHUB_OWNER }}" \
+            -var="hermes_github_default_repo=${{ secrets.HERMES_GITHUB_DEFAULT_REPO }}" \
+            -var="hermes_github_project_id=${{ secrets.HERMES_GITHUB_PROJECT_ID }}" \
+            -var="hermes_github_status_field_id=${{ secrets.HERMES_GITHUB_STATUS_FIELD_ID }}" \
+            -var="hermes_github_webhook_secret=${{ secrets.HERMES_GITHUB_WEBHOOK_SECRET }}" \
             -out=tfplan
 
       - name: Terraform Apply
@@ -316,6 +322,12 @@ jobs:
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          HERMES_GITHUB_TOKEN: ${{ secrets.HERMES_GITHUB_TOKEN }}
+          HERMES_GITHUB_OWNER: ${{ secrets.HERMES_GITHUB_OWNER }}
+          HERMES_GITHUB_DEFAULT_REPO: ${{ secrets.HERMES_GITHUB_DEFAULT_REPO }}
+          HERMES_GITHUB_PROJECT_ID: ${{ secrets.HERMES_GITHUB_PROJECT_ID }}
+          HERMES_GITHUB_STATUS_FIELD_ID: ${{ secrets.HERMES_GITHUB_STATUS_FIELD_ID }}
+          HERMES_GITHUB_WEBHOOK_SECRET: ${{ secrets.HERMES_GITHUB_WEBHOOK_SECRET }}
         run: |
           echo "Starting rolling deployment..."
 
@@ -357,7 +369,7 @@ jobs:
                 \"docker pull $IMAGE\",
                 \"docker stop hermes || true\",
                 \"docker rm hermes || true\",
-                \"printf 'DATABASE_URL=$DATABASE_URL\\nSECRET_KEY_BASE=$SECRET_KEY_BASE\\nANTHROPIC_API_KEY=$ANTHROPIC_API_KEY\\nSENDGRID_API_KEY=$SENDGRID_API_KEY\\nPHX_HOST=$PHX_HOST\\nSTATIC_URL=$ASSETS_URL\\nAWS_S3_BUCKET=$AWS_S3_BUCKET\\nAWS_S3_HOST=$AWS_S3_HOST\\nAWS_S3_REGION=$AWS_S3_REGION\\nAWS_S3_ACCESS_KEY_ID=$AWS_S3_ACCESS_KEY_ID\\nAWS_S3_SECRET_ACCESS_KEY=$AWS_S3_SECRET_ACCESS_KEY\\nAWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID\\nAWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\nPOOL_SIZE=5\\n' > /opt/hermes/.env\",
+                \"printf 'DATABASE_URL=$DATABASE_URL\\nSECRET_KEY_BASE=$SECRET_KEY_BASE\\nANTHROPIC_API_KEY=$ANTHROPIC_API_KEY\\nSENDGRID_API_KEY=$SENDGRID_API_KEY\\nPHX_HOST=$PHX_HOST\\nSTATIC_URL=$ASSETS_URL\\nAWS_S3_BUCKET=$AWS_S3_BUCKET\\nAWS_S3_HOST=$AWS_S3_HOST\\nAWS_S3_REGION=$AWS_S3_REGION\\nAWS_S3_ACCESS_KEY_ID=$AWS_S3_ACCESS_KEY_ID\\nAWS_S3_SECRET_ACCESS_KEY=$AWS_S3_SECRET_ACCESS_KEY\\nAWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID\\nAWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\\nHERMES_GITHUB_TOKEN=$HERMES_GITHUB_TOKEN\\nHERMES_GITHUB_OWNER=$HERMES_GITHUB_OWNER\\nHERMES_GITHUB_DEFAULT_REPO=$HERMES_GITHUB_DEFAULT_REPO\\nHERMES_GITHUB_PROJECT_ID=$HERMES_GITHUB_PROJECT_ID\\nHERMES_GITHUB_STATUS_FIELD_ID=$HERMES_GITHUB_STATUS_FIELD_ID\\nHERMES_GITHUB_WEBHOOK_SECRET=$HERMES_GITHUB_WEBHOOK_SECRET\\nPHX_SERVER=true\\nPORT=4000\\nMIX_ENV=prod\\nPOOL_SIZE=5\\n' > /opt/hermes/.env\",
                 \"docker run -d --name hermes --restart unless-stopped -p 4000:4000 --env-file /opt/hermes/.env $IMAGE\",
                 \"sleep 15\",
                 \"docker logs hermes 2>&1 | tail -50 || true\",

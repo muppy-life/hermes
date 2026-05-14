@@ -205,10 +205,12 @@
                   <div class="flex-1">
                     <h3 class="card-title text-base">{request.title}</h3>
                     <p class="text-sm opacity-70 mt-1">
-                      <%= if String.length(request.description) > 100 do %>
-                        {String.slice(request.description, 0..100)}...
-                      <% else %>
-                        {request.description}
+                      <%= cond do %>
+                        <% is_nil(request.description) or request.description == "" -> %>
+                        <% String.length(request.description) > 100 -> %>
+                          {String.slice(request.description, 0..100)}...
+                        <% true -> %>
+                          {request.description}
                       <% end %>
                     </p>
                     <div class="flex items-center gap-4 mt-2 text-xs">

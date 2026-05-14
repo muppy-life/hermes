@@ -19,8 +19,10 @@ yum install -y awscli unzip
 mkdir -p /opt/hermes
 cd /opt/hermes
 
-# Create environment file
-cat > /opt/hermes/.env << EOF
+# Create environment file. Quote the heredoc delimiter so bash does not
+# re-expand shell metacharacters (e.g. `$`, backticks) in secret values
+# after Terraform has already substituted the $${...} template variables.
+cat > /opt/hermes/.env << 'EOF'
 DATABASE_URL=${database_url}
 SECRET_KEY_BASE=${secret_key_base}
 ANTHROPIC_API_KEY=${anthropic_api_key}
@@ -29,6 +31,12 @@ PHX_HOST=${phx_host}
 PHX_SERVER=true
 PORT=4000
 MIX_ENV=prod
+HERMES_GITHUB_TOKEN=${hermes_github_token}
+HERMES_GITHUB_OWNER=${hermes_github_owner}
+HERMES_GITHUB_DEFAULT_REPO=${hermes_github_default_repo}
+HERMES_GITHUB_PROJECT_ID=${hermes_github_project_id}
+HERMES_GITHUB_STATUS_FIELD_ID=${hermes_github_status_field_id}
+HERMES_GITHUB_WEBHOOK_SECRET=${hermes_github_webhook_secret}
 EOF
 
 # Configure CloudWatch agent for Docker logs

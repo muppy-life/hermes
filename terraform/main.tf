@@ -70,6 +70,13 @@ module "ec2" {
   anthropic_api_key = var.anthropic_api_key
   sendgrid_api_key  = var.sendgrid_api_key
   phx_host          = var.phx_host
+
+  hermes_github_token           = var.hermes_github_token
+  hermes_github_owner           = var.hermes_github_owner
+  hermes_github_default_repo    = var.hermes_github_default_repo
+  hermes_github_project_id      = var.hermes_github_project_id
+  hermes_github_status_field_id = var.hermes_github_status_field_id
+  hermes_github_webhook_secret  = var.hermes_github_webhook_secret
 }
 
 # S3 + CloudFront for static assets
