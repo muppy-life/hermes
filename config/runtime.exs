@@ -30,7 +30,11 @@ config :hermes, :github,
   token: System.get_env("GITHUB_TOKEN"),
   owner: System.get_env("GITHUB_OWNER"),
   default_repo: System.get_env("GITHUB_DEFAULT_REPO"),
-  api_url: System.get_env("GITHUB_API_URL") || "https://api.github.com"
+  api_url: System.get_env("GITHUB_API_URL") || "https://api.github.com",
+  graphql_url: System.get_env("GITHUB_GRAPHQL_URL") || "https://api.github.com/graphql",
+  project_id: System.get_env("GITHUB_PROJECT_ID"),
+  status_field_id: System.get_env("GITHUB_STATUS_FIELD_ID"),
+  webhook_secret: System.get_env("GITHUB_WEBHOOK_SECRET")
 
 if config_env() == :prod do
   database_url =

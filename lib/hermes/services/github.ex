@@ -147,6 +147,68 @@ defmodule Hermes.Services.GitHub do
     |> log_result("get_issue", "#{owner}/#{repo}##{number}")
   end
 
+  @doc "Returns the GraphQL node ID of an issue."
+  def get_issue_node_id(owner, repo, number) when is_integer(number) do
+    adapter().get_issue_node_id(owner, repo, number)
+  end
+
+  @doc "Adds an issue to a Projects v2 board. Returns the project item id."
+  def add_issue_to_project(content_node_id, project_id \\ nil) do
+    project_id = project_id || project_id_or_default()
+
+    if is_nil(project_id) or project_id == "" do
+      {:error, :missing_project_config}
+    else
+      Logger.info("GitHub.add_issue_to_project project=#{project_id} content=#{content_node_id}")
+      adapter().add_issue_to_project(project_id, content_node_id)
+    end
+  end
+
+  @doc """
+  Moves a project item to the column matching `option_id`. The project ID and
+  status field ID default to env config.
+  """
+  def move_item(item_id, option_id, opts \\ []) do
+    project_id = Keyword.get(opts, :project_id) || project_id_or_default()
+    field_id = Keyword.get(opts, :field_id) || status_field_id_or_default()
+
+    cond do
+      is_nil(project_id) or project_id == "" ->
+        {:error, :missing_project_config}
+
+      is_nil(field_id) or field_id == "" ->
+        {:error, :missing_status_field}
+
+      true ->
+        Logger.info("GitHub.move_item item=#{item_id} option=#{option_id}")
+
+        adapter().move_item(project_id, item_id, field_id, option_id)
+        |> log_result("move_item", item_id)
+    end
+  end
+
+  @doc "Lists status options for the configured project."
+  def list_status_options(opts \\ []) do
+    project_id = Keyword.get(opts, :project_id) || project_id_or_default()
+    field_id = Keyword.get(opts, :field_id) || status_field_id_or_default()
+
+    cond do
+      is_nil(project_id) or project_id == "" -> {:error, :missing_project_config}
+      is_nil(field_id) or field_id == "" -> {:error, :missing_status_field}
+      true -> adapter().list_status_options(project_id, field_id)
+    end
+  end
+
+  defp project_id_or_default do
+    config()[:project_id] ||
+      if adapter() == Hermes.Services.GitHub.InMemory, do: "PVT_DEV", else: nil
+  end
+
+  defp status_field_id_or_default do
+    config()[:status_field_id] ||
+      if adapter() == Hermes.Services.GitHub.InMemory, do: "FIELD_STATUS", else: nil
+  end
+
   @doc """
   Parses an issue reference: full URL or bare number.
 

@@ -10,6 +10,7 @@ defmodule Hermes.Requests do
   alias Hermes.Repo
   alias Hermes.Requests.DraftStore
   alias Hermes.Requests.GitHubIssue
+  alias Hermes.Requests.GitHubStatusMapping
   alias Hermes.Requests.Request
   alias Hermes.Requests.RequestChange
   alias Hermes.Requests.RequestComment
@@ -359,7 +360,7 @@ defmodule Hermes.Requests do
 
       true ->
         if Map.has_key?(changes, :status) and updated.status != original.status do
-          trigger_github_sync(updated, "status", %{status: updated.status})
+          trigger_github_sync(updated, "project_move", %{status: updated.status})
         end
 
         if content_fields_changed?(changes) do
@@ -487,14 +488,47 @@ defmodule Hermes.Requests do
   end
 
   defp insert_github_issue(request_id, attrs) do
-    %GitHubIssue{}
-    |> GitHubIssue.changeset(
-      Map.merge(attrs, %{
-        request_id: request_id,
-        last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second)
-      })
-    )
-    |> Repo.insert()
+    result =
+      %GitHubIssue{}
+      |> GitHubIssue.changeset(
+        Map.merge(attrs, %{
+          request_id: request_id,
+          last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+      )
+      |> Repo.insert()
+
+    with {:ok, issue} <- result do
+      {:ok, maybe_add_to_project(issue)}
+    end
+  end
+
+  defp maybe_add_to_project(%GitHubIssue{} = issue) do
+    cond do
+      not is_nil(issue.project_item_id) ->
+        issue
+
+      true ->
+        with {:ok, node_id} <- GitHub.get_issue_node_id(issue.owner, issue.repo, issue.number),
+             {:ok, item_id} <- GitHub.add_issue_to_project(node_id) do
+          {:ok, updated} =
+            issue
+            |> GitHubIssue.changeset(%{project_item_id: item_id})
+            |> Repo.update()
+
+          updated
+        else
+          {:error, :missing_project_config} ->
+            issue
+
+          {:error, reason} ->
+            Logger.warning(
+              "GitHub.add_issue_to_project failed issue=#{issue.owner}/#{issue.repo}##{issue.number} reason=#{inspect(reason)}"
+            )
+
+            issue
+        end
+    end
   end
 
   @doc """
@@ -504,6 +538,205 @@ defmodule Hermes.Requests do
     case get_github_issue(request.id) do
       nil -> {:error, :not_linked}
       issue -> Repo.delete(issue)
+    end
+  end
+
+  # --- Status mappings (Hermes <-> GitHub Projects v2) ---
+
+  def list_status_mappings do
+    GitHubStatusMapping
+    |> order_by([m], asc: m.hermes_status)
+    |> Repo.all()
+  end
+
+  def get_status_mapping!(id), do: Repo.get!(GitHubStatusMapping, id)
+
+  def upsert_status_mapping(attrs) do
+    option_id = Map.get(attrs, "github_option_id") || Map.get(attrs, :github_option_id)
+
+    case option_id && Repo.get_by(GitHubStatusMapping, github_option_id: option_id) do
+      %GitHubStatusMapping{} = existing ->
+        existing |> GitHubStatusMapping.changeset(attrs) |> Repo.update()
+
+      _ ->
+        %GitHubStatusMapping{} |> GitHubStatusMapping.changeset(attrs) |> Repo.insert()
+    end
+  end
+
+  def delete_status_mapping(%GitHubStatusMapping{} = mapping), do: Repo.delete(mapping)
+
+  def change_status_mapping(%GitHubStatusMapping{} = mapping, attrs \\ %{}),
+    do: GitHubStatusMapping.changeset(mapping, attrs)
+
+  @doc """
+  Calls GitHub to list status field options for the configured project and
+  upserts a mapping row for each option (hermes_status left blank if new).
+  """
+  def sync_status_mappings_from_github do
+    case GitHub.list_status_options() do
+      {:ok, options} ->
+        existing_by_option =
+          GitHubStatusMapping
+          |> Repo.all()
+          |> Map.new(&{&1.github_option_id, &1})
+
+        new_options =
+          options
+          |> Enum.reject(fn %{id: id} -> Map.has_key?(existing_by_option, id) end)
+
+        Enum.each(options, fn %{id: id, name: name} ->
+          case Map.get(existing_by_option, id) do
+            nil ->
+              :ok
+
+            mapping ->
+              mapping
+              |> GitHubStatusMapping.changeset(%{"github_option_name" => name})
+              |> Repo.update()
+          end
+        end)
+
+        {:ok, %{existing: list_status_mappings(), pending_options: new_options}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  # --- Reverse-sync (GitHub webhook -> Hermes) ---
+
+  @doc """
+  Handles an `issues` webhook event payload. Updates the linked
+  `github_issues.state` so the request view reflects the GitHub state.
+
+  Accepts the issue map directly (with `repository_url`, `number`, `state`).
+  """
+  def handle_issue_event(%{"number" => number, "state" => state} = issue) do
+    {owner, repo} = parse_repo_from_issue(issue)
+
+    case Repo.get_by(GitHubIssue, owner: owner, repo: repo, number: number) do
+      nil ->
+        :ok
+
+      %GitHubIssue{} = link ->
+        link
+        |> GitHubIssue.changeset(%{
+          state: state,
+          last_sync_source: "webhook",
+          last_sync_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+
+        :ok
+    end
+  end
+
+  def handle_issue_event(_), do: :ok
+
+  defp parse_repo_from_issue(%{"repository_url" => url}) when is_binary(url) do
+    case Regex.run(~r{repos/([^/]+)/([^/]+)$}, url) do
+      [_, o, r] -> {o, r}
+      _ -> {nil, nil}
+    end
+  end
+
+  defp parse_repo_from_issue(%{"owner" => o, "repo" => r}), do: {o, r}
+  defp parse_repo_from_issue(_), do: {nil, nil}
+
+  @doc """
+  Handles a `projects_v2_item` webhook payload. Resolves the linked
+  Hermes request via the project_item_id and updates its status when
+  the status column moved.
+
+  Accepts the raw `projects_v2_item` map from the webhook plus optional
+  `changes` data (when called from controller, pass the top-level payload).
+  """
+  def handle_project_item_event(payload) when is_map(payload) do
+    with %{"id" => item_id} <- payload,
+         %GitHubIssue{} = link <- Repo.get_by(GitHubIssue, project_item_id: item_id) do
+      apply_project_item_change(link, payload)
+    else
+      _ -> :ok
+    end
+  end
+
+  defp apply_project_item_change(link, payload) do
+    option_id = extract_status_option_id(payload)
+    option_name = extract_status_option_name(payload)
+
+    cond do
+      is_nil(option_id) ->
+        :ok
+
+      true ->
+        mapping = Repo.get_by(GitHubStatusMapping, github_option_id: option_id)
+
+        case mapping do
+          %GitHubStatusMapping{hermes_status: hermes_status} ->
+            update_link_from_webhook(link, option_id, option_name)
+            apply_status_to_request(link.request_id, hermes_status)
+            :ok
+
+          nil ->
+            Logger.warning(
+              "GitHub webhook status mapping missing option_id=#{option_id} name=#{inspect(option_name)}"
+            )
+
+            update_link_from_webhook(link, option_id, option_name)
+            :ok
+        end
+    end
+  end
+
+  defp extract_status_option_id(%{"changes" => %{"field_value" => %{"to" => %{"id" => id}}}}),
+    do: id
+
+  defp extract_status_option_id(_), do: nil
+
+  defp extract_status_option_name(%{
+         "changes" => %{"field_value" => %{"to" => %{"name" => name}}}
+       }),
+       do: name
+
+  defp extract_status_option_name(_), do: nil
+
+  defp update_link_from_webhook(%GitHubIssue{} = link, option_id, option_name) do
+    link
+    |> GitHubIssue.changeset(%{
+      project_status: option_name || option_id,
+      last_sync_source: "webhook",
+      last_sync_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
+  end
+
+  defp apply_status_to_request(request_id, hermes_status) do
+    request = Repo.get!(Request, request_id)
+
+    if request.status == hermes_status do
+      :ok
+    else
+      request
+      |> Request.changeset(%{status: hermes_status})
+      |> Repo.update()
+      |> case do
+        {:ok, _} ->
+          log_change(request_id, nil, "updated", %{
+            field: "status",
+            old_value: request.status,
+            new_value: hermes_status,
+            changes: %{"source" => "github_webhook"}
+          })
+
+          :ok
+
+        {:error, changeset} ->
+          Logger.warning(
+            "GitHub webhook could not update request #{request_id} status: #{inspect(changeset.errors)}"
+          )
+
+          :error
+      end
     end
   end
 

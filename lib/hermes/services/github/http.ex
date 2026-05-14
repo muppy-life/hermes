@@ -65,6 +65,106 @@ defmodule Hermes.Services.GitHub.HTTP do
     end
   end
 
+  @impl true
+  def get_issue_node_id(owner, repo, number) when is_integer(number) do
+    case get("/repos/#{owner}/#{repo}/issues/#{number}") do
+      {:ok, %{"node_id" => node_id}} -> {:ok, node_id}
+      {:ok, other} -> {:error, {:unexpected_payload, other}}
+      {:error, _} = err -> err
+    end
+  end
+
+  @impl true
+  def add_issue_to_project(project_id, content_node_id) do
+    query = """
+    mutation($projectId: ID!, $contentId: ID!) {
+      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+        item { id }
+      }
+    }
+    """
+
+    case graphql(query, %{"projectId" => project_id, "contentId" => content_node_id}) do
+      {:ok, %{"data" => %{"addProjectV2ItemById" => %{"item" => %{"id" => id}}}}} ->
+        {:ok, id}
+
+      {:ok, %{"errors" => errors}} ->
+        {:error, {:graphql_error, errors}}
+
+      {:ok, other} ->
+        {:error, {:unexpected_payload, other}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  @impl true
+  def move_item(project_id, item_id, field_id, option_id) do
+    query = """
+    mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+      updateProjectV2ItemFieldValue(input: {
+        projectId: $projectId,
+        itemId: $itemId,
+        fieldId: $fieldId,
+        value: { singleSelectOptionId: $optionId }
+      }) {
+        projectV2Item { id }
+      }
+    }
+    """
+
+    case graphql(query, %{
+           "projectId" => project_id,
+           "itemId" => item_id,
+           "fieldId" => field_id,
+           "optionId" => option_id
+         }) do
+      {:ok, %{"data" => %{"updateProjectV2ItemFieldValue" => %{"projectV2Item" => item}}}} ->
+        {:ok, item}
+
+      {:ok, %{"errors" => errors}} ->
+        {:error, {:graphql_error, errors}}
+
+      {:ok, other} ->
+        {:error, {:unexpected_payload, other}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  @impl true
+  def list_status_options(project_id, field_id) do
+    query = """
+    query($projectId: ID!, $fieldId: ID!) {
+      node(id: $projectId) {
+        ... on ProjectV2 {
+          field(id: $fieldId) {
+            ... on ProjectV2SingleSelectField {
+              options { id name }
+            }
+          }
+        }
+      }
+    }
+    """
+
+    case graphql(query, %{"projectId" => project_id, "fieldId" => field_id}) do
+      {:ok, %{"data" => %{"node" => %{"field" => %{"options" => options}}}}} ->
+        {:ok, Enum.map(options, fn %{"id" => id, "name" => name} -> %{id: id, name: name} end)}
+
+      {:ok, %{"errors" => errors}} ->
+        {:error, {:graphql_error, errors}}
+
+      {:ok, other} ->
+        {:error, {:unexpected_payload, other}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
   # HTTP layer
 
   defp post(path, body), do: request(:post, path, json: body)
@@ -102,6 +202,42 @@ defmodule Hermes.Services.GitHub.HTTP do
 
         {:error, reason} ->
           Logger.warning("GitHub #{method} #{path} transport error: #{inspect(reason)}")
+          {:error, {:transport_error, reason}}
+      end
+    end
+  end
+
+  defp graphql(query, variables) do
+    cfg = config()
+    token = cfg[:token]
+    url = cfg[:graphql_url] || "https://api.github.com/graphql"
+
+    if is_nil(token) or token == "" do
+      {:error, :missing_token}
+    else
+      headers = [
+        {"authorization", "Bearer #{token}"},
+        {"accept", "application/vnd.github+json"},
+        {"content-type", "application/json"},
+        {"user-agent", "hermes-app"}
+      ]
+
+      body = %{"query" => query, "variables" => variables}
+
+      opts =
+        [headers: headers, retry: false, json: body]
+        |> maybe_put_test_plug()
+
+      case Req.post(url, opts) do
+        {:ok, %Req.Response{status: 200, body: resp}} ->
+          {:ok, resp}
+
+        {:ok, %Req.Response{status: status, body: resp}} ->
+          Logger.warning("GitHub GraphQL -> #{status}: #{inspect(resp)}")
+          {:error, {:http_error, status, resp}}
+
+        {:error, reason} ->
+          Logger.warning("GitHub GraphQL transport error: #{inspect(reason)}")
           {:error, {:transport_error, reason}}
       end
     end

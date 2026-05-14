@@ -84,7 +84,11 @@ config :hermes, :github,
   token: nil,
   owner: nil,
   default_repo: nil,
-  api_url: "https://api.github.com"
+  api_url: "https://api.github.com",
+  graphql_url: "https://api.github.com/graphql",
+  project_id: nil,
+  status_field_id: nil,
+  webhook_secret: nil
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

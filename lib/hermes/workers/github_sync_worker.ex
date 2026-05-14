@@ -3,9 +3,9 @@ defmodule Hermes.Workers.GitHubSyncWorker do
   Syncs Hermes requests to GitHub issues.
 
   Actions:
-    * `"update"`  — push title/body changes to the linked issue
-    * `"status"`  — open/close based on Hermes status
-    * `"comment"` — mirror a Hermes comment as a GitHub issue comment
+    * `"update"`       — push title/body changes to the linked issue
+    * `"project_move"` — move the project board card to match Hermes status
+    * `"comment"`      — mirror a Hermes comment as a GitHub issue comment
 
   Issue creation runs synchronously via `Hermes.Requests.create_github_issue_for_request/2`.
   """
@@ -20,6 +20,7 @@ defmodule Hermes.Workers.GitHubSyncWorker do
   alias Hermes.Repo
   alias Hermes.Requests
   alias Hermes.Requests.GitHubIssue
+  alias Hermes.Requests.GitHubStatusMapping
   alias Hermes.Requests.RequestComment
   alias Hermes.Services.GitHub
 
@@ -43,7 +44,7 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     end
   end
 
-  defp handle("status", %{"request_id" => id, "status" => status}) do
+  defp handle("project_move", %{"request_id" => id, "status" => hermes_status}) do
     request = get_request(id)
 
     cond do
@@ -53,15 +54,35 @@ defmodule Hermes.Workers.GitHubSyncWorker do
       is_nil(request.github_issue) ->
         :ok
 
+      is_nil(request.github_issue.project_item_id) ->
+        Logger.info(
+          "GitHubSyncWorker project_move skipped: issue not on project board for request #{id}"
+        )
+
+        :ok
+
+      recently_from_webhook?(request.github_issue) ->
+        Logger.info("GitHubSyncWorker project_move skipped: recent webhook update")
+        :ok
+
       true ->
-        case state_for_status(status) do
+        case Repo.get_by(GitHubStatusMapping, hermes_status: hermes_status) do
           nil ->
+            Logger.warning(
+              "GitHubSyncWorker project_move skipped: no mapping for hermes_status=#{hermes_status}"
+            )
+
             :ok
 
-          state ->
-            result = GitHub.set_issue_state(request.github_issue, state)
-            update_cached_state(request.github_issue, state)
-            wrap(result, request)
+          mapping ->
+            case GitHub.move_item(request.github_issue.project_item_id, mapping.github_option_id) do
+              {:ok, _} ->
+                mark_synced_from_hermes(request.github_issue, mapping.github_option_name)
+                :ok
+
+              {:error, reason} ->
+                {:error, inspect(reason)}
+            end
         end
     end
   end
@@ -105,21 +126,34 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     :ok
   end
 
-  defp update_cached_state(%GitHubIssue{} = issue, state) do
-    issue
-    |> Ecto.Changeset.change(state: Atom.to_string(state))
-    |> Repo.update()
-  end
-
   defp get_request(id) do
     Requests.get_request_with_github_issue(id)
   rescue
     Ecto.NoResultsError -> nil
   end
 
-  defp state_for_status("completed"), do: :closed
-  defp state_for_status("blocked"), do: nil
-  defp state_for_status(_), do: :open
+  # Loop-prevention: skip pushing to GitHub if the last update arrived from
+  # GitHub within this window. Keeps webhook + forward sync from ping-ponging.
+  @recent_webhook_grace_seconds 30
+
+  defp recently_from_webhook?(%GitHubIssue{
+         last_sync_source: "webhook",
+         last_sync_at: %DateTime{} = ts
+       }) do
+    DateTime.diff(DateTime.utc_now(), ts, :second) < @recent_webhook_grace_seconds
+  end
+
+  defp recently_from_webhook?(_), do: false
+
+  defp mark_synced_from_hermes(%GitHubIssue{} = issue, option_name) do
+    issue
+    |> GitHubIssue.changeset(%{
+      project_status: option_name,
+      last_sync_source: "hermes",
+      last_sync_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
+  end
 
   defp format_comment(%RequestComment{user: user, content: content}) do
     author =

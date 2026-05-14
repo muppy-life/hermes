@@ -56,7 +56,7 @@ defmodule HermesWeb.CoreComponents do
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class="toast toast-end z-[100] top-20"
       {@rest}
     >
       <div class={[
@@ -615,7 +615,7 @@ defmodule HermesWeb.CoreComponents do
     """
   end
 
-  defp status_label(status) do
+  def status_label(status) do
     case status do
       "need_requirement" -> gettext("Need requirement")
       "pending" -> gettext("Pending")

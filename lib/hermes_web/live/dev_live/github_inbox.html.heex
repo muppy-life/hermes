@@ -21,6 +21,49 @@
     in-memory adapter. Unset <code>GITHUB_USE_REAL_API</code> and restart the server to use it.
   </div>
 <% else %>
+  <%= if @items != [] do %>
+    <div class="mt-6">
+      <h2 class="font-semibold mb-2">Project board items</h2>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Issue node</th>
+            <th>Current status</th>
+            <th>Move to</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= for item <- @items do %>
+            <tr>
+              <td><code class="text-xs">{item.id}</code></td>
+              <td><code class="text-xs">{item.content_node_id}</code></td>
+              <td>
+                <code class="text-xs">{item.status_option_id || "(none)"}</code>
+              </td>
+              <td class="flex flex-wrap gap-1">
+                <%= for opt <- @options do %>
+                  <button
+                    type="button"
+                    phx-click="move_card"
+                    phx-value-item_id={item.id}
+                    phx-value-option_id={opt.id}
+                    phx-value-option_name={opt.name}
+                    class={
+                      "btn btn-xs " <>
+                        if(item.status_option_id == opt.id, do: "btn-primary", else: "btn-ghost")
+                    }
+                  >
+                    {opt.name}
+                  </button>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
   <%= if @issues == [] do %>
     <p class="text-sm text-gray-500 mt-6">No fake issues yet. Create a Hermes request.</p>
   <% else %>

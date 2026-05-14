@@ -59,7 +59,8 @@ dev_user =
     email: "dev@hermes.com",
     hashed_password: PasswordHelper.hash("dev123"),
     role: "dev_team",
-    team_id: dev_team.id
+    team_id: dev_team.id,
+    is_admin: true
   })
 
 product_owner =

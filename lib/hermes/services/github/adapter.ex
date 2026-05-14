@@ -37,4 +37,35 @@ defmodule Hermes.Services.GitHub.Adapter do
   @callback get_issue(String.t(), String.t(), pos_integer()) ::
               {:ok, %{number: pos_integer(), url: String.t(), state: String.t()}}
               | {:error, term()}
+
+  @doc """
+  Returns the GraphQL node ID of an issue (needed before adding to a project).
+  """
+  @callback get_issue_node_id(String.t(), String.t(), pos_integer()) ::
+              {:ok, String.t()} | {:error, term()}
+
+  @doc """
+  Adds an issue (by node ID) to a Projects v2 board. Returns the project
+  item ID, which is later passed to `move_item/4`.
+  """
+  @callback add_issue_to_project(String.t(), String.t()) ::
+              {:ok, String.t()} | {:error, term()}
+
+  @doc """
+  Moves a project item to a different status column.
+  """
+  @callback move_item(
+              project_id :: String.t(),
+              item_id :: String.t(),
+              field_id :: String.t(),
+              option_id :: String.t()
+            ) :: {:ok, map()} | {:error, term()}
+
+  @doc """
+  Lists status field options for a project. Used to seed the mapping table.
+
+  Returns `[%{id, name}]`.
+  """
+  @callback list_status_options(project_id :: String.t(), field_id :: String.t()) ::
+              {:ok, [%{id: String.t(), name: String.t()}]} | {:error, term()}
 end
