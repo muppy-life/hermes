@@ -75,3 +75,42 @@ variable "phx_host" {
   type        = string
   default     = "hermes.muppy.com"
 }
+
+# GitHub integration
+variable "hermes_github_token" {
+  description = "GitHub PAT (Issues R+W, Metadata R, Projects R+W)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "hermes_github_owner" {
+  description = "GitHub org or user login that owns the target repo"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_default_repo" {
+  description = "Default GitHub repo name new Hermes issues land in"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_project_id" {
+  description = "GraphQL node ID of the Projects v2 board (PVT_...)"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_status_field_id" {
+  description = "GraphQL node ID of the project's Status field (PVTSSF_...)"
+  type        = string
+  default     = ""
+}
+
+variable "hermes_github_webhook_secret" {
+  description = "HMAC secret matching the GitHub webhook config"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

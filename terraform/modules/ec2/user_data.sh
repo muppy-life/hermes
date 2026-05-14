@@ -29,6 +29,12 @@ PHX_HOST=${phx_host}
 PHX_SERVER=true
 PORT=4000
 MIX_ENV=prod
+HERMES_GITHUB_TOKEN=${hermes_github_token}
+HERMES_GITHUB_OWNER=${hermes_github_owner}
+HERMES_GITHUB_DEFAULT_REPO=${hermes_github_default_repo}
+HERMES_GITHUB_PROJECT_ID=${hermes_github_project_id}
+HERMES_GITHUB_STATUS_FIELD_ID=${hermes_github_status_field_id}
+HERMES_GITHUB_WEBHOOK_SECRET=${hermes_github_webhook_secret}
 EOF
 
 # Configure CloudWatch agent for Docker logs
