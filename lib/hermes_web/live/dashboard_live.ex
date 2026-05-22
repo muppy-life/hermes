@@ -78,7 +78,9 @@ defmodule HermesWeb.DashboardLive do
   end
 
   defp get_stats(user) do
-    requests = Requests.list_requests_by_team(user.team_id)
+    requests =
+      Requests.list_requests_by_team(user.team_id)
+      |> Enum.reject(&(&1.status == "discarded"))
 
     %{
       total_requests: length(requests),
@@ -108,7 +110,7 @@ defmodule HermesWeb.DashboardLive do
         r.deadline != nil and
           Date.compare(r.deadline, start_date) != :lt and
           Date.compare(r.deadline, end_date) != :gt and
-          r.status != "completed"
+          r.status != "completed" and r.status != "discarded"
       end)
       |> Enum.sort_by(& &1.deadline, Date)
 

@@ -225,6 +225,10 @@ defmodule Hermes.Requests do
     |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
   end
 
+  def create_subtask(%Request{status: "discarded"}, _title, _user_id) do
+    {:error, :parent_discarded}
+  end
+
   def create_subtask(%Request{} = parent, title, user_id) do
     attrs = %{
       title: title,
@@ -254,6 +258,99 @@ defmodule Hermes.Requests do
   def toggle_subtask_status(%Request{} = subtask, user_id) do
     new_status = if subtask.status == "completed", do: "pending", else: "completed"
     update_request(subtask, %{status: new_status}, user_id)
+  end
+
+  # Discard / restore
+
+  @discard_categories [
+    :duplicate,
+    :out_of_scope,
+    :not_technically_viable,
+    :replaced_by_another,
+    :postponed_indefinitely,
+    :not_a_priority,
+    :no_resources_available,
+    :no_longer_applicable,
+    :other
+  ]
+
+  def discard_categories, do: @discard_categories
+
+  def discard_request(%Request{} = request, %{category: category, reason: reason}, user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    attrs = %{
+      status: "discarded",
+      discard_reason_category: category,
+      discard_reason: reason,
+      discarded_by_id: user_id,
+      discarded_at: now
+    }
+
+    Repo.transaction(fn ->
+      case update_request(request, attrs, user_id) do
+        {:ok, updated} ->
+          cascade_discard_subtasks(updated, attrs, user_id)
+          updated
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  defp cascade_discard_subtasks(parent, attrs, user_id) do
+    parent.id
+    |> list_subtasks()
+    |> Enum.each(fn sub ->
+      if sub.status != "discarded" do
+        {:ok, _} = update_request(sub, attrs, user_id)
+      end
+    end)
+  end
+
+  def restore_request(%Request{} = request, user_id) do
+    if orphan_subtask?(request) do
+      {:error, :parent_discarded}
+    else
+      attrs = %{
+        status: "new",
+        discard_reason_category: nil,
+        discard_reason: nil,
+        discarded_by_id: nil,
+        discarded_at: nil
+      }
+
+      Repo.transaction(fn ->
+        case update_request(request, attrs, user_id) do
+          {:ok, updated} ->
+            cascade_restore_subtasks(updated, attrs, user_id)
+            updated
+
+          {:error, changeset} ->
+            Repo.rollback(changeset)
+        end
+      end)
+    end
+  end
+
+  defp orphan_subtask?(%Request{parent_id: nil}), do: false
+
+  defp orphan_subtask?(%Request{parent_id: parent_id}) do
+    case Repo.get(Request, parent_id) do
+      %Request{status: "discarded"} -> true
+      _ -> false
+    end
+  end
+
+  defp cascade_restore_subtasks(parent, attrs, user_id) do
+    parent.id
+    |> list_subtasks()
+    |> Enum.each(fn sub ->
+      if sub.status == "discarded" do
+        {:ok, _} = update_request(sub, attrs, user_id)
+      end
+    end)
   end
 
   # Request change tracking functions
@@ -379,7 +476,14 @@ defmodule Hermes.Requests do
   def get_request_with_github_issue(id) do
     Request
     |> Repo.get!(id)
-    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by, :github_issue, :parent])
+    |> Repo.preload([
+      :requesting_team,
+      :assigned_to_team,
+      :created_by,
+      :discarded_by,
+      :github_issue,
+      :parent
+    ])
   end
 
   defp trigger_github_sync(request, action, extra \\ %{}) do

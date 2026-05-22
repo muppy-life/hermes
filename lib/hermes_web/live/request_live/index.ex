@@ -155,11 +155,17 @@ defmodule HermesWeb.RequestLive.Index do
       |> Enum.filter(&(&1.status == "completed"))
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
+    discarded_requests =
+      filtered_requests
+      |> Enum.filter(&(&1.status == "discarded"))
+      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
+
     socket
     |> assign(:new_requests, new_requests)
     |> assign(:ongoing_requests, ongoing_requests)
     |> assign(:completed_requests, completed_requests)
-    |> assign(:total_count, length(filtered_requests))
+    |> assign(:discarded_requests, discarded_requests)
+    |> assign(:total_count, length(filtered_requests) - length(discarded_requests))
   end
 
   defp apply_filters(requests, assigns) do

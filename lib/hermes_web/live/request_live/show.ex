@@ -54,6 +54,9 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:show_deadline_modal, false)
+     |> assign(:show_discard_modal, false)
+     |> assign(:discard_category, List.first(Requests.discard_categories()))
+     |> assign(:discard_reason, "")
      |> assign(:editing_comment_id, nil)
      |> assign(:edit_comment_form, nil)
      |> assign(:selected_date, request.deadline || Date.utc_today())
@@ -303,13 +306,20 @@ defmodule HermesWeb.RequestLive.Show do
     end
   end
 
+  def handle_event("change_status", %{"status" => "discarded"}, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_discard_modal, true)
+     |> assign(:discard_category, List.first(Requests.discard_categories()))
+     |> assign(:discard_reason, "")}
+  end
+
   def handle_event("change_status", %{"status" => new_status}, socket) do
     current_user = socket.assigns[:current_user]
     user_id = if current_user, do: current_user.id, else: nil
 
     case Requests.update_request(socket.assigns.request, %{status: new_status}, user_id) do
       {:ok, _updated_request} ->
-        # Reload the request with all associations preloaded
         request_id = socket.assigns.request.id
         updated_request = Requests.get_request_with_github_issue(request_id)
         changes = Requests.list_request_changes(request_id)
@@ -323,6 +333,103 @@ defmodule HermesWeb.RequestLive.Show do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update status"))}
+    end
+  end
+
+  def handle_event("open_discard_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_discard_modal, true)
+     |> assign(:discard_category, List.first(Requests.discard_categories()))
+     |> assign(:discard_reason, "")}
+  end
+
+  def handle_event("close_discard_modal", _params, socket) do
+    {:noreply, assign(socket, :show_discard_modal, false)}
+  end
+
+  def handle_event("update_discard_field", %{"field" => "category", "value" => v}, socket) do
+    {:noreply, assign(socket, :discard_category, v)}
+  end
+
+  def handle_event("update_discard_field", %{"field" => "reason", "value" => v}, socket) do
+    {:noreply, assign(socket, :discard_reason, v)}
+  end
+
+  def handle_event("confirm_discard", params, socket) do
+    current_user = socket.assigns[:current_user]
+    user_id = if current_user, do: current_user.id, else: nil
+
+    category = params["category"] || socket.assigns.discard_category
+    reason = String.trim(params["reason"] || socket.assigns.discard_reason)
+
+    cond do
+      is_nil(user_id) ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized"))}
+
+      reason == "" ->
+        {:noreply,
+         socket
+         |> assign(:discard_reason, reason)
+         |> assign(:discard_category, category)
+         |> put_flash(:error, gettext("Justification is required"))}
+
+      true ->
+        case Requests.discard_request(
+               socket.assigns.request,
+               %{category: category, reason: reason},
+               user_id
+             ) do
+          {:ok, _} ->
+            request_id = socket.assigns.request.id
+            updated_request = Requests.get_request_with_github_issue(request_id)
+            changes = Requests.list_request_changes(request_id)
+            subtasks = Requests.list_subtasks(request_id)
+
+            {:noreply,
+             socket
+             |> assign(:request, updated_request)
+             |> assign(:changes, changes)
+             |> assign(:subtasks, subtasks)
+             |> assign(:show_discard_modal, false)
+             |> assign(:form, to_form(Requests.change_request(updated_request)))
+             |> put_flash(:info, gettext("Request discarded"))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to discard request"))}
+        end
+    end
+  end
+
+  def handle_event("restore_request", _params, socket) do
+    current_user = socket.assigns[:current_user]
+    user_id = if current_user, do: current_user.id, else: nil
+
+    case Requests.restore_request(socket.assigns.request, user_id) do
+      {:ok, _} ->
+        request_id = socket.assigns.request.id
+        updated_request = Requests.get_request_with_github_issue(request_id)
+        changes = Requests.list_request_changes(request_id)
+        subtasks = Requests.list_subtasks(request_id)
+
+        {:noreply,
+         socket
+         |> assign(:request, updated_request)
+         |> assign(:changes, changes)
+         |> assign(:subtasks, subtasks)
+         |> assign(:form, to_form(Requests.change_request(updated_request)))
+         |> put_flash(:info, gettext("Request restored"))}
+
+      {:error, :parent_discarded} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Restore the parent request first to recover this subtask")
+         )}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to restore request"))}
     end
   end
 
@@ -346,6 +453,10 @@ defmodule HermesWeb.RequestLive.Show do
              socket
              |> assign(:subtasks, subtasks)
              |> push_event("clear_subtask_input", %{})}
+
+          {:error, :parent_discarded} ->
+            {:noreply,
+             put_flash(socket, :error, gettext("Cannot add subtasks to a discarded request"))}
 
           {:error, _changeset} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to add subtask"))}
@@ -550,9 +661,33 @@ defmodule HermesWeb.RequestLive.Show do
       {"in_progress", gettext("In progress")},
       {"review", gettext("Review")},
       {"completed", gettext("Completed")},
-      {"blocked", gettext("Blocked")}
+      {"blocked", gettext("Blocked")},
+      {"discarded", gettext("Discarded")}
     ]
   end
+
+  defp discard_category_options do
+    Enum.map(Hermes.Requests.discard_categories(), fn key ->
+      {Atom.to_string(key), discard_category_label(key)}
+    end)
+  end
+
+  defp discard_category_label(category) when is_binary(category) do
+    discard_category_label(String.to_existing_atom(category))
+  rescue
+    ArgumentError -> gettext("Unknown")
+  end
+
+  defp discard_category_label(:duplicate), do: gettext("Duplicate")
+  defp discard_category_label(:out_of_scope), do: gettext("Out of scope")
+  defp discard_category_label(:not_technically_viable), do: gettext("Not technically viable")
+  defp discard_category_label(:replaced_by_another), do: gettext("Replaced by another request")
+  defp discard_category_label(:postponed_indefinitely), do: gettext("Postponed indefinitely")
+  defp discard_category_label(:not_a_priority), do: gettext("Not a priority")
+  defp discard_category_label(:no_resources_available), do: gettext("No resources available")
+  defp discard_category_label(:no_longer_applicable), do: gettext("No longer applicable")
+  defp discard_category_label(:other), do: gettext("Other reason")
+  defp discard_category_label(_), do: gettext("Unknown")
 
   defp subtask_progress([]), do: {0, 0, 0}
 
