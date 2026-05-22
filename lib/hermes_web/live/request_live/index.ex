@@ -9,7 +9,8 @@ defmodule HermesWeb.RequestLive.Index do
     {:ok,
      socket
      |> assign(:page_title, "Team Requests")
-     |> assign(:teams, Accounts.list_teams())}
+     |> assign(:teams, Accounts.list_teams())
+     |> assign(:show_new_request, false)}
   end
 
   @impl true
@@ -45,6 +46,10 @@ defmodule HermesWeb.RequestLive.Index do
   @impl true
   def handle_event("view_request", %{"id" => id}, socket) do
     {:noreply, push_navigate(socket, to: ~p"/backlog/#{id}")}
+  end
+
+  def handle_event("show_new_request", _params, socket) do
+    {:noreply, assign(socket, :show_new_request, true)}
   end
 
   def handle_event("delete", %{"id" => id}, socket) do
@@ -93,6 +98,22 @@ defmodule HermesWeb.RequestLive.Index do
      push_patch(socket,
        to: ~p"/backlog?#{build_params(socket, tab: tab)}"
      )}
+  end
+
+  @impl true
+  def handle_info(:hide_new_request, socket) do
+    {:noreply, assign(socket, :show_new_request, false)}
+  end
+
+  def handle_info({:new_request_created, _request}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("Request created successfully"))
+     |> load_requests()}
+  end
+
+  def handle_info({:new_request_flash, kind, msg}, socket) do
+    {:noreply, put_flash(socket, kind, msg)}
   end
 
   defp build_params(socket, updates) do

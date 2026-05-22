@@ -93,13 +93,10 @@
         <.icon name="hero-chart-bar" class="size-4" />
         {gettext("Metrics")}
       </.link>
-      <.link
-        navigate={~p"/backlog/new?#{[return_to: ~p"/boards/#{@board.id}"]}"}
-        class="btn btn-primary btn-sm"
-      >
+      <button type="button" phx-click="show_new_request" class="btn btn-primary btn-sm">
         <.icon name="hero-plus" class="size-4" />
         {gettext("New Request")}
-      </.link>
+      </button>
       <.back_button navigate={@return_to} />
     </div>
   </div>
@@ -223,3 +220,11 @@
     </div>
   </div>
 </div>
+
+<%= if @show_new_request do %>
+  <.live_component
+    module={HermesWeb.RequestLive.NewRequestFormComponent}
+    id="new-request-form"
+    current_user={@current_user}
+  />
+<% end %>

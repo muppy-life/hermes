@@ -229,7 +229,7 @@ defmodule Hermes.Requests do
     attrs = %{
       title: title,
       priority: parent.priority || 2,
-      status: "pending",
+      status: "new",
       parent_id: parent.id,
       requesting_team_id: parent.requesting_team_id,
       assigned_to_team_id: parent.assigned_to_team_id,

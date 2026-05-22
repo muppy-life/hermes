@@ -1,18 +1,20 @@
 <!-- CTA Floating Button -->
-<.link navigate={~p"/backlog/new"}>
-  <button class="btn btn-primary shadow-lg fixed bottom-[50px] right-8 z-50">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-5 w-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-    </svg>
-    {gettext("New Request")}
-  </button>
-</.link>
+<button
+  type="button"
+  phx-click="show_new_request"
+  class="btn btn-primary shadow-lg fixed bottom-[50px] right-8 z-50"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+  </svg>
+  {gettext("New Request")}
+</button>
 
 <div class="mt-6">
   <h2 class="text-2xl font-semibold mb-4">{gettext("Statistics")}</h2>
@@ -317,3 +319,11 @@
     <% end %>
   </div>
 </div>
+
+<%= if @show_new_request do %>
+  <.live_component
+    module={HermesWeb.RequestLive.NewRequestFormComponent}
+    id="new-request-form"
+    current_user={@current_user}
+  />
+<% end %>

@@ -17,7 +17,8 @@ defmodule HermesWeb.KanbanLive.Board do
        |> NavigationHistory.assign_return_path(default: ~p"/boards")
        |> assign(:raw_board_id, board_id)
        |> assign(:page_title, board.name)
-       |> assign(:teams, Accounts.list_teams())}
+       |> assign(:teams, Accounts.list_teams())
+       |> assign(:show_new_request, false)}
     else
       {:ok,
        socket
@@ -126,6 +127,40 @@ defmodule HermesWeb.KanbanLive.Board do
        to:
          ~p"/boards/#{socket.assigns.raw_board_id}?perspective=#{socket.assigns.filter_perspective}"
      )}
+  end
+
+  def handle_event("show_new_request", _params, socket) do
+    {:noreply, assign(socket, :show_new_request, true)}
+  end
+
+  @impl true
+  def handle_info(:hide_new_request, socket) do
+    {:noreply, assign(socket, :show_new_request, false)}
+  end
+
+  def handle_info({:new_request_created, _request}, socket) do
+    board_id = socket.assigns.raw_board_id
+    current_user = socket.assigns[:current_user]
+    board = Kanbans.get_board!(board_id, current_user.team_id)
+
+    filtered_board =
+      apply_all_filters(
+        board,
+        socket.assigns.filter_perspective,
+        socket.assigns.filter_priority,
+        socket.assigns.filter_team,
+        current_user.team_id
+      )
+
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("Request created successfully"))
+     |> assign(:board, filtered_board)
+     |> assign(:total_count, count_all_cards(filtered_board))}
+  end
+
+  def handle_info({:new_request_flash, kind, msg}, socket) do
+    {:noreply, put_flash(socket, kind, msg)}
   end
 
   defp build_params(socket, updates) do

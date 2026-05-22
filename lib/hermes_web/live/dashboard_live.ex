@@ -14,7 +14,32 @@ defmodule HermesWeb.DashboardLive do
      |> assign(:recent_requests, get_recent_requests(current_user))
      |> assign(:boards, get_boards(current_user))
      |> assign(:stats, get_stats(current_user))
-     |> assign(:roadmap, get_roadmap_data(current_user))}
+     |> assign(:roadmap, get_roadmap_data(current_user))
+     |> assign(:show_new_request, false)}
+  end
+
+  @impl true
+  def handle_event("show_new_request", _params, socket) do
+    {:noreply, assign(socket, :show_new_request, true)}
+  end
+
+  @impl true
+  def handle_info(:hide_new_request, socket) do
+    {:noreply, assign(socket, :show_new_request, false)}
+  end
+
+  def handle_info({:new_request_created, _request}, socket) do
+    current_user = socket.assigns[:current_user]
+
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("Request created successfully"))
+     |> assign(:recent_requests, get_recent_requests(current_user))
+     |> assign(:stats, get_stats(current_user))}
+  end
+
+  def handle_info({:new_request_flash, kind, msg}, socket) do
+    {:noreply, put_flash(socket, kind, msg)}
   end
 
   defp get_recent_requests(user) do
