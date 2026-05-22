@@ -214,6 +214,48 @@ defmodule Hermes.Requests do
     Request.changeset(request, attrs)
   end
 
+  # Subtask functions
+
+  def list_subtasks(parent_id) do
+    from(r in Request,
+      where: r.parent_id == ^parent_id,
+      order_by: [asc: r.inserted_at]
+    )
+    |> Repo.all()
+    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
+  end
+
+  def create_subtask(%Request{} = parent, title, user_id) do
+    attrs = %{
+      title: title,
+      priority: parent.priority || 2,
+      status: "pending",
+      parent_id: parent.id,
+      requesting_team_id: parent.requesting_team_id,
+      assigned_to_team_id: parent.assigned_to_team_id,
+      created_by_id: user_id
+    }
+
+    result =
+      %Request{}
+      |> Request.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, subtask} ->
+        log_change(subtask.id, user_id, "created", %{changes: attrs})
+        {:ok, Repo.preload(subtask, [:requesting_team, :assigned_to_team, :created_by])}
+
+      error ->
+        error
+    end
+  end
+
+  def toggle_subtask_status(%Request{} = subtask, user_id) do
+    new_status = if subtask.status == "completed", do: "pending", else: "completed"
+    update_request(subtask, %{status: new_status}, user_id)
+  end
+
   # Request change tracking functions
 
   def list_request_changes(request_id) do
@@ -337,7 +379,7 @@ defmodule Hermes.Requests do
   def get_request_with_github_issue(id) do
     Request
     |> Repo.get!(id)
-    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by, :github_issue])
+    |> Repo.preload([:requesting_team, :assigned_to_team, :created_by, :github_issue, :parent])
   end
 
   defp trigger_github_sync(request, action, extra \\ %{}) do

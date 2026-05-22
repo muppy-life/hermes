@@ -149,7 +149,6 @@ defmodule HermesWeb.RequestLive.New do
       |> Map.put("assigned_to_team_id", dev_team && dev_team.id)
       |> Map.put("status", "pending")
       |> Map.put("title", generate_title(form_data))
-      |> Map.put("description", form_data["current_situation"] || "")
 
     case Requests.create_request(final_params, current_user.id) do
       {:ok, request} ->

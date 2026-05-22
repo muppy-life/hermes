@@ -16,6 +16,7 @@ defmodule HermesWeb.RequestLive.Show do
     changes = Requests.list_request_changes(id)
     comments = Requests.list_request_comments(id)
     images = Requests.list_request_images(id)
+    subtasks = Requests.list_subtasks(id)
 
     # Subscribe to updates for this request
     Phoenix.PubSub.subscribe(Hermes.PubSub, "request:#{id}")
@@ -49,6 +50,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:changes, changes)
      |> assign(:comments, comments)
      |> assign(:images, images)
+     |> assign(:subtasks, subtasks)
      |> assign(:show_edit_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:show_deadline_modal, false)
@@ -324,6 +326,52 @@ defmodule HermesWeb.RequestLive.Show do
     end
   end
 
+  def handle_event("add_subtask", %{"title" => title}, socket) do
+    title = String.trim(title || "")
+    current_user = socket.assigns[:current_user]
+
+    cond do
+      title == "" ->
+        {:noreply, socket}
+
+      is_nil(current_user) ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized"))}
+
+      true ->
+        case Requests.create_subtask(socket.assigns.request, title, current_user.id) do
+          {:ok, _subtask} ->
+            subtasks = Requests.list_subtasks(socket.assigns.request.id)
+
+            {:noreply,
+             socket
+             |> assign(:subtasks, subtasks)
+             |> push_event("clear_subtask_input", %{})}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to add subtask"))}
+        end
+    end
+  end
+
+  def handle_event("toggle_subtask", %{"id" => id}, socket) do
+    current_user = socket.assigns[:current_user]
+    user_id = if current_user, do: current_user.id, else: nil
+    subtask = Enum.find(socket.assigns.subtasks, &(to_string(&1.id) == to_string(id)))
+
+    if subtask do
+      case Requests.toggle_subtask_status(subtask, user_id) do
+        {:ok, _updated} ->
+          subtasks = Requests.list_subtasks(socket.assigns.request.id)
+          {:noreply, assign(socket, :subtasks, subtasks)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to update subtask"))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("validate_images", _params, socket) do
     {:noreply, socket}
   end
@@ -483,4 +531,35 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   defp format_change_value(value), do: value
+
+  defp aging_days(%{updated_at: nil}), do: 0
+
+  defp aging_days(%{updated_at: updated_at}) do
+    DateTime.diff(DateTime.utc_now(), updated_at, :day)
+  end
+
+  defp aging_class(days) when days <= 7, do: "aging-ok"
+  defp aging_class(days) when days <= 30, do: "aging-warn"
+  defp aging_class(_), do: "aging-bad"
+
+  defp status_options do
+    [
+      {"new", gettext("New")},
+      {"need_requirement", gettext("Need requirement")},
+      {"pending", gettext("Pending")},
+      {"in_progress", gettext("In progress")},
+      {"review", gettext("Review")},
+      {"completed", gettext("Completed")},
+      {"blocked", gettext("Blocked")}
+    ]
+  end
+
+  defp subtask_progress([]), do: {0, 0, 0}
+
+  defp subtask_progress(subtasks) do
+    total = length(subtasks)
+    done = Enum.count(subtasks, &(&1.status == "completed"))
+    pct = if total > 0, do: round(done / total * 100), else: 0
+    {done, total, pct}
+  end
 end

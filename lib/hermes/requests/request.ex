@@ -24,6 +24,8 @@ defmodule Hermes.Requests.Request do
     belongs_to :requesting_team, Hermes.Accounts.Team
     belongs_to :assigned_to_team, Hermes.Accounts.Team
     belongs_to :created_by, Hermes.Accounts.User
+    belongs_to :parent, __MODULE__, foreign_key: :parent_id
+    has_many :subtasks, __MODULE__, foreign_key: :parent_id
 
     timestamps(type: :utc_datetime)
   end
@@ -47,19 +49,10 @@ defmodule Hermes.Requests.Request do
       :solution_diagram,
       :requesting_team_id,
       :assigned_to_team_id,
-      :created_by_id
+      :created_by_id,
+      :parent_id
     ])
-    |> validate_required([
-      :kind,
-      :priority,
-      :target_user_type,
-      :current_situation,
-      :goal_description,
-      :goal_target,
-      :expected_output,
-      :requesting_team_id,
-      :created_by_id
-    ])
+    |> validate_required([:title, :priority, :requesting_team_id, :created_by_id])
     |> validate_inclusion(:priority, 1..4)
     |> validate_inclusion(:status, [
       "new",
