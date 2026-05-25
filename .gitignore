@@ -51,3 +51,7 @@ terraform/.terraform/
 terraform/*.tfvars
 terraform/*.tfstate*
 
+
+# Playwright MCP artifacts
+.playwright-mcp/
+detail.png
