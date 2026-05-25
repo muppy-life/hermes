@@ -28,7 +28,7 @@ if appsignal_key = System.get_env("APPSIGNAL_PUSH_API_KEY") do
     name: System.get_env("APPSIGNAL_APP_NAME") || "hermes",
     push_api_key: appsignal_key,
     env: System.get_env("APPSIGNAL_APP_ENV") || to_string(config_env()),
-    revision: System.get_env("APPSIGNAL_APP_REVISION") || System.get_env("GIT_SHA"),
+    revision: System.get_env("APPSIGNAL_APP_REVISION"),
     active: true,
     enable_error_backend: true,
     send_params: true
