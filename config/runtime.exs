@@ -22,7 +22,9 @@ end
 
 # AppSignal runtime configuration. Activates only when a push API key is set,
 # so dev/test stay inert unless explicitly configured.
-if appsignal_key = System.get_env("APPSIGNAL_PUSH_API_KEY") do
+appsignal_key = System.get_env("APPSIGNAL_PUSH_API_KEY")
+
+if appsignal_key not in [nil, ""] do
   config :appsignal, :config,
     otp_app: :hermes,
     name: System.get_env("APPSIGNAL_APP_NAME") || "hermes",
