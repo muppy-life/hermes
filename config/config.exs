@@ -18,8 +18,7 @@ config :appsignal, :config,
   name: "hermes",
   env: Mix.env(),
   active: false,
-  enable_error_backend: true,
-  send_params: true
+  enable_error_backend: true
 
 # Configure Oban
 config :hermes, Oban,

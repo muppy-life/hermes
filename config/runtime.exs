@@ -30,8 +30,7 @@ if appsignal_key = System.get_env("APPSIGNAL_PUSH_API_KEY") do
     env: System.get_env("APPSIGNAL_APP_ENV") || to_string(config_env()),
     revision: System.get_env("APPSIGNAL_APP_REVISION"),
     active: true,
-    enable_error_backend: true,
-    send_params: true
+    enable_error_backend: true
 end
 
 # Configure Claude API key from environment variable
