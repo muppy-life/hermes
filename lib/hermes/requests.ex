@@ -384,8 +384,10 @@ defmodule Hermes.Requests do
     |> list_subtasks()
     |> Enum.flat_map(fn sub ->
       if sub.status not in ["discarded", "completed"] do
-        {:ok, updated} = discard_one(sub, category, reason, user_id, now)
-        [updated]
+        case discard_one(sub, category, reason, user_id, now) do
+          {:ok, updated} -> [updated]
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
       else
         []
       end
@@ -461,8 +463,10 @@ defmodule Hermes.Requests do
     |> list_subtasks()
     |> Enum.flat_map(fn sub ->
       if sub.status == "discarded" do
-        {:ok, updated} = restore_one(sub, user_id)
-        [updated]
+        case restore_one(sub, user_id) do
+          {:ok, updated} -> [updated]
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
       else
         []
       end
