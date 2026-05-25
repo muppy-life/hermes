@@ -34,6 +34,7 @@ defmodule Hermes.Requests.Request do
 
     field :discard_reason, :string
     field :discarded_at, :utc_datetime
+    field :pre_discard_status, :string
 
     has_one :github_issue, Hermes.Requests.GitHubIssue
 
@@ -67,11 +68,8 @@ defmodule Hermes.Requests.Request do
       :requesting_team_id,
       :assigned_to_team_id,
       :created_by_id,
-      :parent_id,
       :discard_reason_category,
-      :discard_reason,
-      :discarded_at,
-      :discarded_by_id
+      :discard_reason
     ])
     |> validate_required([:title, :priority, :requesting_team_id, :created_by_id])
     |> validate_inclusion(:priority, 1..4)

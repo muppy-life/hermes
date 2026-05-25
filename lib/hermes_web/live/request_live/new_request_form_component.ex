@@ -47,7 +47,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
         {:noreply,
          socket
          |> assign(:form_data, form_data)
-         |> assign(:current_step, String.to_integer(step))}
+         |> assign(:current_step, parse_step(step, socket.assigns.current_step))}
 
       {:error, msg} ->
         send(self(), {:new_request_flash, :error, msg})
@@ -57,7 +57,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
   end
 
   def handle_event("go_step", %{"step" => step}, socket) do
-    {:noreply, assign(socket, :current_step, String.to_integer(step))}
+    {:noreply, assign(socket, :current_step, parse_step(step, socket.assigns.current_step))}
   end
 
   def handle_event("cancel", _params, socket) do
@@ -113,6 +113,13 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
   defp normalize_deadline(%{"deadline" => ""} = params), do: Map.delete(params, "deadline")
   defp normalize_deadline(%{"deadline" => nil} = params), do: Map.delete(params, "deadline")
   defp normalize_deadline(params), do: params
+
+  defp parse_step(value, fallback) do
+    case Integer.parse(to_string(value)) do
+      {n, ""} when n >= 1 and n <= 3 -> n
+      _ -> fallback
+    end
+  end
 
   defp validate_step(1, form_data) do
     cond do

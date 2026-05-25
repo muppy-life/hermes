@@ -1,6 +1,7 @@
 <% {subtasks_done, subtasks_total, subtasks_pct} = subtask_progress(@subtasks)
 is_epic = subtasks_total > 0
 is_discarded = @request.status == "discarded"
+is_completed = @request.status == "completed"
 aging = aging_days(@request) %>
 
 <div class="detail-topbar">
@@ -108,7 +109,7 @@ aging = aging_days(@request) %>
             {if @request.deadline, do: gettext("Change deadline"), else: gettext("Set deadline")}
           </button>
         <% end %>
-        <%= if not is_discarded do %>
+        <%= if not is_discarded and not is_completed do %>
           <button phx-click="open_discard_modal" class="btn btn-sm btn-ghost">
             <.icon name="hero-archive-box" class="size-4" /> {gettext("Discard")}
           </button>
@@ -473,7 +474,9 @@ aging = aging_days(@request) %>
           class="select select-bordered select-sm w-full"
           disabled={is_discarded}
         >
-          <%= for {value, label} <- status_options(), value != "discarded" or is_discarded do %>
+          <%= for {value, label} <- status_options(),
+                  value != "discarded" or is_discarded,
+                  not (value == "discarded" and is_completed) do %>
             <option value={value} selected={@request.status == value}>{label}</option>
           <% end %>
         </select>

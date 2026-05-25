@@ -234,7 +234,6 @@ defmodule Hermes.Requests do
       title: title,
       priority: parent.priority || 2,
       status: "new",
-      parent_id: parent.id,
       requesting_team_id: parent.requesting_team_id,
       assigned_to_team_id: parent.assigned_to_team_id,
       created_by_id: user_id
@@ -243,11 +242,20 @@ defmodule Hermes.Requests do
     result =
       %Request{}
       |> Request.changeset(attrs)
+      |> Ecto.Changeset.put_change(:parent_id, parent.id)
       |> Repo.insert()
 
     case result do
       {:ok, subtask} ->
-        log_change(subtask.id, user_id, "created", %{changes: attrs})
+        log_change(subtask.id, user_id, "created", %{
+          changes: Map.put(attrs, :parent_id, parent.id)
+        })
+
+        maybe_auto_sync_subtask(parent, subtask)
+
+        # Re-fetch parent issue to also update its Epic label now that it has a subtask
+        maybe_refresh_parent_epic_label(parent)
+
         {:ok, Repo.preload(subtask, [:requesting_team, :assigned_to_team, :created_by])}
 
       error ->
@@ -255,8 +263,30 @@ defmodule Hermes.Requests do
     end
   end
 
+  defp maybe_auto_sync_subtask(%Request{} = parent, %Request{} = subtask) do
+    case get_github_issue(parent.id) do
+      nil ->
+        :ok
+
+      %GitHubIssue{} = parent_issue ->
+        sync_subtask_to_github_parent(subtask, parent_issue, [])
+    end
+  end
+
+  defp maybe_refresh_parent_epic_label(%Request{} = parent) do
+    case get_github_issue(parent.id) do
+      nil ->
+        :ok
+
+      %GitHubIssue{} = issue ->
+        # Re-issue an update so labels (including new Epic label) sync
+        GitHub.update_issue(issue, parent)
+        :ok
+    end
+  end
+
   def toggle_subtask_status(%Request{} = subtask, user_id) do
-    new_status = if subtask.status == "completed", do: "pending", else: "completed"
+    new_status = if subtask.status == "completed", do: "new", else: "completed"
     update_request(subtask, %{status: new_status}, user_id)
   end
 
@@ -276,35 +306,74 @@ defmodule Hermes.Requests do
 
   def discard_categories, do: @discard_categories
 
+  def discard_request(%Request{status: "completed"}, _attrs, _user_id) do
+    {:error, :already_completed}
+  end
+
   def discard_request(%Request{} = request, %{category: category, reason: reason}, user_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    attrs = %{
-      status: "discarded",
-      discard_reason_category: category,
-      discard_reason: reason,
-      discarded_by_id: user_id,
-      discarded_at: now
-    }
+    result =
+      Repo.transaction(fn ->
+        case discard_one(request, category, reason, user_id, now) do
+          {:ok, updated} ->
+            affected = [
+              updated | cascade_discard_subtasks(updated, category, reason, user_id, now)
+            ]
 
-    Repo.transaction(fn ->
-      case update_request(request, attrs, user_id) do
-        {:ok, updated} ->
-          cascade_discard_subtasks(updated, attrs, user_id)
-          updated
+            {updated, affected}
 
-        {:error, changeset} ->
-          Repo.rollback(changeset)
-      end
-    end)
+          {:error, changeset} ->
+            Repo.rollback(changeset)
+        end
+      end)
+
+    case result do
+      {:ok, {updated, affected}} ->
+        Enum.each(affected, &close_github_as_not_planned(&1, category, reason))
+        {:ok, updated}
+
+      err ->
+        err
+    end
   end
 
-  defp cascade_discard_subtasks(parent, attrs, user_id) do
+  defp discard_one(request, category, reason, user_id, now) do
+    old_request = request
+
+    changeset =
+      request
+      |> Request.changeset(%{
+        status: "discarded",
+        discard_reason_category: category,
+        discard_reason: reason
+      })
+      |> Ecto.Changeset.put_change(:discarded_by_id, user_id)
+      |> Ecto.Changeset.put_change(:discarded_at, now)
+      |> Ecto.Changeset.put_change(:pre_discard_status, request.status)
+
+    case Repo.update(changeset) do
+      {:ok, updated} ->
+        if map_size(changeset.changes) > 0 do
+          log_changes(updated.id, user_id, old_request, changeset.changes)
+        end
+
+        {:ok, updated}
+
+      err ->
+        err
+    end
+  end
+
+  defp cascade_discard_subtasks(parent, category, reason, user_id, now) do
     parent.id
     |> list_subtasks()
-    |> Enum.each(fn sub ->
-      if sub.status != "discarded" do
-        {:ok, _} = update_request(sub, attrs, user_id)
+    |> Enum.flat_map(fn sub ->
+      if sub.status not in ["discarded", "completed"] do
+        {:ok, updated} = discard_one(sub, category, reason, user_id, now)
+        [updated]
+      else
+        []
       end
     end)
   end
@@ -313,24 +382,54 @@ defmodule Hermes.Requests do
     if orphan_subtask?(request) do
       {:error, :parent_discarded}
     else
-      attrs = %{
-        status: "new",
+      result =
+        Repo.transaction(fn ->
+          case restore_one(request, user_id) do
+            {:ok, updated} ->
+              affected = [updated | cascade_restore_subtasks(updated, user_id)]
+              {updated, affected}
+
+            {:error, changeset} ->
+              Repo.rollback(changeset)
+          end
+        end)
+
+      case result do
+        {:ok, {updated, affected}} ->
+          Enum.each(affected, &reopen_github_issue/1)
+          {:ok, updated}
+
+        err ->
+          err
+      end
+    end
+  end
+
+  defp restore_one(request, user_id) do
+    old_request = request
+    target_status = request.pre_discard_status || "new"
+
+    changeset =
+      request
+      |> Request.changeset(%{
+        status: target_status,
         discard_reason_category: nil,
-        discard_reason: nil,
-        discarded_by_id: nil,
-        discarded_at: nil
-      }
+        discard_reason: nil
+      })
+      |> Ecto.Changeset.put_change(:discarded_by_id, nil)
+      |> Ecto.Changeset.put_change(:discarded_at, nil)
+      |> Ecto.Changeset.put_change(:pre_discard_status, nil)
 
-      Repo.transaction(fn ->
-        case update_request(request, attrs, user_id) do
-          {:ok, updated} ->
-            cascade_restore_subtasks(updated, attrs, user_id)
-            updated
-
-          {:error, changeset} ->
-            Repo.rollback(changeset)
+    case Repo.update(changeset) do
+      {:ok, updated} ->
+        if map_size(changeset.changes) > 0 do
+          log_changes(updated.id, user_id, old_request, changeset.changes)
         end
-      end)
+
+        {:ok, updated}
+
+      err ->
+        err
     end
   end
 
@@ -343,14 +442,82 @@ defmodule Hermes.Requests do
     end
   end
 
-  defp cascade_restore_subtasks(parent, attrs, user_id) do
+  defp cascade_restore_subtasks(parent, user_id) do
     parent.id
     |> list_subtasks()
-    |> Enum.each(fn sub ->
+    |> Enum.flat_map(fn sub ->
       if sub.status == "discarded" do
-        {:ok, _} = update_request(sub, attrs, user_id)
+        {:ok, updated} = restore_one(sub, user_id)
+        [updated]
+      else
+        []
       end
     end)
+  end
+
+  defp close_github_as_not_planned(%Request{} = request, category, reason) do
+    if github_integration_enabled?() do
+      case get_github_issue(request.id) do
+        nil ->
+          :ok
+
+        %GitHubIssue{} = issue ->
+          GitHub.set_issue_state(issue, :closed, reason: :not_planned)
+          maybe_post_discard_comment(issue, category, reason)
+          :ok
+      end
+    else
+      :ok
+    end
+  end
+
+  defp maybe_post_discard_comment(%GitHubIssue{} = issue, category, reason) do
+    body = """
+    🗄️ **Discarded in Hermes**
+
+    **Category:** #{format_discard_category(category)}
+
+    **Justification:**
+    #{reason}
+    """
+
+    case GitHub.create_comment(issue, body) do
+      {:ok, _} ->
+        :ok
+
+      {:error, err} ->
+        Logger.warning(
+          "discard comment failed issue=#{issue.owner}/#{issue.repo}##{issue.number} reason=#{inspect(err)}"
+        )
+
+        :ok
+    end
+  end
+
+  defp format_discard_category(nil), do: "—"
+
+  defp format_discard_category(c) when is_atom(c),
+    do: c |> Atom.to_string() |> humanize_category()
+
+  defp format_discard_category(c) when is_binary(c), do: humanize_category(c)
+
+  defp humanize_category(c) do
+    c |> String.replace("_", " ") |> String.capitalize()
+  end
+
+  defp reopen_github_issue(%Request{} = request) do
+    if github_integration_enabled?() do
+      case get_github_issue(request.id) do
+        nil ->
+          :ok
+
+        %GitHubIssue{} = issue ->
+          GitHub.set_issue_state(issue, :open)
+          :ok
+      end
+    else
+      :ok
+    end
   end
 
   # Request change tracking functions
@@ -584,13 +751,17 @@ defmodule Hermes.Requests do
       true ->
         case GitHub.create_issue(request, opts) do
           {:ok, %{owner: owner, repo: repo, number: number, url: url}} ->
-            insert_github_issue(request.id, %{
-              owner: owner,
-              repo: repo,
-              number: number,
-              url: url,
-              state: "open"
-            })
+            with {:ok, issue} <-
+                   insert_github_issue(request.id, %{
+                     owner: owner,
+                     repo: repo,
+                     number: number,
+                     url: url,
+                     state: "open"
+                   }) do
+              cascade_subtasks_to_github(request, issue, opts)
+              {:ok, issue}
+            end
 
           {:error, _} = err ->
             err
@@ -609,14 +780,17 @@ defmodule Hermes.Requests do
          {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
          {:ok, {resolved_owner, resolved_repo}} <- resolve_link_target(owner, repo),
          {:ok, %{url: url, state: state}} <-
-           GitHub.get_issue(resolved_owner, resolved_repo, number) do
-      insert_github_issue(request.id, %{
-        owner: resolved_owner,
-        repo: resolved_repo,
-        number: number,
-        url: url,
-        state: state
-      })
+           GitHub.get_issue(resolved_owner, resolved_repo, number),
+         {:ok, issue} <-
+           insert_github_issue(request.id, %{
+             owner: resolved_owner,
+             repo: resolved_repo,
+             number: number,
+             url: url,
+             state: state
+           }) do
+      cascade_subtasks_to_github(request, issue, owner: resolved_owner, repo: resolved_repo)
+      {:ok, issue}
     end
   end
 
@@ -691,12 +865,101 @@ defmodule Hermes.Requests do
   end
 
   @doc """
-  Removes the GitHub issue link from a request. Does not touch GitHub.
+  Removes the GitHub issue link from a request. Also removes the linked
+  project item (the GitHub issue itself is untouched).
   """
   def unlink_github_issue(%Request{} = request) do
     case get_github_issue(request.id) do
-      nil -> {:error, :not_linked}
-      issue -> Repo.delete(issue)
+      nil ->
+        {:error, :not_linked}
+
+      issue ->
+        maybe_remove_project_item(issue)
+        Repo.delete(issue)
+    end
+  end
+
+  defp maybe_remove_project_item(%GitHubIssue{project_item_id: nil}), do: :ok
+
+  defp maybe_remove_project_item(%GitHubIssue{project_item_id: item_id} = issue) do
+    case GitHub.remove_item(item_id) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(
+          "remove_item failed issue=#{issue.owner}/#{issue.repo}##{issue.number} item=#{item_id} reason=#{inspect(reason)}"
+        )
+
+        :ok
+    end
+  end
+
+  # Cascade subtask GH issues + sub-issue linkage when parent is linked.
+  defp cascade_subtasks_to_github(%Request{parent_id: nil} = parent, parent_issue, opts) do
+    parent.id
+    |> list_subtasks()
+    |> Enum.each(fn sub ->
+      if sub.status != "discarded" do
+        sync_subtask_to_github_parent(sub, parent_issue, opts)
+      end
+    end)
+  end
+
+  defp cascade_subtasks_to_github(_subtask_parent, _issue, _opts), do: :ok
+
+  defp sync_subtask_to_github_parent(%Request{} = subtask, parent_issue, opts) do
+    cond do
+      not github_integration_enabled?() ->
+        :ok
+
+      not is_nil(get_github_issue(subtask.id)) ->
+        # already linked — just attach sub-issue relationship
+        attach_sub_issue(parent_issue, get_github_issue(subtask.id))
+
+      true ->
+        case GitHub.create_issue(subtask, opts) do
+          {:ok, %{owner: o, repo: r, number: n, url: u}} ->
+            case insert_github_issue(subtask.id, %{
+                   owner: o,
+                   repo: r,
+                   number: n,
+                   url: u,
+                   state: "open"
+                 }) do
+              {:ok, child_issue} ->
+                attach_sub_issue(parent_issue, child_issue)
+
+              {:error, reason} ->
+                Logger.warning(
+                  "cascade_subtask insert failed subtask_id=#{subtask.id} reason=#{inspect(reason)}"
+                )
+
+                :ok
+            end
+
+          {:error, reason} ->
+            Logger.warning(
+              "cascade_subtask GH.create_issue failed subtask_id=#{subtask.id} reason=#{inspect(reason)}"
+            )
+
+            :ok
+        end
+    end
+  end
+
+  defp attach_sub_issue(%GitHubIssue{} = parent, %GitHubIssue{} = child) do
+    with {:ok, parent_node} <- GitHub.get_issue_node_id(parent.owner, parent.repo, parent.number),
+         {:ok, child_node} <- GitHub.get_issue_node_id(child.owner, child.repo, child.number),
+         {:ok, _} <- GitHub.add_sub_issue(parent_node, child_node) do
+      :ok
+    else
+      {:error, reason} ->
+        Logger.warning(
+          "add_sub_issue failed parent=#{parent.number} child=#{child.number} reason=#{inspect(reason)}"
+        )
+
+        :ok
     end
   end
 

@@ -395,6 +395,12 @@ defmodule HermesWeb.RequestLive.Show do
              |> assign(:form, to_form(Requests.change_request(updated_request)))
              |> put_flash(:info, gettext("Request discarded"))}
 
+          {:error, :already_completed} ->
+            {:noreply,
+             socket
+             |> assign(:show_discard_modal, false)
+             |> put_flash(:error, gettext("Completed requests cannot be discarded"))}
+
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to discard request"))}
         end
@@ -689,11 +695,10 @@ defmodule HermesWeb.RequestLive.Show do
   defp discard_category_label(:other), do: gettext("Other reason")
   defp discard_category_label(_), do: gettext("Unknown")
 
-  defp subtask_progress([]), do: {0, 0, 0}
-
   defp subtask_progress(subtasks) do
-    total = length(subtasks)
-    done = Enum.count(subtasks, &(&1.status == "completed"))
+    active = Enum.reject(subtasks, &(&1.status == "discarded"))
+    total = length(active)
+    done = Enum.count(active, &(&1.status == "completed"))
     pct = if total > 0, do: round(done / total * 100), else: 0
     {done, total, pct}
   end

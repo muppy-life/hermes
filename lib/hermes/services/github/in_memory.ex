@@ -36,7 +36,9 @@ defmodule Hermes.Services.GitHub.InMemory do
       # item_id => %{project_id, content_node_id, status_option_id}
       project_items: %{},
       # auto-increment for synthetic item ids
-      item_counter: 0
+      item_counter: 0,
+      # parent_node_id => MapSet.new([child_node_id, ...])
+      sub_issues: %{}
     }
   end
 
@@ -68,6 +70,7 @@ defmodule Hermes.Services.GitHub.InMemory do
         body: body,
         labels: labels,
         state: "open",
+        state_reason: nil,
         url: "https://github.example/#{owner}/#{repo}/issues/#{number}",
         created_at: DateTime.utc_now(),
         updated_at: DateTime.utc_now()
@@ -98,10 +101,22 @@ defmodule Hermes.Services.GitHub.InMemory do
   end
 
   @impl true
-  def set_issue_state(%{owner: owner, repo: repo, number: number}, state)
+  def set_issue_state(issue_ref, state) when state in [:open, :closed] do
+    set_issue_state(issue_ref, state, [])
+  end
+
+  @impl true
+  def set_issue_state(%{owner: owner, repo: repo, number: number}, state, opts)
       when state in [:open, :closed] do
+    reason = Keyword.get(opts, :reason)
+
     mutate(owner, repo, number, fn issue ->
-      %{issue | state: Atom.to_string(state), updated_at: DateTime.utc_now()}
+      %{
+        issue
+        | state: Atom.to_string(state),
+          state_reason: reason && Atom.to_string(reason),
+          updated_at: DateTime.utc_now()
+      }
     end)
   end
 
@@ -185,6 +200,46 @@ defmodule Hermes.Services.GitHub.InMemory do
       end)
 
     {:ok, options}
+  end
+
+  @impl true
+  def remove_item(_project_id, item_id) do
+    Agent.get_and_update(__MODULE__, fn state ->
+      case Map.pop(state.project_items, item_id) do
+        {nil, _} ->
+          {{:error, {:http_error, 404, %{"message" => "Item not found"}}}, state}
+
+        {_item, rest} ->
+          {{:ok, %{"deletedItemId" => item_id}}, %{state | project_items: rest}}
+      end
+    end)
+  end
+
+  @impl true
+  def add_sub_issue(parent_node_id, child_node_id) do
+    Agent.get_and_update(__MODULE__, fn state ->
+      children = Map.get(state.sub_issues, parent_node_id, MapSet.new())
+      new_children = MapSet.put(children, child_node_id)
+      new_state = %{state | sub_issues: Map.put(state.sub_issues, parent_node_id, new_children)}
+      {{:ok, %{"parent" => parent_node_id, "child" => child_node_id}}, new_state}
+    end)
+  end
+
+  @impl true
+  def remove_sub_issue(parent_node_id, child_node_id) do
+    Agent.get_and_update(__MODULE__, fn state ->
+      children = Map.get(state.sub_issues, parent_node_id, MapSet.new())
+      new_children = MapSet.delete(children, child_node_id)
+      new_state = %{state | sub_issues: Map.put(state.sub_issues, parent_node_id, new_children)}
+      {{:ok, %{"parent" => parent_node_id, "child" => child_node_id}}, new_state}
+    end)
+  end
+
+  @doc "Returns the set of child node IDs for a parent issue."
+  def sub_issues_of(parent_node_id) do
+    Agent.get(__MODULE__, fn state ->
+      Map.get(state.sub_issues, parent_node_id, MapSet.new()) |> MapSet.to_list()
+    end)
   end
 
   # Dev/test helpers
