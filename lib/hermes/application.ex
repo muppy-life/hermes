@@ -7,6 +7,8 @@ defmodule Hermes.Application do
 
   @impl true
   def start(_type, _args) do
+    attach_appsignal_logger()
+
     children =
       [
         HermesWeb.Telemetry,
@@ -40,6 +42,17 @@ defmodule Hermes.Application do
     else
       []
     end
+  end
+
+  # Forward Elixir Logger events (warning+) and SASL crash reports to AppSignal.
+  # No-op unless AppSignal is active (APPSIGNAL_PUSH_API_KEY set).
+  defp attach_appsignal_logger do
+    if Appsignal.Config.active?() do
+      :ok = Appsignal.Logger.Handler.add("hermes")
+    end
+  rescue
+    # Never block boot on instrumentation failures.
+    _ -> :ok
   end
 
   defp schedule_model_loading do

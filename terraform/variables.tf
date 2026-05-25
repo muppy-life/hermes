@@ -114,3 +114,10 @@ variable "hermes_github_webhook_secret" {
   sensitive   = true
   default     = ""
 }
+
+variable "appsignal_push_api_key" {
+  description = "AppSignal push API key. Leave empty to disable AppSignal tracking."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

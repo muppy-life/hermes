@@ -20,6 +20,20 @@ if System.get_env("PHX_SERVER") do
   config :hermes, HermesWeb.Endpoint, server: true
 end
 
+# AppSignal runtime configuration. Activates only when a push API key is set,
+# so dev/test stay inert unless explicitly configured.
+if appsignal_key = System.get_env("APPSIGNAL_PUSH_API_KEY") do
+  config :appsignal, :config,
+    otp_app: :hermes,
+    name: System.get_env("APPSIGNAL_APP_NAME") || "hermes",
+    push_api_key: appsignal_key,
+    env: System.get_env("APPSIGNAL_APP_ENV") || to_string(config_env()),
+    revision: System.get_env("APPSIGNAL_APP_REVISION") || System.get_env("GIT_SHA"),
+    active: true,
+    enable_error_backend: true,
+    send_params: true
+end
+
 # Configure Claude API key from environment variable
 if api_key = System.get_env("ANTHROPIC_API_KEY") do
   config :hermes, :anthropic_api_key, api_key
