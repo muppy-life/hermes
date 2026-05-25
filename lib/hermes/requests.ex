@@ -280,9 +280,19 @@ defmodule Hermes.Requests do
 
       %GitHubIssue{} = issue ->
         # Re-issue an update so labels (including new Epic label) sync
-        GitHub.update_issue(issue, parent)
+        GitHub.update_issue(issue, annotate_epic(parent))
         :ok
     end
+  end
+
+  defp annotate_epic(%Request{id: id, parent_id: nil} = request) when not is_nil(id) do
+    %{request | is_epic: has_active_subtasks?(id)}
+  end
+
+  defp annotate_epic(request), do: request
+
+  defp has_active_subtasks?(parent_id) do
+    Repo.exists?(from r in Request, where: r.parent_id == ^parent_id and r.status != "discarded")
   end
 
   def toggle_subtask_status(%Request{} = subtask, user_id) do
@@ -308,6 +318,10 @@ defmodule Hermes.Requests do
 
   def discard_request(%Request{status: "completed"}, _attrs, _user_id) do
     {:error, :already_completed}
+  end
+
+  def discard_request(%Request{status: "discarded"}, _attrs, _user_id) do
+    {:error, :already_discarded}
   end
 
   def discard_request(%Request{} = request, %{category: category, reason: reason}, user_id) do
@@ -671,6 +685,7 @@ defmodule Hermes.Requests do
       :github_issue,
       :parent
     ])
+    |> annotate_epic()
   end
 
   defp trigger_github_sync(request, action, extra \\ %{}) do
@@ -769,7 +784,7 @@ defmodule Hermes.Requests do
         {:error, :already_linked}
 
       true ->
-        case GitHub.create_issue(request, opts) do
+        case GitHub.create_issue(annotate_epic(request), opts) do
           {:ok, %{owner: owner, repo: repo, number: number, url: url}} ->
             with {:ok, issue} <-
                    insert_github_issue(request.id, %{
@@ -929,13 +944,15 @@ defmodule Hermes.Requests do
   defp cascade_subtasks_to_github(_subtask_parent, _issue, _opts), do: :ok
 
   defp sync_subtask_to_github_parent(%Request{} = subtask, parent_issue, opts) do
+    existing = get_github_issue(subtask.id)
+
     cond do
       not github_integration_enabled?() ->
         :ok
 
-      not is_nil(get_github_issue(subtask.id)) ->
+      not is_nil(existing) ->
         # already linked — just attach sub-issue relationship
-        attach_sub_issue(parent_issue, get_github_issue(subtask.id))
+        attach_sub_issue(parent_issue, existing)
 
       true ->
         case GitHub.create_issue(subtask, opts) do

@@ -12,11 +12,8 @@ defmodule Hermes.Services.GitHub do
   only) for tight-control HTTP stubs.
   """
 
-  alias Hermes.Repo
   alias Hermes.Requests.GitHubIssue
   alias Hermes.Requests.Request
-
-  import Ecto.Query, only: [from: 2]
 
   require Logger
 
@@ -327,15 +324,8 @@ defmodule Hermes.Services.GitHub do
     |> Enum.reject(&is_nil/1)
   end
 
-  defp epic_label_for(%Request{id: nil}), do: nil
-  defp epic_label_for(%Request{parent_id: parent_id}) when not is_nil(parent_id), do: nil
-
-  defp epic_label_for(%Request{id: id}) do
-    has_subtasks =
-      Repo.exists?(from r in Request, where: r.parent_id == ^id and r.status != "discarded")
-
-    if has_subtasks, do: "Epic"
-  end
+  defp epic_label_for(%Request{is_epic: true, parent_id: nil}), do: "Epic"
+  defp epic_label_for(_), do: nil
 
   defp add_label(list, nil), do: list
   defp add_label(list, label), do: [label | list]

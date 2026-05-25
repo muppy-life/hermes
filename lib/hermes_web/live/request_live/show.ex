@@ -401,6 +401,12 @@ defmodule HermesWeb.RequestLive.Show do
              |> assign(:show_discard_modal, false)
              |> put_flash(:error, gettext("Completed requests cannot be discarded"))}
 
+          {:error, :already_discarded} ->
+            {:noreply,
+             socket
+             |> assign(:show_discard_modal, false)
+             |> put_flash(:error, gettext("Request is already discarded"))}
+
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to discard request"))}
         end

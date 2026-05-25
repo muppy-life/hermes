@@ -36,6 +36,8 @@ defmodule Hermes.Requests.Request do
     field :discarded_at, :utc_datetime
     field :pre_discard_status, :string
 
+    field :is_epic, :boolean, virtual: true, default: false
+
     has_one :github_issue, Hermes.Requests.GitHubIssue
 
     belongs_to :requesting_team, Hermes.Accounts.Team
