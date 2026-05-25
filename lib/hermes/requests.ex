@@ -823,17 +823,17 @@ defmodule Hermes.Requests do
          {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
          {:ok, {resolved_owner, resolved_repo}} <- resolve_link_target(owner, repo),
          {:ok, %{url: url, state: state}} <-
-           GitHub.get_issue(resolved_owner, resolved_repo, number),
-         {:ok, issue} <-
-           insert_github_issue(request.id, %{
-             owner: resolved_owner,
-             repo: resolved_repo,
-             number: number,
-             url: url,
-             state: state
-           }) do
-      cascade_subtasks_to_github(request, issue, owner: resolved_owner, repo: resolved_repo)
-      {:ok, issue}
+           GitHub.get_issue(resolved_owner, resolved_repo, number) do
+      # Linking only records the existing GH issue — no cascade, no sub-issue
+      # creation, no body/label mutation. The pre-existing GH structure is
+      # preserved.
+      insert_github_issue(request.id, %{
+        owner: resolved_owner,
+        repo: resolved_repo,
+        number: number,
+        url: url,
+        state: state
+      })
     end
   end
 
@@ -876,7 +876,7 @@ defmodule Hermes.Requests do
 
       true ->
         with {:ok, node_id} <- GitHub.get_issue_node_id(issue.owner, issue.repo, issue.number),
-             {:ok, item_id} <- GitHub.add_issue_to_project(node_id),
+             {:ok, item_id} <- ensure_project_item(node_id),
              {:ok, updated} <-
                issue
                |> GitHubIssue.changeset(%{project_item_id: item_id})
@@ -893,6 +893,17 @@ defmodule Hermes.Requests do
 
             issue
         end
+    end
+  end
+
+  defp ensure_project_item(node_id) do
+    case GitHub.find_project_item(node_id) do
+      {:ok, item_id} when is_binary(item_id) ->
+        Logger.info("GitHub.add_issue_to_project skipped: existing item=#{item_id}")
+        {:ok, item_id}
+
+      _ ->
+        GitHub.add_issue_to_project(node_id)
     end
   end
 
@@ -996,7 +1007,7 @@ defmodule Hermes.Requests do
   defp attach_sub_issue(%GitHubIssue{} = parent, %GitHubIssue{} = child) do
     with {:ok, parent_node} <- GitHub.get_issue_node_id(parent.owner, parent.repo, parent.number),
          {:ok, child_node} <- GitHub.get_issue_node_id(child.owner, child.repo, child.number),
-         {:ok, _} <- GitHub.add_sub_issue(parent_node, child_node) do
+         :ok <- maybe_add_sub_issue(parent_node, child_node, parent, child) do
       :ok
     else
       {:error, reason} ->
@@ -1005,6 +1016,23 @@ defmodule Hermes.Requests do
         )
 
         :ok
+    end
+  end
+
+  defp maybe_add_sub_issue(parent_node, child_node, parent, child) do
+    case GitHub.sub_issue_attached?(parent_node, child_node) do
+      {:ok, true} ->
+        Logger.info(
+          "add_sub_issue skipped: already attached parent=##{parent.number} child=##{child.number}"
+        )
+
+        :ok
+
+      _ ->
+        case GitHub.add_sub_issue(parent_node, child_node) do
+          {:ok, _} -> :ok
+          err -> err
+        end
     end
   end
 

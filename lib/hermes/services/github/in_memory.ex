@@ -203,6 +203,20 @@ defmodule Hermes.Services.GitHub.InMemory do
   end
 
   @impl true
+  def find_project_item(project_id, issue_node_id) do
+    item =
+      Agent.get(__MODULE__, fn state ->
+        Enum.find_value(state.project_items, fn {_id, item} ->
+          if item.project_id == project_id and item.content_node_id == issue_node_id,
+            do: item.id,
+            else: nil
+        end)
+      end)
+
+    {:ok, item}
+  end
+
+  @impl true
   def remove_item(_project_id, item_id) do
     Agent.get_and_update(__MODULE__, fn state ->
       case Map.pop(state.project_items, item_id) do
@@ -223,6 +237,18 @@ defmodule Hermes.Services.GitHub.InMemory do
       new_state = %{state | sub_issues: Map.put(state.sub_issues, parent_node_id, new_children)}
       {{:ok, %{"parent" => parent_node_id, "child" => child_node_id}}, new_state}
     end)
+  end
+
+  @impl true
+  def sub_issue_attached?(parent_node_id, child_node_id) do
+    attached =
+      Agent.get(__MODULE__, fn state ->
+        state.sub_issues
+        |> Map.get(parent_node_id, MapSet.new())
+        |> MapSet.member?(child_node_id)
+      end)
+
+    {:ok, attached}
   end
 
   @impl true

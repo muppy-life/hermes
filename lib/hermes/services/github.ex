@@ -164,6 +164,20 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
+  Returns the existing project item ID for an issue if it is already on
+  the configured project, or `{:ok, nil}` otherwise.
+  """
+  def find_project_item(issue_node_id, opts \\ []) do
+    project_id = Keyword.get(opts, :project_id) || project_id_or_default()
+
+    if is_nil(project_id) or project_id == "" do
+      {:error, :missing_project_config}
+    else
+      adapter().find_project_item(project_id, issue_node_id)
+    end
+  end
+
+  @doc """
   Removes a project item (the issue stays untouched). `project_id` defaults
   to the configured value.
   """
@@ -176,6 +190,11 @@ defmodule Hermes.Services.GitHub do
       Logger.info("GitHub.remove_item project=#{project_id} item=#{item_id}")
       adapter().remove_item(project_id, item_id)
     end
+  end
+
+  @doc "Returns whether a child issue is already attached as a sub-issue."
+  def sub_issue_attached?(parent_node_id, child_node_id) do
+    adapter().sub_issue_attached?(parent_node_id, child_node_id)
   end
 
   @doc "Attach a child issue as a sub-issue of a parent issue."

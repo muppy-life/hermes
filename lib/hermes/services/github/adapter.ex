@@ -76,6 +76,13 @@ defmodule Hermes.Services.GitHub.Adapter do
               {:ok, map()} | {:error, term()}
 
   @doc """
+  Returns the project item ID for an issue if it is already on the given
+  project, or `{:ok, nil}` if not.
+  """
+  @callback find_project_item(project_id :: String.t(), issue_node_id :: String.t()) ::
+              {:ok, String.t() | nil} | {:error, term()}
+
+  @doc """
   Lists status field options for a project. Used to seed the mapping table.
 
   Returns `[%{id, name}]`.
@@ -95,4 +102,11 @@ defmodule Hermes.Services.GitHub.Adapter do
   """
   @callback remove_sub_issue(parent_node_id :: String.t(), child_node_id :: String.t()) ::
               {:ok, map()} | {:error, term()}
+
+  @doc """
+  Returns whether `child_node_id` is already attached as a sub-issue of
+  `parent_node_id`.
+  """
+  @callback sub_issue_attached?(parent_node_id :: String.t(), child_node_id :: String.t()) ::
+              {:ok, boolean()} | {:error, term()}
 end
