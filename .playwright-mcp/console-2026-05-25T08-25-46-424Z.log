@@ -1,0 +1,10 @@
+[     138ms] [INFO] %c📡 [info] GET /backlog/24
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[     160ms] [INFO] %c📡 [info] Sent 200 in 24ms
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[     333ms] [LOG] phx-GLLBfUaW71R8-ALj mount:  -  {0: Object, 1: 24, 2: Request detail, 3: , 4: Object, 5: Object, 6: Object, 7: , 8: , 9: , 10: , 11: Playwright test request, 12: Object, 13: Object, 14: Object, 15: Edit, 16: Object, 17: Object, 18: Object, 19: Delete, 20: , 21: , 22: , 23: Images, 24: , 25:  phx-drop-target="phx-GLLBfVHMxt7mfAND", 26:  for="phx-GLLBfVHMxt7mfAND", 27: Object, 28: Drop or click to upload, 29: JPG, PNG — max 14 MB, 30: Object, 31: , 32: , 33: Object, 34: Subtasks, 35: Object, 36: Object, 37: Object, 38: Object, 39: Comments, 40: 0, 41: Object, 42:  data-users="[{&quot;id&quot;:2,&quot;username&quo…d&quot;:1,&quot;username&quot;:&quot;dev&quot;}]", 43:  placeholder="Write a comment… use @ to mention", 44: Object, 45: Comment, 46: Status, 47: , 48: Object, 49: , 50: Priority, 51: Object, 52: Requesting team, 53: Development Team, 54: Assigned team, 55: Object, 56: Reporter, 57: dev, 58: Created, 59: May 25, 2026, 60: Deadline, 61: Object, 62: Updated At, 63: May 25, 2026, 64: Aging, 65: aging aging-ok, 66: 0, 67: GitHub issue, 68: Object, 69: Object, 70: , 71: , 72: , 73: , t: Request Details, p: Object, s: 27} @ http://localhost:51122/assets/js/app.js:1843
+[   17225ms] [INFO] %c📡 [info] GitHub.create_issue request_id=24 target=dev-org/hermes-fake adapter=Hermes.Services.GitHub.InMemory
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   17225ms] [INFO] %c📡 [info] GitHub.create_issue ok request_id=24 issue=dev-org/hermes-fake#1
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   17238ms] [LOG] phx-GLLBfUaW71R8-ALj update:  -  {9: , 10: , 35: Object, 36: Object, 47: , 48: Object, 49: , 65: aging aging-ok, 66: 0} @ http://localhost:51122/assets/js/app.js:1843

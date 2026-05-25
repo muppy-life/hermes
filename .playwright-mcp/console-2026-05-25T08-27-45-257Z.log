@@ -1,0 +1,203 @@
+[     148ms] [INFO] %c📡 [info] GET /backlog/24
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[     176ms] [INFO] %c📡 [info] Sent 200 in 36ms
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[     332ms] [LOG] phx-GLLBmPJbTf76nALi mount:  -  {0: Object, 1: 24, 2: Request detail, 3: , 4: Object, 5: Object, 6: Object, 7: , 8: , 9: , 10: , 11: Playwright test request, 12: Object, 13: Object, 14: Object, 15: Edit, 16: Object, 17: Object, 18: Object, 19: Delete, 20: , 21: , 22: , 23: Images, 24: , 25:  phx-drop-target="phx-GLLBmPy6MJAA2gQD", 26:  for="phx-GLLBmPy6MJAA2gQD", 27: Object, 28: Drop or click to upload, 29: JPG, PNG — max 14 MB, 30: Object, 31: , 32: , 33: Object, 34: Subtasks, 35: Object, 36: Object, 37: Object, 38: Object, 39: Comments, 40: 0, 41: Object, 42:  data-users="[{&quot;id&quot;:2,&quot;username&quo…d&quot;:1,&quot;username&quot;:&quot;dev&quot;}]", 43:  placeholder="Write a comment… use @ to mention", 44: Object, 45: Comment, 46: Status, 47: , 48: Object, 49: , 50: Priority, 51: Object, 52: Requesting team, 53: Development Team, 54: Assigned team, 55: Object, 56: Reporter, 57: dev, 58: Created, 59: May 25, 2026, 60: Deadline, 61: Object, 62: Updated At, 63: May 25, 2026, 64: Aging, 65: aging aging-ok, 66: 0, 67: GitHub issue, 68: Object, 69: Object, 70: , 71: , 72: , 73: , t: Request Details, p: Object, s: 27} @ http://localhost:51122/assets/js/app.js:1843
+[   45860ms] [INFO] %c📡 [info] GitHub.get_issue issue=dev-org/hermes-fake#99
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   45862ms] [WARNING] %c📡 [warning] GitHub.get_issue failed issue=dev-org/hermes-fake#99 reason={:http_error, 404, %{"message" => "Not Found"}}
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   45864ms] [LOG] phx-GLLBmPJbTf76nALi update:  -  {9: , 10: , 35: Object, 36: Object, 47: , 48: Object, 49: , 65: aging aging-ok, 66: 0} @ http://localhost:51122/assets/js/app.js:1843
+[   80798ms] [INFO] %c📡 [info] GitHub.create_issue request_id=24 target=dev-org/hermes-fake adapter=Hermes.Services.GitHub.InMemory
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   80798ms] [INFO] %c📡 [info] GitHub.create_issue ok request_id=24 issue=dev-org/hermes-fake#2
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   80802ms] [INFO] %c📡 [info] GitHub.add_issue_to_project project=PVT_DEV content=ISSUE_NODE_dev-org_hermes-fake_2
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   80806ms] [LOG] phx-GLLBmPJbTf76nALi update:  -  {7: Object, 8: , 9: , 10: , 35: Object, 36: Object, 47: , 48: Object, 49: , 65: aging aging-ok, 66: 0, 68: Object, p: Object} @ http://localhost:51122/assets/js/app.js:1843
+[   95789ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 5)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   95792ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[   95792ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 300s (attempt 5)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  396172ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 6)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  396176ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  396176ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 360s (attempt 6)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  569587ms] [INFO] %c📡 [info] Starting summarization for request 23, updating field: title (attempt 15)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  569595ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  569596ms] [INFO] %c📡 [info] ML model not ready yet for request 23, will retry in 900s (attempt 15)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  757099ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 7)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  757106ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[  757106ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 420s (attempt 7)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1177585ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 8)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1177593ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1177593ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 480s (attempt 8)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1469969ms] [INFO] %c📡 [info] Starting summarization for request 23, updating field: title (attempt 16)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1469973ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1469974ms] [INFO] %c📡 [info] ML model not ready yet for request 23, will retry in 960s (attempt 16)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1658206ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 9)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1658210ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 1658210ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 540s (attempt 9)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2198628ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 10)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2198638ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2198638ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 600s (attempt 10)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2248984ms] [INFO] %c📡 [info] Starting summarization for request 18, updating field: title (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2248985ms] [INFO] %c📡 [info] Starting summarization for request 19, updating field: title (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2248985ms] [INFO] %c📡 [info] Starting summarization for request 20, updating field: title (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2248986ms] [INFO] %c📡 [info] Starting summarization for request 17, updating field: title (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2248994ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2249000ms] [INFO] %c📡 [info] ML model not ready yet for request 17, will retry in 3360s (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2249002ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2249003ms] [INFO] %c📡 [info] ML model not ready yet for request 20, will retry in 3360s (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2249006ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2249006ms] [INFO] %c📡 [info] ML model not ready yet for request 18, will retry in 3360s (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2249007ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2249007ms] [INFO] %c📡 [info] ML model not ready yet for request 19, will retry in 3360s (attempt 56)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2429128ms] [INFO] %c📡 [info] Starting summarization for request 16, updating field: title (attempt 59)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2429131ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2429132ms] [INFO] %c📡 [info] ML model not ready yet for request 16, will retry in 3540s (attempt 59)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2430132ms] [INFO] %c📡 [info] Starting summarization for request 23, updating field: title (attempt 17)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2430137ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2430137ms] [INFO] %c📡 [info] ML model not ready yet for request 23, will retry in 1020s (attempt 17)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2799616ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 11)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2799622ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2799622ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 660s (attempt 11)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2848952ms] [INFO] %c📡 [info] Starting summarization for request 15, updating field: title (attempt 66)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2848957ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2848957ms] [INFO] %c📡 [info] ML model not ready yet for request 15, will retry in 3960s (attempt 66)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968757ms] [INFO] %c📡 [info] Starting summarization for request 13, updating field: title (attempt 68)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968759ms] [INFO] %c📡 [info] Starting summarization for request 12, updating field: title (attempt 68)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968759ms] [INFO] %c📡 [info] Starting summarization for request 14, updating field: title (attempt 68)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968767ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968767ms] [INFO] %c📡 [info] ML model not ready yet for request 12, will retry in 4080s (attempt 68)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968768ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968768ms] [INFO] %c📡 [info] ML model not ready yet for request 14, will retry in 4080s (attempt 68)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968768ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 2968768ms] [INFO] %c📡 [info] ML model not ready yet for request 13, will retry in 4080s (attempt 68)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 3450986ms] [INFO] %c📡 [info] Starting summarization for request 23, updating field: title (attempt 18)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 3450992ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 3450992ms] [INFO] %c📡 [info] ML model not ready yet for request 23, will retry in 1080s (attempt 18)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 3460041ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 12)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 3460046ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 3460046ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 720s (attempt 12)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4180395ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 13)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4180401ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4180401ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 780s (attempt 13)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4531474ms] [INFO] %c📡 [info] Starting summarization for request 23, updating field: title (attempt 19)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4531487ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4531488ms] [INFO] %c📡 [info] ML model not ready yet for request 23, will retry in 1140s (attempt 19)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4961028ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 14)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4961034ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 4961034ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 840s (attempt 14)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609313ms] [INFO] %c📡 [info] Starting summarization for request 18, updating field: title (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609318ms] [INFO] %c📡 [info] Starting summarization for request 20, updating field: title (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609319ms] [INFO] %c📡 [info] Starting summarization for request 19, updating field: title (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609319ms] [INFO] %c📡 [info] Starting summarization for request 17, updating field: title (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609324ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609325ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609325ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609325ms] [INFO] %c📡 [info] ML model not ready yet for request 19, will retry in 3420s (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609325ms] [INFO] %c📡 [info] ML model not ready yet for request 17, will retry in 3420s (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609325ms] [INFO] %c📡 [info] ML model not ready yet for request 18, will retry in 3420s (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609325ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5609326ms] [INFO] %c📡 [info] ML model not ready yet for request 20, will retry in 3420s (attempt 57)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5671863ms] [INFO] %c📡 [info] Starting summarization for request 23, updating field: title (attempt 20)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5671869ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5671869ms] [INFO] %c📡 [info] ML model not ready yet for request 23, will retry in 1200s (attempt 20)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5801724ms] [INFO] %c📡 [info] Starting summarization for request 24, updating field: title (attempt 15)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5801727ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5801727ms] [INFO] %c📡 [info] ML model not ready yet for request 24, will retry in 900s (attempt 15)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5970065ms] [INFO] %c📡 [info] Starting summarization for request 16, updating field: title (attempt 60)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5970069ms] [WARNING] %c📡 [warning] Summarization requested but model is still loading
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804
+[ 5970069ms] [INFO] %c📡 [info] ML model not ready yet for request 16, will retry in 3600s (attempt 60)
+ color: inherit; @ http://localhost:51122/phoenix/live_reload/frame:1804

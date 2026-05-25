@@ -464,10 +464,29 @@ defmodule Hermes.Requests do
         %GitHubIssue{} = issue ->
           GitHub.set_issue_state(issue, :closed, reason: :not_planned)
           maybe_post_discard_comment(issue, category, reason)
+          detach_from_project(issue)
           :ok
       end
     else
       :ok
+    end
+  end
+
+  defp detach_from_project(%GitHubIssue{project_item_id: nil}), do: :ok
+
+  defp detach_from_project(%GitHubIssue{project_item_id: item_id} = issue) do
+    case GitHub.remove_item(item_id) do
+      {:ok, _} ->
+        issue
+        |> GitHubIssue.changeset(%{project_item_id: nil, project_status: nil})
+        |> Repo.update()
+
+      {:error, reason} ->
+        Logger.warning(
+          "detach_from_project failed issue=#{issue.owner}/#{issue.repo}##{issue.number} item=#{item_id} reason=#{inspect(reason)}"
+        )
+
+        :ok
     end
   end
 
@@ -513,6 +532,7 @@ defmodule Hermes.Requests do
 
         %GitHubIssue{} = issue ->
           GitHub.set_issue_state(issue, :open)
+          maybe_add_to_project(issue)
           :ok
       end
     else

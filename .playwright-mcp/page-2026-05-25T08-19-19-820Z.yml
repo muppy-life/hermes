@@ -1,0 +1,383 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link [ref=e5] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: dev@hermes.com
+        - generic [ref=e9]: Dev team
+    - list [ref=e11]:
+      - listitem [ref=e12]:
+        - link "Dashboard" [ref=e13] [cursor=pointer]:
+          - /url: /dashboard
+      - listitem [ref=e14]:
+        - link "Backlog" [ref=e15] [cursor=pointer]:
+          - /url: /backlog
+      - listitem [ref=e16]:
+        - link "Boards" [ref=e17] [cursor=pointer]:
+          - /url: /boards
+      - listitem [ref=e18]:
+        - link "Admin" [ref=e19] [cursor=pointer]:
+          - /url: /admin
+    - list [ref=e21]:
+      - listitem [ref=e22]:
+        - button "🇺🇸" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: 🇺🇸
+      - listitem [ref=e26]:
+        - button "🌙" [ref=e27] [cursor=pointer]:
+          - generic [ref=e28]: 🌙
+        - button "☀️" [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]: ☀️
+      - listitem [ref=e31]:
+        - link [ref=e32] [cursor=pointer]:
+          - /url: /notifications
+      - listitem [ref=e34]:
+        - link [ref=e35] [cursor=pointer]:
+          - /url: /logout
+  - main [ref=e37]:
+    - generic [ref=e39]:
+      - button "New Request" [ref=e40] [cursor=pointer]:
+        - img [ref=e41]
+        - text: New Request
+      - generic [ref=e43]:
+        - heading "Statistics" [level=2] [ref=e44]
+        - generic [ref=e45]:
+          - link "21 Total" [ref=e471] [cursor=pointer]:
+            - /url: /backlog
+            - generic [ref=e47]:
+              - generic [ref=e48]: "21"
+              - generic [ref=e49]: Total
+          - link "3 New" [ref=e472] [cursor=pointer]:
+            - /url: /backlog?status=new&tab=new
+            - generic [ref=e51]:
+              - generic [ref=e52]: "3"
+              - generic [ref=e53]: New
+          - link "0 Need requirement" [ref=e54] [cursor=pointer]:
+            - /url: /backlog?status=need_requirement&tab=new
+            - generic [ref=e55]:
+              - generic [ref=e56]: "0"
+              - generic [ref=e57]: Need requirement
+          - link "14 Pending" [ref=e58] [cursor=pointer]:
+            - /url: /backlog?status=pending&tab=ongoing
+            - generic [ref=e59]:
+              - generic [ref=e60]: "14"
+              - generic [ref=e61]: Pending
+          - link "2 In Progress" [ref=e62] [cursor=pointer]:
+            - /url: /backlog?status=in_progress&tab=ongoing
+            - generic [ref=e63]:
+              - generic [ref=e64]: "2"
+              - generic [ref=e65]: In Progress
+          - link "1 Review" [ref=e66] [cursor=pointer]:
+            - /url: /backlog?status=review&tab=ongoing
+            - generic [ref=e67]:
+              - generic [ref=e68]: "1"
+              - generic [ref=e69]: Review
+          - link "1 Completed" [ref=e70] [cursor=pointer]:
+            - /url: /backlog?status=completed&tab=completed
+            - generic [ref=e71]:
+              - generic [ref=e72]: "1"
+              - generic [ref=e73]: Completed
+          - link "0 Blocked" [ref=e74] [cursor=pointer]:
+            - /url: /backlog?status=blocked&tab=ongoing
+            - generic [ref=e75]:
+              - generic [ref=e76]: "0"
+              - generic [ref=e77]: Blocked
+      - generic [ref=e78]:
+        - heading "Roadmap" [level=2] [ref=e79]
+        - generic [ref=e81]:
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - generic [ref=e85]:
+                - generic [ref=e86]: Apr
+                - generic [ref=e87]: "2026"
+              - generic [ref=e88]:
+                - generic [ref=e89]: May
+                - generic [ref=e90]: "2026"
+              - generic [ref=e91]:
+                - generic [ref=e92]: Jun
+                - generic [ref=e93]: "2026"
+              - generic [ref=e94]:
+                - generic [ref=e95]: Jul
+                - generic [ref=e96]: "2026"
+              - generic [ref=e97]:
+                - generic [ref=e98]: Aug
+                - generic [ref=e99]: "2026"
+              - generic [ref=e100]:
+                - generic [ref=e101]: Sep
+                - generic [ref=e102]: "2026"
+              - generic [ref=e103]:
+                - generic [ref=e104]: Oct
+                - generic [ref=e105]: "2026"
+              - generic [ref=e106]:
+                - generic [ref=e107]: Nov
+                - generic [ref=e108]: "2026"
+            - generic [ref=e109]:
+              - generic [ref=e112]: Today
+              - generic [ref=e113]:
+                - generic [ref=e115]: No deadlines
+                - link "asdas 22" [ref=e117] [cursor=pointer]:
+                  - /url: /backlog/23
+                  - generic "asdas - May 22, 2026" [ref=e118]:
+                    - generic [ref=e119]: asdas
+                    - generic [ref=e120]:
+                      - generic [ref=e121]:
+                        - img [ref=e122]
+                        - generic [ref=e124]: "22"
+                      - generic "Pending" [ref=e125]:
+                        - img [ref=e126]
+                - generic [ref=e129]: No deadlines
+                - generic [ref=e131]: No deadlines
+                - generic [ref=e133]: No deadlines
+                - generic [ref=e135]: No deadlines
+                - generic [ref=e137]: No deadlines
+                - generic [ref=e139]: No deadlines
+          - generic [ref=e140]:
+            - generic [ref=e141]: "Priority:"
+            - generic [ref=e142]: Low
+            - generic [ref=e144]: Normal
+            - generic [ref=e146]: Important
+            - generic [ref=e148]: Critical
+            - generic [ref=e150]: Today
+      - generic [ref=e152]:
+        - generic [ref=e153]:
+          - generic [ref=e154]:
+            - heading "Recent Requests" [level=2] [ref=e155]
+            - link "View all →" [ref=e156] [cursor=pointer]:
+              - /url: /backlog
+          - generic [ref=e157]:
+            - 'link "Playwright test request Verifying the new design end-to-end via playwright From: Development Team To: Development Team Updated At May 25, 2026 at 08:19 AM Important New Jun 30, 2026" [ref=e473] [cursor=pointer]':
+              - /url: /backlog/24
+              - generic [ref=e161]:
+                - generic [ref=e162]:
+                  - heading "Playwright test request" [level=3] [ref=e474]
+                  - paragraph [ref=e164]: Verifying the new design end-to-end via playwright
+                  - generic [ref=e165]:
+                    - generic [ref=e166]:
+                      - generic [ref=e167]: "From:"
+                      - generic [ref=e168]: Development Team
+                    - generic [ref=e169]:
+                      - generic [ref=e170]: "To:"
+                      - generic [ref=e171]: Development Team
+                  - paragraph [ref=e172]: Updated At May 25, 2026 at 08:19 AM
+                - generic [ref=e173]:
+                  - generic [ref=e174]: Important
+                  - generic [ref=e175]: New
+                  - generic [ref=e176]: Jun 30, 2026
+            - 'link "asdas asdasd From: Development Team To: Development Team Updated At May 22, 2026 at 11:54 AM Important Pending May 22, 2026" [ref=e475] [cursor=pointer]':
+              - /url: /backlog/23
+              - generic [ref=e181]:
+                - generic [ref=e182]:
+                  - heading "asdas" [level=3] [ref=e476]
+                  - paragraph [ref=e477]: asdasd
+                  - generic [ref=e184]:
+                    - generic [ref=e185]:
+                      - generic [ref=e186]: "From:"
+                      - generic [ref=e187]: Development Team
+                    - generic [ref=e478]:
+                      - generic [ref=e479]: "To:"
+                      - generic [ref=e480]: Development Team
+                  - paragraph [ref=e188]: Updated At May 22, 2026 at 11:54 AM
+                - generic [ref=e189]:
+                  - generic [ref=e190]: Important
+                  - generic [ref=e191]: Pending
+                  - generic [ref=e481]: May 22, 2026
+            - 'link "test From: Development Team Updated At May 22, 2026 at 11:25 AM Important Pending" [ref=e483] [cursor=pointer]':
+              - /url: /backlog/22
+              - generic [ref=e195]:
+                - generic [ref=e196]:
+                  - heading "test" [level=3] [ref=e484]
+                  - paragraph
+                  - generic [ref=e199]:
+                    - generic [ref=e200]: "From:"
+                    - generic [ref=e201]: Development Team
+                  - paragraph [ref=e202]: Updated At May 22, 2026 at 11:25 AM
+                - generic [ref=e203]:
+                  - generic [ref=e204]: Important
+                  - generic [ref=e205]: Pending
+            - 'link "nueva tarea From: Development Team Updated At May 22, 2026 at 11:24 AM Important Pending" [ref=e485] [cursor=pointer]':
+              - /url: /backlog/21
+              - generic [ref=e209]:
+                - generic [ref=e210]:
+                  - heading "nueva tarea" [level=3] [ref=e486]
+                  - paragraph
+                  - generic [ref=e214]:
+                    - generic [ref=e215]: "From:"
+                    - generic [ref=e216]: Development Team
+                  - paragraph [ref=e220]: Updated At May 22, 2026 at 11:24 AM
+                - generic [ref=e221]:
+                  - generic [ref=e222]: Important
+                  - generic [ref=e223]: Pending
+            - 'link "jninadiaw jninadiaw From: Development Team To: Development Team Updated At May 14, 2026 at 10:52 AM Critical New" [ref=e487] [cursor=pointer]':
+              - /url: /backlog/20
+              - generic [ref=e227]:
+                - generic [ref=e228]:
+                  - heading "jninadiaw" [level=3] [ref=e488]
+                  - paragraph [ref=e230]: jninadiaw
+                  - generic [ref=e231]:
+                    - generic [ref=e232]:
+                      - generic [ref=e233]: "From:"
+                      - generic [ref=e234]: Development Team
+                    - generic [ref=e235]:
+                      - generic [ref=e236]: "To:"
+                      - generic [ref=e237]: Development Team
+                  - paragraph [ref=e238]: Updated At May 14, 2026 at 10:52 AM
+                - generic [ref=e239]:
+                  - generic [ref=e240]: Critical
+                  - generic [ref=e241]: New
+        - generic [ref=e242]:
+          - generic [ref=e243]:
+            - heading "Your Boards" [level=2] [ref=e244]
+            - link "View all →" [ref=e245] [cursor=pointer]:
+              - /url: /boards
+          - generic [ref=e246]:
+            - link "Development Team ↔ Development Team 3 total 1 new 0 need requirement 2 Pending 0 active 0 Review 0 done 0 Blocked Updated At May 25, 2026 at 08:15 AM" [ref=e247] [cursor=pointer]:
+              - /url: /boards/1_1
+              - generic [ref=e249]:
+                - heading "Development Team ↔ Development Team" [level=3] [ref=e250]
+                - generic [ref=e251]:
+                  - generic [ref=e252]:
+                    - generic [ref=e253]: "3"
+                    - generic [ref=e254]: total
+                  - generic [ref=e255]:
+                    - generic [ref=e256]: "1"
+                    - generic [ref=e257]: new
+                  - generic [ref=e258]:
+                    - generic [ref=e259]: "0"
+                    - generic [ref=e260]: need requirement
+                  - generic [ref=e261]:
+                    - generic [ref=e262]: "2"
+                    - generic [ref=e263]: Pending
+                  - generic [ref=e264]:
+                    - generic [ref=e265]: "0"
+                    - generic [ref=e266]: active
+                  - generic [ref=e267]:
+                    - generic [ref=e268]: "0"
+                    - generic [ref=e269]: Review
+                  - generic [ref=e270]:
+                    - generic [ref=e271]: "0"
+                    - generic [ref=e272]: done
+                  - generic [ref=e273]:
+                    - generic [ref=e274]: "0"
+                    - generic [ref=e275]: Blocked
+                - paragraph [ref=e276]: Updated At May 25, 2026 at 08:15 AM
+            - link "Development Team ↔ Sales Team 3 total 1 new 0 need requirement 1 Pending 0 active 1 Review 0 done 0 Blocked Updated At May 25, 2026 at 08:15 AM" [ref=e277] [cursor=pointer]:
+              - /url: /boards/1_3
+              - generic [ref=e279]:
+                - heading "Development Team ↔ Sales Team" [level=3] [ref=e280]
+                - generic [ref=e281]:
+                  - generic [ref=e282]:
+                    - generic [ref=e283]: "3"
+                    - generic [ref=e284]: total
+                  - generic [ref=e285]:
+                    - generic [ref=e286]: "1"
+                    - generic [ref=e287]: new
+                  - generic [ref=e288]:
+                    - generic [ref=e289]: "0"
+                    - generic [ref=e290]: need requirement
+                  - generic [ref=e291]:
+                    - generic [ref=e292]: "1"
+                    - generic [ref=e293]: Pending
+                  - generic [ref=e294]:
+                    - generic [ref=e295]: "0"
+                    - generic [ref=e296]: active
+                  - generic [ref=e297]:
+                    - generic [ref=e298]: "1"
+                    - generic [ref=e299]: Review
+                  - generic [ref=e300]:
+                    - generic [ref=e301]: "0"
+                    - generic [ref=e302]: done
+                  - generic [ref=e303]:
+                    - generic [ref=e304]: "0"
+                    - generic [ref=e305]: Blocked
+                - paragraph [ref=e306]: Updated At May 25, 2026 at 08:15 AM
+            - link "Development Team ↔ Marketing Team 2 total 0 new 0 need requirement 1 Pending 1 active 0 Review 0 done 0 Blocked Updated At May 25, 2026 at 08:15 AM" [ref=e307] [cursor=pointer]:
+              - /url: /boards/1_2
+              - generic [ref=e309]:
+                - heading "Development Team ↔ Marketing Team" [level=3] [ref=e310]
+                - generic [ref=e311]:
+                  - generic [ref=e312]:
+                    - generic [ref=e313]: "2"
+                    - generic [ref=e314]: total
+                  - generic [ref=e315]:
+                    - generic [ref=e316]: "0"
+                    - generic [ref=e317]: new
+                  - generic [ref=e318]:
+                    - generic [ref=e319]: "0"
+                    - generic [ref=e320]: need requirement
+                  - generic [ref=e321]:
+                    - generic [ref=e322]: "1"
+                    - generic [ref=e323]: Pending
+                  - generic [ref=e324]:
+                    - generic [ref=e325]: "1"
+                    - generic [ref=e326]: active
+                  - generic [ref=e327]:
+                    - generic [ref=e328]: "0"
+                    - generic [ref=e329]: Review
+                  - generic [ref=e330]:
+                    - generic [ref=e331]: "0"
+                    - generic [ref=e332]: done
+                  - generic [ref=e333]:
+                    - generic [ref=e334]: "0"
+                    - generic [ref=e335]: Blocked
+                - paragraph [ref=e336]: Updated At May 25, 2026 at 08:15 AM
+            - link "Development Team ↔ HR Team 4 total 0 new 0 need requirement 2 Pending 1 active 0 Review 1 done 0 Blocked Updated At May 25, 2026 at 08:15 AM" [ref=e337] [cursor=pointer]:
+              - /url: /boards/1_4
+              - generic [ref=e339]:
+                - heading "Development Team ↔ HR Team" [level=3] [ref=e340]
+                - generic [ref=e341]:
+                  - generic [ref=e342]:
+                    - generic [ref=e343]: "4"
+                    - generic [ref=e344]: total
+                  - generic [ref=e345]:
+                    - generic [ref=e346]: "0"
+                    - generic [ref=e347]: new
+                  - generic [ref=e348]:
+                    - generic [ref=e349]: "0"
+                    - generic [ref=e350]: need requirement
+                  - generic [ref=e351]:
+                    - generic [ref=e352]: "2"
+                    - generic [ref=e353]: Pending
+                  - generic [ref=e354]:
+                    - generic [ref=e355]: "1"
+                    - generic [ref=e356]: active
+                  - generic [ref=e357]:
+                    - generic [ref=e358]: "0"
+                    - generic [ref=e359]: Review
+                  - generic [ref=e360]:
+                    - generic [ref=e361]: "1"
+                    - generic [ref=e362]: done
+                  - generic [ref=e363]:
+                    - generic [ref=e364]: "0"
+                    - generic [ref=e365]: Blocked
+                - paragraph [ref=e366]: Updated At May 25, 2026 at 08:15 AM
+      - generic [ref=e388]:
+        - complementary [ref=e389]:
+          - generic [ref=e390]: New request
+          - generic [ref=e391]:
+            - generic [ref=e392]: ✓
+            - generic [ref=e394]: Information
+          - generic [ref=e395]:
+            - generic [ref=e396]: ✓
+            - generic [ref=e398]: Details
+          - generic [ref=e399]:
+            - generic [ref=e400]: ✓
+            - generic [ref=e402]: Review
+          - button "Cancel" [ref=e404]
+        - generic [ref=e490]:
+          - heading "Request submitted" [level=3] [ref=e493]
+          - paragraph [ref=e494]: Your request has been recorded successfully
+          - button "Close" [ref=e495] [cursor=pointer]
+  - contentinfo [ref=e367]:
+    - generic [ref=e369]:
+      - generic [ref=e370]:
+        - generic [ref=e371]: © 2025 Muppy
+        - generic [ref=e372]: •
+        - link "tech@muppy.com" [ref=e373] [cursor=pointer]:
+          - /url: mailto:tech@muppy.com
+      - generic [ref=e374]:
+        - generic [ref=e375]: DEV
+        - generic [ref=e376]: •
+        - generic [ref=e377]: v0.1.0
+        - generic [ref=e378]: •
+        - generic [ref=e379]: Updated May 25, 2026
