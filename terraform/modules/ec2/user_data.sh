@@ -37,6 +37,8 @@ HERMES_GITHUB_DEFAULT_REPO=${hermes_github_default_repo}
 HERMES_GITHUB_PROJECT_ID=${hermes_github_project_id}
 HERMES_GITHUB_STATUS_FIELD_ID=${hermes_github_status_field_id}
 HERMES_GITHUB_WEBHOOK_SECRET=${hermes_github_webhook_secret}
+APPSIGNAL_PUSH_API_KEY=${appsignal_push_api_key}
+APPSIGNAL_APP_ENV=${environment}
 EOF
 
 # Configure CloudWatch agent for Docker logs

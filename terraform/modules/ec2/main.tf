@@ -176,6 +176,7 @@ resource "aws_launch_template" "app" {
     hermes_github_project_id      = var.hermes_github_project_id
     hermes_github_status_field_id = var.hermes_github_status_field_id
     hermes_github_webhook_secret  = var.hermes_github_webhook_secret
+    appsignal_push_api_key        = var.appsignal_push_api_key
   }))
 
   tag_specifications {

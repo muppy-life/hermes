@@ -107,3 +107,10 @@ variable "hermes_github_webhook_secret" {
   sensitive   = true
   default     = ""
 }
+
+variable "appsignal_push_api_key" {
+  description = "AppSignal push API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

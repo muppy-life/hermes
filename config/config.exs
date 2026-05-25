@@ -11,6 +11,15 @@ config :hermes,
   ecto_repos: [Hermes.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# AppSignal: compile-time defaults. Activation happens in runtime.exs
+# when APPSIGNAL_PUSH_API_KEY is set.
+config :appsignal, :config,
+  otp_app: :hermes,
+  name: "hermes",
+  env: Mix.env(),
+  active: false,
+  enable_error_backend: true
+
 # Configure Oban
 config :hermes, Oban,
   engine: Oban.Engines.Basic,
