@@ -440,6 +440,9 @@ defmodule HermesWeb.RequestLive.Show do
            gettext("Restore the parent request first to recover this subtask")
          )}
 
+      {:error, :not_discarded} ->
+        {:noreply, put_flash(socket, :error, gettext("Request is not discarded"))}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to restore request"))}
     end

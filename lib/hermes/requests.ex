@@ -394,6 +394,10 @@ defmodule Hermes.Requests do
     end)
   end
 
+  def restore_request(%Request{status: status}, _user_id) when status != "discarded" do
+    {:error, :not_discarded}
+  end
+
   def restore_request(%Request{} = request, user_id) do
     if orphan_subtask?(request) do
       {:error, :parent_discarded}
