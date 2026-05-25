@@ -43,8 +43,11 @@ defmodule Hermes.Application do
   end
 
   defp schedule_model_loading do
-    # Schedule model loading job to run immediately in the background for production environments
-    if Application.get_env(:hermes, :env) == :prod do
+    # Schedule model loading job to run immediately in the background for production environments.
+    # Disable via ML_MODEL_LOADING_ENABLED=false to prevent OOM crash loop on memory-constrained hosts.
+    enabled? = System.get_env("ML_MODEL_LOADING_ENABLED", "false") in ~w(true 1)
+
+    if enabled? and Application.get_env(:hermes, :env) == :prod do
       %{}
       |> Hermes.Workers.ModelLoaderWorker.new(queue: :media)
       |> Oban.insert()
