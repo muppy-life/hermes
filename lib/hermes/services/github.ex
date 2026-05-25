@@ -113,13 +113,24 @@ defmodule Hermes.Services.GitHub do
   @doc """
   Sets the issue state. `state` is `:open` or `:closed`.
   """
-  def set_issue_state(%GitHubIssue{owner: owner, repo: repo, number: number}, state)
+  def set_issue_state(%GitHubIssue{owner: owner, repo: repo, number: number}, state, opts \\ [])
       when state in [:open, :closed] do
-    Logger.info("GitHub.set_issue_state issue=#{owner}/#{repo}##{number} state=#{state}")
+    reason = Keyword.get(opts, :reason)
 
-    %{owner: owner, repo: repo, number: number}
-    |> adapter().set_issue_state(state)
-    |> log_result("set_issue_state", "#{owner}/#{repo}##{number}")
+    Logger.info(
+      "GitHub.set_issue_state issue=#{owner}/#{repo}##{number} state=#{state} reason=#{inspect(reason)}"
+    )
+
+    ref = %{owner: owner, repo: repo, number: number}
+
+    result =
+      if reason in [:not_planned, :completed] do
+        adapter().set_issue_state(ref, state, reason: reason)
+      else
+        adapter().set_issue_state(ref, state)
+      end
+
+    log_result(result, "set_issue_state", "#{owner}/#{repo}##{number}")
   end
 
   @doc """
@@ -150,6 +161,52 @@ defmodule Hermes.Services.GitHub do
   @doc "Returns the GraphQL node ID of an issue."
   def get_issue_node_id(owner, repo, number) when is_integer(number) do
     adapter().get_issue_node_id(owner, repo, number)
+  end
+
+  @doc """
+  Returns the existing project item ID for an issue if it is already on
+  the configured project, or `{:ok, nil}` otherwise.
+  """
+  def find_project_item(issue_node_id, opts \\ []) do
+    project_id = Keyword.get(opts, :project_id) || project_id_or_default()
+
+    if is_nil(project_id) or project_id == "" do
+      {:error, :missing_project_config}
+    else
+      adapter().find_project_item(project_id, issue_node_id)
+    end
+  end
+
+  @doc """
+  Removes a project item (the issue stays untouched). `project_id` defaults
+  to the configured value.
+  """
+  def remove_item(item_id, opts \\ []) do
+    project_id = Keyword.get(opts, :project_id) || project_id_or_default()
+
+    if is_nil(project_id) or project_id == "" do
+      {:error, :missing_project_config}
+    else
+      Logger.info("GitHub.remove_item project=#{project_id} item=#{item_id}")
+      adapter().remove_item(project_id, item_id)
+    end
+  end
+
+  @doc "Returns whether a child issue is already attached as a sub-issue."
+  def sub_issue_attached?(parent_node_id, child_node_id) do
+    adapter().sub_issue_attached?(parent_node_id, child_node_id)
+  end
+
+  @doc "Attach a child issue as a sub-issue of a parent issue."
+  def add_sub_issue(parent_node_id, child_node_id) do
+    Logger.info("GitHub.add_sub_issue parent=#{parent_node_id} child=#{child_node_id}")
+    adapter().add_sub_issue(parent_node_id, child_node_id)
+  end
+
+  @doc "Detach a child issue from a parent issue."
+  def remove_sub_issue(parent_node_id, child_node_id) do
+    Logger.info("GitHub.remove_sub_issue parent=#{parent_node_id} child=#{child_node_id}")
+    adapter().remove_sub_issue(parent_node_id, child_node_id)
   end
 
   @doc "Adds an issue to a Projects v2 board. Returns the project item id."
@@ -282,8 +339,12 @@ defmodule Hermes.Services.GitHub do
       r.priority && "priority:#{Request.priority_label(r.priority) |> String.downcase()}"
     )
     |> add_label(r.kind && "kind:#{r.kind}")
+    |> add_label(epic_label_for(r))
     |> Enum.reject(&is_nil/1)
   end
+
+  defp epic_label_for(%Request{is_epic: true, parent_id: nil}), do: "Epic"
+  defp epic_label_for(_), do: nil
 
   defp add_label(list, nil), do: list
   defp add_label(list, label), do: [label | list]

@@ -30,7 +30,14 @@ defmodule Hermes.Services.GitHub.Adapter do
 
   @callback update_issue(update_payload) :: {:ok, map()} | {:error, term()}
 
+  @type close_reason :: :completed | :not_planned
+
   @callback set_issue_state(issue_ref, :open | :closed) :: {:ok, map()} | {:error, term()}
+
+  @callback set_issue_state(issue_ref, :open | :closed, keyword()) ::
+              {:ok, map()} | {:error, term()}
+
+  @optional_callbacks set_issue_state: 3
 
   @callback create_comment(issue_ref, String.t()) :: {:ok, map()} | {:error, term()}
 
@@ -62,10 +69,44 @@ defmodule Hermes.Services.GitHub.Adapter do
             ) :: {:ok, map()} | {:error, term()}
 
   @doc """
+  Removes an item from a Projects v2 board. Does not touch the underlying
+  issue.
+  """
+  @callback remove_item(project_id :: String.t(), item_id :: String.t()) ::
+              {:ok, map()} | {:error, term()}
+
+  @doc """
+  Returns the project item ID for an issue if it is already on the given
+  project, or `{:ok, nil}` if not.
+  """
+  @callback find_project_item(project_id :: String.t(), issue_node_id :: String.t()) ::
+              {:ok, String.t() | nil} | {:error, term()}
+
+  @doc """
   Lists status field options for a project. Used to seed the mapping table.
 
   Returns `[%{id, name}]`.
   """
   @callback list_status_options(project_id :: String.t(), field_id :: String.t()) ::
               {:ok, [%{id: String.t(), name: String.t()}]} | {:error, term()}
+
+  @doc """
+  Adds a child issue as a sub-issue of a parent issue.
+  Both arguments are GraphQL node IDs (use `get_issue_node_id/3`).
+  """
+  @callback add_sub_issue(parent_node_id :: String.t(), child_node_id :: String.t()) ::
+              {:ok, map()} | {:error, term()}
+
+  @doc """
+  Removes the sub-issue relationship between parent and child node IDs.
+  """
+  @callback remove_sub_issue(parent_node_id :: String.t(), child_node_id :: String.t()) ::
+              {:ok, map()} | {:error, term()}
+
+  @doc """
+  Returns whether `child_node_id` is already attached as a sub-issue of
+  `parent_node_id`.
+  """
+  @callback sub_issue_attached?(parent_node_id :: String.t(), child_node_id :: String.t()) ::
+              {:ok, boolean()} | {:error, term()}
 end

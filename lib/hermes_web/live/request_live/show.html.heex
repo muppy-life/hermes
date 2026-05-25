@@ -1,385 +1,202 @@
-<.header class="sticky top-0 z-10 bg-base-100 pt-4 pb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 shadow-sm">
-  <div>
-    <h1 class="text-2xl font-bold">{@request.title}</h1>
-    <div class="flex gap-2 mt-2">
-      <%= if @request.kind do %>
-        <.kind_badge kind={@request.kind} size="md" />
-      <% end %>
-      <.status_badge status={@request.status} size="md" />
-      <.priority_badge priority={@request.priority} size="md" />
-      <%= if @request.deadline do %>
-        <.deadline_badge deadline={@request.deadline} size="md" />
-      <% end %>
+<% {subtasks_done, subtasks_total, subtasks_pct} = subtask_progress(@subtasks)
+is_epic = subtasks_total > 0
+is_discarded = @request.status == "discarded"
+is_completed = @request.status == "completed"
+aging = aging_days(@request) %>
+
+<div class="detail-topbar">
+  <.link navigate={@return_to} class="detail-back" aria-label={gettext("Back")}>
+    <.icon name="hero-arrow-left" class="size-5" />
+  </.link>
+
+  <div class="flex-1">
+    <div class="text-[11.5px] font-medium opacity-60">#{@request.id}</div>
+    <div class="text-base font-bold tracking-tight truncate">
+      {gettext("Request detail")}
     </div>
   </div>
-  <:actions>
-    <.button phx-click="open_edit_modal" class="btn btn-primary h-10 min-h-10">
-      {gettext("Edit Request")}
-    </.button>
-    <%= if @can_set_deadline do %>
-      <.button phx-click="open_deadline_modal" class="btn btn-accent h-10 min-h-10">
-        {if @request.deadline, do: gettext("Change Deadline"), else: gettext("Set Deadline")}
-      </.button>
-    <% end %>
-    <.button phx-click="open_delete_modal" class="btn btn-error h-10 min-h-10">
-      {gettext("Delete Request")}
-    </.button>
 
-    <.back_button navigate={@return_to} class="btn-outline h-10 min-h-10">
-      {gettext("Back")}
-    </.back_button>
-  </:actions>
-</.header>
+  <%= if @request.kind do %>
+    <.kind_badge kind={@request.kind} size="sm" />
+  <% end %>
+  <.status_badge status={@request.status} size="sm" />
+  <.priority_badge priority={@request.priority} size="sm" />
+  <%= if @request.deadline do %>
+    <.deadline_badge deadline={@request.deadline} size="sm" />
+  <% end %>
 
-<div class="mt-4 flex gap-4 h-[calc(100vh-12rem)]">
-  <!-- Left Column: Main Content (3/4 width) -->
-  <div class="w-3/4 space-y-4 pr-2 overflow-y-auto pb-4">
-    <!-- Current Problem Card -->
-    <div
-      class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col"
-      style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);"
+  <%= if @github_enabled && @request.github_issue do %>
+    <a
+      class="gh-badge ok"
+      href={@request.github_issue.url}
+      target="_blank"
+      rel="noopener"
     >
-      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">
-        {gettext("Current Problem")}
-      </h2>
+      <.icon name="hero-link" class="size-3" /> Issue #{@request.github_issue.number}
+    </a>
+  <% end %>
+</div>
 
-      <div class="flex gap-4 flex-1 min-h-0">
-        <!-- Metadata Column -->
-        <div class="w-1/4 space-y-4 flex-shrink-0">
-          <div>
-            <label class="label">
-              <span class="label-text font-semibold text-sm">{gettext("Requesting Team")}</span>
-            </label>
-            <p class="text-sm">{@request.requesting_team.name}</p>
-          </div>
+<div class="detail-body">
+  <!-- Left column -->
+  <div>
+    <%= if @request.parent do %>
+      <.link navigate={~p"/backlog/#{@request.parent.id}"} class="parent-link">
+        <.icon name="hero-arrow-uturn-left" class="size-3.5" />
+        {gettext("Subtask of")}
+        <strong class="ml-1">#{@request.parent.id} {@request.parent.title}</strong>
+      </.link>
+    <% end %>
 
-          <div>
-            <label class="label">
-              <span class="label-text font-semibold text-sm">{gettext("Reported By")}</span>
-            </label>
-            <p class="text-sm">{@request.created_by.email}</p>
-          </div>
-
-          <div>
-            <label class="label">
-              <span class="label-text font-semibold text-sm">{gettext("Reported At")}</span>
-            </label>
-            <p class="text-sm">
-              {Calendar.strftime(@request.inserted_at, "%B %d, %Y at %I:%M %p")}
-            </p>
-          </div>
-
-          <%= if @request.deadline do %>
-            <div>
-              <label class="label">
-                <span class="label-text font-semibold text-sm">{gettext("Deadline")}</span>
-              </label>
-              <p class="text-sm font-medium text-warning">
-                {Calendar.strftime(@request.deadline, "%B %d, %Y")}
-              </p>
-            </div>
-          <% end %>
+    <%= if is_discarded && @request.discard_reason do %>
+      <div class="discard-card">
+        <div class="discard-card-icon">
+          <.icon name="hero-archive-box" class="size-5" />
         </div>
-        
-<!-- Content Column -->
-        <div
-          class="flex-1 pl-4 border-l border-base-300 relative"
-          phx-hook="ScrollIndicator"
-          id="current-problem-scroll"
-        >
-          <!-- Scroll Indicator - Top -->
-          <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 15l7-7 7 7"
-              />
-            </svg>
+        <div class="discard-card-body">
+          <div class="discard-card-h">
+            {gettext("Request discarded")}
+            <span class="discard-card-cat">
+              {discard_category_label(@request.discard_reason_category || "other")}
+            </span>
           </div>
-
-          <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
-            <%= if @request.current_situation do %>
-              <p
-                class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
-                style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
-              >
-                {@request.current_situation}
-              </p>
+          <div class="discard-card-p">{@request.discard_reason}</div>
+          <div class="discard-card-meta">
+            {gettext("Discarded by")}
+            <strong>
+              {if @request.discarded_by,
+                do: String.split(@request.discarded_by.email, "@") |> List.first(),
+                else: gettext("Unknown")}
+            </strong>
+            <%= if @request.discarded_at do %>
+              · {Calendar.strftime(@request.discarded_at, "%b %d, %Y")}
             <% end %>
-          </div>
-          
-<!-- Scroll Indicator - Bottom -->
-          <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <button
+              type="button"
+              phx-click="restore_request"
+              data-confirm={gettext("Restore this request?")}
+              class="discard-card-undo"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+              <.icon name="hero-arrow-path" class="size-3" /> {gettext("Restore")}
+            </button>
           </div>
         </div>
+      </div>
+    <% end %>
+    
+<!-- Title + description + actions -->
+    <div class="detail-section">
+      <div class={["detail-title", is_discarded && "discarded"]}>
+        {@request.title}
+        <%= if is_epic do %>
+          <span class="epic-tag">
+            <.icon name="hero-square-3-stack-3d" class="size-3" /> EPIC
+          </span>
+        <% end %>
+      </div>
+
+      <%= if @request.description && String.trim(@request.description) != "" do %>
+        <div class="detail-desc">{@request.description}</div>
+      <% end %>
+
+      <div class="detail-actions">
+        <button phx-click="open_edit_modal" class="btn btn-sm btn-ghost">
+          <.icon name="hero-pencil" class="size-4" /> {gettext("Edit")}
+        </button>
+        <%= if @can_set_deadline do %>
+          <button phx-click="open_deadline_modal" class="btn btn-sm btn-ghost">
+            <.icon name="hero-calendar" class="size-4" />
+            {if @request.deadline, do: gettext("Change deadline"), else: gettext("Set deadline")}
+          </button>
+        <% end %>
+        <%= if not is_discarded and not is_completed do %>
+          <button phx-click="open_discard_modal" class="btn btn-sm btn-ghost">
+            <.icon name="hero-archive-box" class="size-4" /> {gettext("Discard")}
+          </button>
+        <% end %>
+        <button phx-click="open_delete_modal" class="btn btn-sm btn-error btn-outline">
+          <.icon name="hero-trash" class="size-4" /> {gettext("Delete")}
+        </button>
       </div>
     </div>
     
-<!-- Proposed Solution Card -->
+<!-- Current Problem -->
+    <%= if @request.current_situation do %>
+      <div class="detail-section">
+        <div class="detail-section-t">{gettext("Current problem")}</div>
+        <div class="detail-desc">{@request.current_situation}</div>
+      </div>
+    <% end %>
+    
+<!-- Proposed Solution -->
     <%= if @request.goal_description || @request.expected_output do %>
-      <div
-        class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col"
-        style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);"
-      >
-        <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">
-          {gettext("Proposed Solution")}
-        </h2>
+      <div class="detail-section">
+        <div class="detail-section-t">{gettext("Proposed solution")}</div>
 
-        <div class="flex gap-4 flex-1 min-h-0">
-          <!-- Metadata Column -->
-          <div class="w-1/4 space-y-4 flex-shrink-0">
-            <div>
-              <label class="label">
-                <span class="label-text font-semibold text-sm">{gettext("Assigned To")}</span>
-              </label>
-              <p class="text-sm">
-                <%= if @request.assigned_to_team do %>
-                  {@request.assigned_to_team.name}
-                <% else %>
-                  <span class="opacity-60">{gettext("Not assigned yet")}</span>
-                <% end %>
-              </p>
-            </div>
+        <div role="tablist" class="tabs tabs-boxed mb-4 inline-flex">
+          <button
+            role="tab"
+            class={["tab tab-sm", @solution_tab == "goal" && "tab-active"]}
+            phx-click="switch_solution_tab"
+            phx-value-tab="goal"
+          >
+            {gettext("Goal")}
+          </button>
+          <button
+            role="tab"
+            class={["tab tab-sm", @solution_tab == "output" && "tab-active"]}
+            phx-click="switch_solution_tab"
+            phx-value-tab="output"
+          >
+            {gettext("Desired output")}
+          </button>
+          <%= if @diagram_feature_enabled do %>
+            <button
+              role="tab"
+              class={["tab tab-sm", @solution_tab == "diagram" && "tab-active"]}
+              phx-click="switch_solution_tab"
+              phx-value-tab="diagram"
+            >
+              {gettext("Diagram")}
+            </button>
+          <% end %>
+        </div>
 
-            <%= if @request.target_user_type do %>
-              <div>
-                <label class="label">
-                  <span class="label-text font-semibold text-sm">{gettext("Target User")}</span>
-                </label>
-                <p class="text-sm">
-                  {Hermes.Requests.Request.target_user_label(@request.target_user_type)}
-                </p>
-              </div>
-            <% end %>
-
-            <%= if @request.goal_target do %>
-              <div>
-                <label class="label">
-                  <span class="label-text font-semibold text-sm">{gettext("Output Type")}</span>
-                </label>
-                <span class="badge badge-md badge-info truncate max-w-full">
-                  {Hermes.Requests.Request.goal_target_label(@request.goal_target)}
-                </span>
-              </div>
-            <% end %>
-          </div>
-          
-<!-- Content Column -->
-          <div class="flex-1 pl-4 border-l border-base-300 flex flex-col min-h-0">
-            <!-- Tabs -->
-            <div class="tabs tabs-boxed mb-4 flex-shrink-0">
-              <button
-                class={["tab", @solution_tab == "goal" && "tab-active"]}
-                phx-click="switch_solution_tab"
-                phx-value-tab="goal"
-              >
-                {gettext("Goal")}
-              </button>
-              <button
-                class={["tab", @solution_tab == "output" && "tab-active"]}
-                phx-click="switch_solution_tab"
-                phx-value-tab="output"
-              >
-                {gettext("Desired Output")}
-              </button>
-              <%= if @diagram_feature_enabled do %>
-                <button
-                  class={["tab", @solution_tab == "diagram" && "tab-active"]}
-                  phx-click="switch_solution_tab"
-                  phx-value-tab="diagram"
-                >
-                  {gettext("Solution Diagram")}
-                </button>
-              <% end %>
-            </div>
-            
-<!-- Tab Content -->
+        <%= if @solution_tab == "goal" && @request.goal_description do %>
+          <div class="detail-desc">{@request.goal_description}</div>
+        <% end %>
+        <%= if @solution_tab == "output" && @request.expected_output do %>
+          <div class="detail-desc">{@request.expected_output}</div>
+        <% end %>
+        <%= if @diagram_feature_enabled && @solution_tab == "diagram" do %>
+          <%= if @request.solution_diagram do %>
             <div
-              class="flex-1 min-h-0 relative"
-              phx-hook="ScrollIndicator"
-              id="proposed-solution-scroll"
+              phx-hook="MermaidDiagram"
+              id="solution-diagram-container"
+              class="bg-base-200 rounded-lg p-4"
             >
-              <!-- Scroll Indicator - Top -->
-              <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              </div>
-
-              <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
-                <%= if @solution_tab == "goal" && @request.goal_description do %>
-                  <p
-                    class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
-                    style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
-                  >
-                    {@request.goal_description}
-                  </p>
-                <% end %>
-
-                <%= if @solution_tab == "output" && @request.expected_output do %>
-                  <p
-                    class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
-                    style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
-                  >
-                    {@request.expected_output}
-                  </p>
-                <% end %>
-
-                <%= if @diagram_feature_enabled && @solution_tab == "diagram" do %>
-                  <%= if @request.solution_diagram do %>
-                    <div
-                      phx-hook="MermaidDiagram"
-                      id="solution-diagram-container"
-                      class="bg-white rounded-lg p-4"
-                    >
-                      <div class="mermaid">
-                        {@request.solution_diagram}
-                      </div>
-                    </div>
-                  <% else %>
-                    <div class="flex items-center justify-center h-full">
-                      <div class="text-center opacity-60">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-12 w-12 mx-auto mb-2 motion-safe:animate-spin"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                          />
-                        </svg>
-                        <p class="text-sm">{gettext("Diagram is being generated...")}</p>
-                      </div>
-                    </div>
-                  <% end %>
-                <% end %>
-              </div>
-              
-<!-- Scroll Indicator - Bottom -->
-              <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </div>
+              <div class="mermaid">{@request.solution_diagram}</div>
             </div>
-          </div>
-        </div>
+          <% else %>
+            <div class="opacity-60 text-sm py-4 text-center">
+              {gettext("Diagram is being generated…")}
+            </div>
+          <% end %>
+        <% end %>
       </div>
     <% end %>
     
-<!-- Related Business Data Card -->
+<!-- Business Data -->
     <%= if @request.data_description && String.trim(@request.data_description) != "" do %>
-      <div
-        class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4 flex flex-col"
-        style="min-height: 300px; max-height: 500px; height: calc((100vh - 14rem) / 3);"
-      >
-        <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300 flex-shrink-0">
-          {gettext("Related Business Data")}
-        </h2>
-
-        <div class="flex-1 min-h-0 relative" phx-hook="ScrollIndicator" id="business-data-scroll">
-          <!-- Scroll Indicator - Top -->
-          <div class="scroll-indicator-top absolute top-0 right-2 z-10 hidden items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 15l7-7 7 7"
-              />
-            </svg>
-          </div>
-
-          <div class="scroll-content overflow-y-auto h-full bg-base-200/50 rounded-lg p-4">
-            <p
-              class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed tracking-wide opacity-90"
-              style="font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
-            >
-              {@request.data_description}
-            </p>
-          </div>
-          
-<!-- Scroll Indicator - Bottom -->
-          <div class="scroll-indicator-bottom absolute bottom-0 right-2 z-10 flex items-center justify-center w-8 h-8 bg-primary/80 rounded-full shadow-lg pointer-events-none">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-        </div>
+      <div class="detail-section">
+        <div class="detail-section-t">{gettext("Related business data")}</div>
+        <div class="detail-desc">{@request.data_description}</div>
       </div>
     <% end %>
     
-<!-- Images Card -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-4">
-      <h2 class="font-semibold text-lg mb-4 pb-3 border-b border-base-300">
-        {gettext("Images")}
-      </h2>
+<!-- Images -->
+    <div class="detail-section">
+      <div class="detail-section-t">{gettext("Images")}</div>
 
       <%= if @images != [] do %>
         <div class="grid grid-cols-3 gap-3 mb-4">
@@ -412,20 +229,7 @@
         >
           <label for={@uploads.images.ref} class="cursor-pointer">
             <div class="flex flex-col items-center gap-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-8 w-8 opacity-40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+              <.icon name="hero-photo" class="h-7 w-7 opacity-40" />
               <span class="text-xs opacity-60">{gettext("Drop or click to upload")}</span>
               <span class="text-xs opacity-40">{gettext("JPG, PNG — max 14 MB")}</span>
             </div>
@@ -469,129 +273,132 @@
         <% end %>
       </form>
     </div>
-  </div>
-  
-<!-- Right Column: History & Comments (1/4 width) -->
-  <div class="w-1/4 flex flex-col gap-4 h-full pb-8">
-    <!-- Change History -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-3 flex flex-col max-h-[40%]">
-      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300 flex-shrink-0">
-        {gettext("History")}
-      </h2>
-
-      <%= if Enum.empty?(@changes) do %>
-        <p class="text-xs opacity-60">{gettext("No changes yet.")}</p>
-      <% else %>
-        <div class="space-y-2 overflow-y-auto flex-1">
-          <%= for change <- @changes do %>
-            <div class="p-2 bg-base-200 rounded text-xs">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-semibold truncate">
-                  {if change.user,
-                    do: String.split(change.user.email, "@") |> List.first(),
-                    else: gettext("System")}
-                </span>
-                <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
-                  {Calendar.strftime(change.inserted_at, "%b %d, %H:%M")}
-                </span>
-              </div>
-
-              <%= if change.action == "created" do %>
-                <p class="text-[10px] opacity-70">{gettext("Created request")}</p>
-              <% else %>
-                <div class="text-[10px]">
-                  <div class="font-medium mb-1">{humanize_field(change.field)}</div>
-                  <div class="space-y-0.5">
-                    <div>
-                      <span class="opacity-60">{gettext("From:")}</span>
-                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
-                        {format_change_value(change.old_value)}
-                      </span>
-                    </div>
-                    <div>
-                      <span class="opacity-60">{gettext("To:")}</span>
-                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
-                        {format_change_value(change.new_value)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
+    
+<!-- Subtasks -->
+    <div class="detail-section">
+      <div class="subtask-head">
+        <div class="detail-section-t" style="margin-bottom:0">
+          <.icon name="hero-square-3-stack-3d" class="size-3.5 align-[-2px] mr-1" />
+          {gettext("Subtasks")}
         </div>
+        <%= if subtasks_total > 0 do %>
+          <div class="subtask-count">
+            <strong>{subtasks_done}/{subtasks_total}</strong> {gettext("completed")} · {subtasks_pct}%
+          </div>
+        <% end %>
+      </div>
+
+      <%= if subtasks_total > 0 do %>
+        <div class="subtask-progress-wrap">
+          <div style={"width:#{subtasks_pct}%"}></div>
+        </div>
+      <% end %>
+
+      <div class="subtask-list">
+        <%= for s <- @subtasks do %>
+          <div
+            class={["subtask-row", s.status == "completed" && "done"]}
+            phx-click={JS.navigate(~p"/backlog/#{s.id}")}
+          >
+            <div
+              class="subtask-check"
+              phx-click="toggle_subtask"
+              phx-value-id={s.id}
+              onclick="event.stopPropagation()"
+            >
+            </div>
+            <span class="subtask-id">#{s.id}</span>
+            <span class="subtask-title">{s.title}</span>
+            <div class="subtask-meta">
+              <.priority_badge priority={s.priority} size="sm" />
+              <.status_badge status={s.status} size="sm" />
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%= unless is_discarded do %>
+        <form
+          phx-submit="add_subtask"
+          class="subtask-add"
+          id="subtask-add-form"
+          phx-hook="SubtaskInput"
+        >
+          <input
+            type="text"
+            name="title"
+            class="subtask-input"
+            placeholder={gettext("Add subtask…")}
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn-primary btn-sm">
+            <.icon name="hero-plus" class="size-4" /> {gettext("Add")}
+          </button>
+        </form>
       <% end %>
     </div>
     
-<!-- Comments Chat -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-3 flex flex-col flex-1">
-      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300 flex-shrink-0">
-        {gettext("Comments")}
-      </h2>
-      
-<!-- Comments List -->
-      <div class="flex-1 overflow-y-auto space-y-2 mb-3">
-        <%= if Enum.empty?(@comments) do %>
-          <p class="text-xs opacity-60">{gettext("No comments yet.")}</p>
-        <% else %>
-          <%= for comment <- @comments do %>
-            <div class="p-2 bg-base-200 rounded group">
-              <div class="flex items-start justify-between mb-1">
-                <span class="font-semibold text-xs truncate">
-                  {String.split(comment.user.email, "@") |> List.first()}
+<!-- Comments -->
+    <div class="detail-section">
+      <div class="detail-section-t">
+        {gettext("Comments")} · {length(@comments)}
+      </div>
+
+      <%= if Enum.empty?(@comments) do %>
+        <div class="opacity-60 text-sm text-center py-6">
+          {gettext("No comments yet")}
+        </div>
+      <% else %>
+        <%= for comment <- @comments do %>
+          <div class="comment">
+            <div class="c-avatar">
+              {String.first(comment.user.email) |> String.upcase()}
+            </div>
+            <div class="c-bubble">
+              <div class="c-meta flex items-center justify-between gap-2">
+                <span>
+                  <strong>{String.split(comment.user.email, "@") |> List.first()}</strong>
+                  · {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
                 </span>
-                <div class="flex items-center gap-1 ml-1 flex-shrink-0">
-                  <span class="text-[10px] opacity-60">
-                    {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
-                  </span>
-                  <%= if @current_user && comment.user_id == @current_user.id && @editing_comment_id != comment.id do %>
-                    <div class="dropdown dropdown-end">
-                      <div
-                        tabindex="0"
-                        role="button"
-                        class="cursor-pointer p-0.5 rounded opacity-60 hover:opacity-100 hover:bg-base-300 leading-none"
-                        aria-label={gettext("Comment actions")}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3 w-3"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <circle cx="12" cy="5" r="2" />
-                          <circle cx="12" cy="12" r="2" />
-                          <circle cx="12" cy="19" r="2" />
-                        </svg>
-                      </div>
-                      <ul
-                        tabindex="0"
-                        class="dropdown-content menu menu-sm bg-base-100 rounded-box shadow border border-base-300 z-50 w-36 p-1 whitespace-nowrap"
-                      >
-                        <li>
-                          <button
-                            type="button"
-                            phx-click="start_edit_comment"
-                            phx-value-id={comment.id}
-                          >
-                            {gettext("Edit")}
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            type="button"
-                            phx-click="delete_comment"
-                            phx-value-id={comment.id}
-                            data-confirm={gettext("Delete this comment?")}
-                            class="text-error"
-                          >
-                            {gettext("Delete")}
-                          </button>
-                        </li>
-                      </ul>
+                <%= if @current_user && comment.user_id == @current_user.id && @editing_comment_id != comment.id do %>
+                  <div class="dropdown dropdown-end">
+                    <div
+                      tabindex="0"
+                      role="button"
+                      class="cursor-pointer p-1 rounded opacity-60 hover:opacity-100"
+                      aria-label={gettext("Comment actions")}
+                    >
+                      <.icon name="hero-ellipsis-vertical" class="size-3" />
                     </div>
-                  <% end %>
-                </div>
+                    <ul
+                      tabindex="0"
+                      class="dropdown-content menu menu-sm bg-base-100 rounded-box shadow border border-base-300 z-50 w-36 p-1"
+                    >
+                      <li>
+                        <button
+                          type="button"
+                          phx-click="start_edit_comment"
+                          phx-value-id={comment.id}
+                        >
+                          {gettext("Edit")}
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          phx-click="delete_comment"
+                          phx-value-id={comment.id}
+                          data-confirm={gettext("Delete this comment?")}
+                          class="text-error"
+                        >
+                          {gettext("Delete")}
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                <% end %>
               </div>
+
               <%= if @editing_comment_id == comment.id and @edit_comment_form do %>
                 <.form
                   for={@edit_comment_form}
@@ -620,15 +427,14 @@
                   </div>
                 </.form>
               <% else %>
-                <p phx-no-format class="text-xs whitespace-pre-wrap">{render_comment_content(comment.content)}</p>
+                <p phx-no-format class="c-text">{render_comment_content(comment.content)}</p>
               <% end %>
             </div>
-          <% end %>
+          </div>
         <% end %>
-      </div>
-      
-<!-- Comment Input -->
-      <form phx-submit="add_comment" class="flex-shrink-0">
+      <% end %>
+
+      <form phx-submit="add_comment" class="pt-4 mt-2 border-t border-base-300">
         <div
           id="mention-input-wrapper"
           class="relative"
@@ -638,9 +444,9 @@
           <textarea
             id="comment-textarea"
             name="content"
-            rows="2"
-            class="textarea textarea-bordered textarea-sm w-full text-xs"
-            placeholder={gettext("Add a comment... (type @ to mention someone)")}
+            rows="3"
+            class="textarea textarea-bordered w-full text-sm"
+            placeholder={gettext("Write a comment… use @ to mention")}
             phx-update="ignore"
           ></textarea>
           <ul
@@ -649,17 +455,93 @@
           >
           </ul>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm w-full mt-2">
-          {gettext("Send")}
-        </button>
+        <div class="flex justify-end mt-2">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <.icon name="hero-paper-airplane" class="size-4" /> {gettext("Comment")}
+          </button>
+        </div>
       </form>
     </div>
+  </div>
+  
+<!-- Right sidebar -->
+  <div>
+    <div class="detail-section">
+      <div class="detail-section-t">{gettext("Status")}</div>
+      <form phx-change="change_status">
+        <select
+          name="status"
+          class="select select-bordered select-sm w-full"
+          disabled={is_discarded}
+        >
+          <%= for {value, label} <- status_options(),
+                  value != "discarded" or is_discarded,
+                  not (value == "discarded" and is_completed) do %>
+            <option value={value} selected={@request.status == value}>{label}</option>
+          <% end %>
+        </select>
+      </form>
+      <%= if is_discarded do %>
+        <p class="text-xs opacity-60 mt-1">
+          {gettext("Restore the request to change its status.")}
+        </p>
+      <% end %>
+
+      <div class="detail-meta-row mt-4">
+        <span class="detail-meta-l">{gettext("Priority")}</span>
+        <span class="detail-meta-v">
+          <.priority_badge priority={@request.priority} size="sm" />
+        </span>
+      </div>
+      <div class="detail-meta-row">
+        <span class="detail-meta-l">{gettext("Requesting team")}</span>
+        <span class="detail-meta-v">{@request.requesting_team.name}</span>
+      </div>
+      <div class="detail-meta-row">
+        <span class="detail-meta-l">{gettext("Assigned team")}</span>
+        <span class="detail-meta-v">
+          <%= if @request.assigned_to_team do %>
+            {@request.assigned_to_team.name}
+          <% else %>
+            <span class="opacity-60">—</span>
+          <% end %>
+        </span>
+      </div>
+      <div class="detail-meta-row">
+        <span class="detail-meta-l">{gettext("Reporter")}</span>
+        <span class="detail-meta-v">
+          {String.split(@request.created_by.email, "@") |> List.first()}
+        </span>
+      </div>
+      <div class="detail-meta-row">
+        <span class="detail-meta-l">{gettext("Created")}</span>
+        <span class="detail-meta-v">{Calendar.strftime(@request.inserted_at, "%b %d, %Y")}</span>
+      </div>
+      <div class="detail-meta-row">
+        <span class="detail-meta-l">{gettext("Deadline")}</span>
+        <span class="detail-meta-v">
+          <%= if @request.deadline do %>
+            {Calendar.strftime(@request.deadline, "%b %d, %Y")}
+          <% else %>
+            <span class="opacity-60">—</span>
+          <% end %>
+        </span>
+      </div>
+      <div class="detail-meta-row">
+        <span class="detail-meta-l">{gettext("Updated")}</span>
+        <span class="detail-meta-v">{Calendar.strftime(@request.updated_at, "%b %d, %Y")}</span>
+      </div>
+      <div class="detail-meta-row">
+        <span class="detail-meta-l">{gettext("Aging")}</span>
+        <span class="detail-meta-v">
+          <span class={"aging #{aging_class(aging)}"}>{aging}d</span>
+        </span>
+      </div>
+    </div>
     
-<!-- GitHub Issue -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-300 p-3 flex-shrink-0">
-      <h2 class="font-semibold text-sm mb-2 pb-2 border-b border-base-300">
-        {gettext("GitHub Issue")}
-      </h2>
+<!-- GitHub -->
+    <div class="detail-section">
+      <div class="detail-section-t">{gettext("GitHub issue")}</div>
 
       <%= cond do %>
         <% not @github_enabled -> %>
@@ -705,11 +587,7 @@
               {gettext("Create GitHub issue")}
             </button>
 
-            <.form
-              for={@github_link_form}
-              phx-submit="github_link_issue"
-              class="space-y-2"
-            >
+            <.form for={@github_link_form} phx-submit="github_link_issue" class="space-y-2">
               <input
                 type="text"
                 name="github_link[reference]"
@@ -724,6 +602,51 @@
           </div>
       <% end %>
     </div>
+    
+<!-- History -->
+    <%= if @changes != [] do %>
+      <div class="detail-section">
+        <div class="detail-section-t">{gettext("History")}</div>
+        <div class="space-y-2 max-h-80 overflow-y-auto">
+          <%= for change <- @changes do %>
+            <div class="p-2 bg-base-200 rounded text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-semibold truncate">
+                  {if change.user,
+                    do: String.split(change.user.email, "@") |> List.first(),
+                    else: gettext("System")}
+                </span>
+                <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
+                  {Calendar.strftime(change.inserted_at, "%b %d, %H:%M")}
+                </span>
+              </div>
+
+              <%= if change.action == "created" do %>
+                <p class="text-[10px] opacity-70">{gettext("Created request")}</p>
+              <% else %>
+                <div class="text-[10px]">
+                  <div class="font-medium mb-1">{humanize_field(change.field)}</div>
+                  <div class="space-y-0.5">
+                    <div>
+                      <span class="opacity-60">{gettext("From:")}</span>
+                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
+                        {format_change_value(change.old_value)}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="opacity-60">{gettext("To:")}</span>
+                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
+                        {format_change_value(change.new_value)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
   </div>
 </div>
 
@@ -751,48 +674,9 @@
           />
 
           <.input
-            field={@form[:target_user_type]}
-            type="select"
-            label={gettext("Target User")}
-            prompt={gettext("Choose target user")}
-            options={[
-              {gettext("Internal user (company team)"), :internal},
-              {gettext("External user (client, provider)"), :external}
-            ]}
-          />
-
-          <.input
-            field={@form[:current_situation]}
-            type="textarea"
-            label={gettext("Current Situation")}
-          />
-          <.input
             field={@form[:goal_description]}
             type="textarea"
             label={gettext("Goal Description")}
-          />
-          <.input
-            field={@form[:data_description]}
-            type="textarea"
-            label={gettext("Related Business Data (optional)")}
-          />
-
-          <.input
-            field={@form[:goal_target]}
-            type="select"
-            label={gettext("Expected Output Type")}
-            prompt={gettext("Choose output type")}
-            options={[
-              {gettext("Interface / View"), :interface_view},
-              {gettext("Report File"), :report_file},
-              {gettext("Alert / Message / Communication"), :alert_message}
-            ]}
-          />
-
-          <.input
-            field={@form[:expected_output]}
-            type="textarea"
-            label={gettext("Expected Output")}
           />
 
           <.input
@@ -822,6 +706,9 @@
               {gettext("Blocked"), "blocked"}
             ]}
           />
+          <p class="text-xs opacity-60 -mt-2">
+            {gettext("Use the Discard action to discard a request.")}
+          </p>
           <.input
             field={@form[:requesting_team_id]}
             type="select"
@@ -873,36 +760,26 @@
 
 <!-- Deadline Modal -->
 <%= if @show_deadline_modal do %>
-  <% # Calendar calculations
-  today = Date.utc_today()
+  <% today = Date.utc_today()
   selected_date = @selected_date
   first_day = Date.beginning_of_month(selected_date)
   last_day = Date.end_of_month(selected_date)
-
-  # Get day of week for first day (1 = Monday, 7 = Sunday)
   first_weekday = Date.day_of_week(first_day)
-
-  # Calculate previous and next month
   prev_month = Date.add(first_day, -1)
   next_month = Date.add(last_day, 1)
 
-  # Generate all days in the month
   days =
     Enum.map(1..last_day.day, fn day ->
       Date.new!(selected_date.year, selected_date.month, day)
     end)
 
-  # Add padding days from previous month
   padding_days = if first_weekday > 1, do: first_weekday - 1, else: 0
-
-  # Month name
   month_name = Calendar.strftime(selected_date, "%B %Y") %>
 
   <div class="modal modal-open">
     <div class="modal-box max-w-md">
       <h3 class="font-bold text-lg mb-4">{gettext("Set Deadline")}</h3>
-      
-<!-- Calendar Header -->
+
       <div class="flex items-center justify-between mb-4">
         <button
           type="button"
@@ -924,24 +801,20 @@
           <.icon name="hero-chevron-right" class="size-5" />
         </button>
       </div>
-      
-<!-- Calendar Grid -->
+
       <div class="grid grid-cols-7 gap-1 mb-4">
-        <!-- Day headers -->
         <%= for day_name <- ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] do %>
           <div class="text-center text-xs font-semibold text-base-content/60 py-2">
             {day_name}
           </div>
         <% end %>
-        
-<!-- Empty cells for padding -->
+
         <%= if padding_days > 0 do %>
           <%= for _ <- 1..padding_days do %>
             <div></div>
           <% end %>
         <% end %>
-        
-<!-- Day buttons -->
+
         <%= for day <- days do %>
           <% is_today = Date.compare(day, today) == :eq
           is_selected = Date.compare(day, selected_date) == :eq
@@ -983,6 +856,57 @@
           {gettext("Set Deadline")}
         </button>
       </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Discard Modal -->
+<%= if @show_discard_modal do %>
+  <div class="modal modal-open">
+    <div class="modal-box max-w-lg">
+      <h3 class="font-bold text-lg">{gettext("Discard request")}</h3>
+      <p class="text-sm opacity-70 mt-1">
+        {gettext("State the reason. The justification is recorded for team audit.")}
+      </p>
+
+      <form phx-submit="confirm_discard" class="mt-4 space-y-4">
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold text-sm">
+              {gettext("Discard category")}<span class="text-error ml-1">*</span>
+            </span>
+          </label>
+          <select name="category" class="select select-bordered w-full">
+            <%= for {value, label} <- discard_category_options() do %>
+              <option value={value} selected={@discard_category == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
+
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold text-sm">
+              {gettext("Detailed justification")}<span class="text-error ml-1">*</span>
+            </span>
+          </label>
+          <textarea
+            name="reason"
+            class="textarea textarea-bordered w-full"
+            rows="4"
+            placeholder={gettext("Explain why this request is being discarded...")}
+            required
+          ><%= @discard_reason %></textarea>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" phx-click="close_discard_modal" class="btn btn-ghost">
+            {gettext("Cancel")}
+          </button>
+          <button type="submit" class="btn btn-error">
+            <.icon name="hero-archive-box" class="size-4" /> {gettext("Discard")}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 <% end %>

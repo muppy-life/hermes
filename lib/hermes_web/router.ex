@@ -52,7 +52,6 @@ defmodule HermesWeb.Router do
       live "/dashboard", DashboardLive, :index
 
       live "/backlog", RequestLive.Index, :index
-      live "/backlog/new", RequestLive.New, :new
       live "/backlog/:id", RequestLive.Show, :show
       live "/backlog/:id/edit", RequestLive.Edit, :edit
 

@@ -19,11 +19,33 @@ defmodule Hermes.Requests.Request do
     field :expected_output, :string
     field :solution_diagram, :string
 
+    field :discard_reason_category, Ecto.Enum,
+      values: [
+        :duplicate,
+        :out_of_scope,
+        :not_technically_viable,
+        :replaced_by_another,
+        :postponed_indefinitely,
+        :not_a_priority,
+        :no_resources_available,
+        :no_longer_applicable,
+        :other
+      ]
+
+    field :discard_reason, :string
+    field :discarded_at, :utc_datetime
+    field :pre_discard_status, :string
+
+    field :is_epic, :boolean, virtual: true, default: false
+
     has_one :github_issue, Hermes.Requests.GitHubIssue
 
     belongs_to :requesting_team, Hermes.Accounts.Team
     belongs_to :assigned_to_team, Hermes.Accounts.Team
     belongs_to :created_by, Hermes.Accounts.User
+    belongs_to :discarded_by, Hermes.Accounts.User
+    belongs_to :parent, __MODULE__, foreign_key: :parent_id
+    has_many :subtasks, __MODULE__, foreign_key: :parent_id
 
     timestamps(type: :utc_datetime)
   end
@@ -47,19 +69,11 @@ defmodule Hermes.Requests.Request do
       :solution_diagram,
       :requesting_team_id,
       :assigned_to_team_id,
-      :created_by_id
+      :created_by_id,
+      :discard_reason_category,
+      :discard_reason
     ])
-    |> validate_required([
-      :kind,
-      :priority,
-      :target_user_type,
-      :current_situation,
-      :goal_description,
-      :goal_target,
-      :expected_output,
-      :requesting_team_id,
-      :created_by_id
-    ])
+    |> validate_required([:title, :priority, :requesting_team_id, :created_by_id])
     |> validate_inclusion(:priority, 1..4)
     |> validate_inclusion(:status, [
       "new",
@@ -68,7 +82,8 @@ defmodule Hermes.Requests.Request do
       "in_progress",
       "review",
       "completed",
-      "blocked"
+      "blocked",
+      "discarded"
     ])
   end
 

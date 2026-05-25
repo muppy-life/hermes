@@ -1,9 +1,9 @@
 <div class="sticky top-0 z-10 bg-base-100 py-2">
   <div class="flex items-center justify-between">
     <h1 class="text-xl font-bold">{gettext("Backlog")}</h1>
-    <.link navigate={~p"/backlog/new"}>
-      <button class="btn btn-primary btn-sm">{gettext("New Request")}</button>
-    </.link>
+    <button type="button" phx-click="show_new_request" class="btn btn-primary btn-sm">
+      {gettext("New Request")}
+    </button>
   </div>
 </div>
 
@@ -56,6 +56,19 @@
   >
     {gettext("Completed Requests")}
     <span class="badge badge-success ml-2">{length(@completed_requests)}</span>
+  </button>
+  <button
+    role="tab"
+    class={[
+      "tab text-base transition-all",
+      @active_tab == "discarded" && "tab-active font-bold border-b-4 border-neutral bg-base-200",
+      @active_tab != "discarded" && "opacity-60 hover:opacity-100"
+    ]}
+    phx-click="change_tab"
+    phx-value-tab="discarded"
+  >
+    {gettext("Discarded")}
+    <span class="badge badge-neutral ml-2">{length(@discarded_requests)}</span>
   </button>
 </div>
 
@@ -162,7 +175,11 @@
           >
             <div class="grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px_140px] gap-3 items-center">
               <div class="opacity-60 text-sm">{index}</div>
-              <div><.kind_badge kind={request.kind} size="sm" /></div>
+              <div>
+                <%= if request.kind do %>
+                  <.kind_badge kind={request.kind} size="sm" />
+                <% end %>
+              </div>
               <div class="font-medium relative group w-[300px]">
                 <span class="block truncate w-full">{request.title}</span>
                 <div class="absolute left-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 delay-500 z-[100] bg-base-300 text-base-content px-3 py-2 rounded-lg shadow-xl border border-base-300 min-w-max max-w-md whitespace-normal break-words pointer-events-none">
@@ -296,7 +313,11 @@
           >
             <div class="grid grid-cols-[60px_100px_300px_120px_120px_150px_150px_120px_140px] gap-3 items-center">
               <div class="opacity-60 text-sm">{index}</div>
-              <div><.kind_badge kind={request.kind} size="sm" /></div>
+              <div>
+                <%= if request.kind do %>
+                  <.kind_badge kind={request.kind} size="sm" />
+                <% end %>
+              </div>
               <div class="font-medium relative group w-[300px]">
                 <span class="block truncate w-full">{request.title}</span>
                 <div class="absolute left-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 delay-500 z-[100] bg-base-300 text-base-content px-3 py-2 rounded-lg shadow-xl border border-base-300 min-w-max max-w-md whitespace-normal break-words pointer-events-none">
@@ -420,7 +441,11 @@
           >
             <div class="grid grid-cols-[60px_100px_300px_120px_150px_150px_120px_140px] gap-3 items-center">
               <div class="opacity-60 text-sm">{index}</div>
-              <div><.kind_badge kind={request.kind} size="sm" /></div>
+              <div>
+                <%= if request.kind do %>
+                  <.kind_badge kind={request.kind} size="sm" />
+                <% end %>
+              </div>
               <div class="font-medium relative group w-[300px]">
                 <span class="block truncate w-full">{request.title}</span>
                 <div class="absolute left-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 delay-500 z-[100] bg-base-300 text-base-content px-3 py-2 rounded-lg shadow-xl border border-base-300 min-w-max max-w-md whitespace-normal break-words pointer-events-none">
@@ -450,6 +475,49 @@
       </div>
     <% end %>
   </div>
+  
+<!-- DISCARDED REQUESTS LIST -->
+  <div class={[@active_tab != "discarded" && "hidden"]}>
+    <%= if Enum.empty?(@discarded_requests) do %>
+      <div class="text-center py-6 opacity-60 bg-base-200 rounded-lg">
+        <p>{gettext("No discarded requests")}</p>
+      </div>
+    <% else %>
+      <div class="space-y-2">
+        <%= for request <- @discarded_requests do %>
+          <div
+            phx-click={JS.navigate(~p"/backlog/#{request.id}")}
+            class="bg-base-100 border border-base-300 rounded-lg p-3 cursor-pointer hover:border-base-content/30 transition-colors opacity-80"
+          >
+            <div class="flex items-center gap-3 text-sm">
+              <span class="opacity-50 font-mono text-xs">#{request.id}</span>
+              <span class="font-medium line-through opacity-60 flex-1 truncate">
+                {request.title}
+              </span>
+              <%= if request.discard_reason_category do %>
+                <span class="badge badge-sm badge-ghost">
+                  {request.discard_reason_category
+                  |> Atom.to_string()
+                  |> String.replace("_", " ")
+                  |> String.capitalize()}
+                </span>
+              <% end %>
+              <%= if request.discarded_at do %>
+                <span class="text-xs opacity-60">
+                  {Calendar.strftime(request.discarded_at, "%b %d, %Y")}
+                </span>
+              <% end %>
+            </div>
+            <%= if request.discard_reason do %>
+              <div class="text-xs opacity-70 mt-1 line-clamp-2">
+                {request.discard_reason}
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
 </div>
 
 <%= if @total_count == 0 do %>
@@ -457,4 +525,12 @@
     <p class="text-lg">{gettext("No requests found matching your filters.")}</p>
     <button phx-click="clear_filters" class="btn btn-link">{gettext("Clear filters")}</button>
   </div>
+<% end %>
+
+<%= if @show_new_request do %>
+  <.live_component
+    module={HermesWeb.RequestLive.NewRequestFormComponent}
+    id="new-request-form"
+    current_user={@current_user}
+  />
 <% end %>

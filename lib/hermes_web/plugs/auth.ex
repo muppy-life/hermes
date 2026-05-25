@@ -134,7 +134,6 @@ defmodule HermesWeb.Plugs.Auth do
     case socket.view do
       HermesWeb.DashboardLive -> "Dashboard"
       HermesWeb.RequestLive.Index -> "Backlog"
-      HermesWeb.RequestLive.New -> "New Request"
       HermesWeb.RequestLive.Show -> "Request Details"
       HermesWeb.RequestLive.Edit -> "Edit Request"
       HermesWeb.KanbanLive.Index -> "Boards"

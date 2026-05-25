@@ -624,6 +624,7 @@ defmodule HermesWeb.CoreComponents do
       "blocked" -> gettext("Blocked")
       "new" -> gettext("New")
       "review" -> gettext("Review")
+      "discarded" -> gettext("Discarded")
       _ -> String.capitalize(status)
     end
   end
@@ -637,6 +638,7 @@ defmodule HermesWeb.CoreComponents do
       "review" -> "bg-indigo-500 text-white border-indigo-600"
       "completed" -> "bg-green-200 text-green-900 border-green-300"
       "blocked" -> "bg-red-200 text-red-900 border-red-300"
+      "discarded" -> "bg-base-300 text-base-content/60 border-base-300"
       _ -> "badge-ghost"
     end
   end
@@ -827,6 +829,9 @@ defmodule HermesWeb.CoreComponents do
                 </option>
                 <option value="blocked" selected={@filter_status == "blocked"}>
                   {gettext("Blocked")}
+                </option>
+                <option value="discarded" selected={@filter_status == "discarded"}>
+                  {gettext("Discarded")}
                 </option>
               </select>
             <% end %>

@@ -28,6 +28,14 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 const Hooks = {
+  SubtaskInput: {
+    mounted() {
+      this.handleEvent('clear_subtask_input', () => {
+        const input = this.el.querySelector('input[name="title"]')
+        if (input) input.value = ''
+      })
+    }
+  },
   ScrollToTop: {
     mounted() { this.step = this.el.dataset.step },
     updated() {

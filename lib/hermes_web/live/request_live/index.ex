@@ -9,7 +9,8 @@ defmodule HermesWeb.RequestLive.Index do
     {:ok,
      socket
      |> assign(:page_title, "Team Requests")
-     |> assign(:teams, Accounts.list_teams())}
+     |> assign(:teams, Accounts.list_teams())
+     |> assign(:show_new_request, false)}
   end
 
   @impl true
@@ -45,6 +46,10 @@ defmodule HermesWeb.RequestLive.Index do
   @impl true
   def handle_event("view_request", %{"id" => id}, socket) do
     {:noreply, push_navigate(socket, to: ~p"/backlog/#{id}")}
+  end
+
+  def handle_event("show_new_request", _params, socket) do
+    {:noreply, assign(socket, :show_new_request, true)}
   end
 
   def handle_event("delete", %{"id" => id}, socket) do
@@ -95,6 +100,22 @@ defmodule HermesWeb.RequestLive.Index do
      )}
   end
 
+  @impl true
+  def handle_info(:hide_new_request, socket) do
+    {:noreply, assign(socket, :show_new_request, false)}
+  end
+
+  def handle_info({:new_request_created, _request}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("Request created successfully"))
+     |> load_requests()}
+  end
+
+  def handle_info({:new_request_flash, kind, msg}, socket) do
+    {:noreply, put_flash(socket, kind, msg)}
+  end
+
   defp build_params(socket, updates) do
     updates_map = Enum.into(updates, %{}, fn {k, v} -> {Atom.to_string(k), v} end)
 
@@ -134,11 +155,17 @@ defmodule HermesWeb.RequestLive.Index do
       |> Enum.filter(&(&1.status == "completed"))
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
+    discarded_requests =
+      filtered_requests
+      |> Enum.filter(&(&1.status == "discarded"))
+      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
+
     socket
     |> assign(:new_requests, new_requests)
     |> assign(:ongoing_requests, ongoing_requests)
     |> assign(:completed_requests, completed_requests)
-    |> assign(:total_count, length(filtered_requests))
+    |> assign(:discarded_requests, discarded_requests)
+    |> assign(:total_count, length(filtered_requests) - length(discarded_requests))
   end
 
   defp apply_filters(requests, assigns) do

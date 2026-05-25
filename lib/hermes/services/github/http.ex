@@ -41,9 +41,23 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
-  def set_issue_state(%{owner: owner, repo: repo, number: number}, state)
+  def set_issue_state(issue_ref, state) when state in [:open, :closed] do
+    set_issue_state(issue_ref, state, [])
+  end
+
+  @impl true
+  def set_issue_state(%{owner: owner, repo: repo, number: number}, state, opts)
       when state in [:open, :closed] do
-    patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"state" => Atom.to_string(state)})
+    body = %{"state" => Atom.to_string(state)}
+
+    body =
+      case Keyword.get(opts, :reason) do
+        :not_planned -> Map.put(body, "state_reason", "not_planned")
+        :completed -> Map.put(body, "state_reason", "completed")
+        _ -> body
+      end
+
+    patch("/repos/#{owner}/#{repo}/issues/#{number}", body)
   end
 
   @impl true
@@ -160,6 +174,121 @@ defmodule Hermes.Services.GitHub.HTTP do
 
       {:error, _} = err ->
         err
+    end
+  end
+
+  @impl true
+  def find_project_item(project_id, issue_node_id) do
+    query = """
+    query($issueId: ID!) {
+      node(id: $issueId) {
+        ... on Issue {
+          projectItems(first: 50) {
+            nodes { id project { id } }
+          }
+        }
+      }
+    }
+    """
+
+    case graphql(query, %{"issueId" => issue_node_id}) do
+      {:ok, %{"data" => %{"node" => %{"projectItems" => %{"nodes" => nodes}}}}} ->
+        match =
+          Enum.find(nodes, fn item ->
+            get_in(item, ["project", "id"]) == project_id
+          end)
+
+        {:ok, match && match["id"]}
+
+      {:ok, %{"errors" => errors}} ->
+        {:error, {:graphql_error, errors}}
+
+      {:ok, other} ->
+        {:error, {:unexpected_payload, other}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  @impl true
+  def remove_item(project_id, item_id) do
+    query = """
+    mutation($projectId: ID!, $itemId: ID!) {
+      deleteProjectV2Item(input: {projectId: $projectId, itemId: $itemId}) {
+        deletedItemId
+      }
+    }
+    """
+
+    case graphql(query, %{"projectId" => project_id, "itemId" => item_id}) do
+      {:ok, %{"data" => %{"deleteProjectV2Item" => result}}} -> {:ok, result}
+      {:ok, %{"errors" => errors}} -> {:error, {:graphql_error, errors}}
+      {:ok, other} -> {:error, {:unexpected_payload, other}}
+      {:error, _} = err -> err
+    end
+  end
+
+  @impl true
+  def add_sub_issue(parent_node_id, child_node_id) do
+    query = """
+    mutation($issueId: ID!, $subIssueId: ID!) {
+      addSubIssue(input: {issueId: $issueId, subIssueId: $subIssueId}) {
+        subIssue { id number }
+      }
+    }
+    """
+
+    case graphql(query, %{"issueId" => parent_node_id, "subIssueId" => child_node_id}) do
+      {:ok, %{"data" => %{"addSubIssue" => result}}} -> {:ok, result}
+      {:ok, %{"errors" => errors}} -> {:error, {:graphql_error, errors}}
+      {:ok, other} -> {:error, {:unexpected_payload, other}}
+      {:error, _} = err -> err
+    end
+  end
+
+  @impl true
+  def sub_issue_attached?(parent_node_id, child_node_id) do
+    query = """
+    query($issueId: ID!) {
+      node(id: $issueId) {
+        ... on Issue {
+          subIssues(first: 100) { nodes { id } }
+        }
+      }
+    }
+    """
+
+    case graphql(query, %{"issueId" => parent_node_id}) do
+      {:ok, %{"data" => %{"node" => %{"subIssues" => %{"nodes" => nodes}}}}} ->
+        {:ok, Enum.any?(nodes, &(&1["id"] == child_node_id))}
+
+      {:ok, %{"errors" => errors}} ->
+        {:error, {:graphql_error, errors}}
+
+      {:ok, other} ->
+        {:error, {:unexpected_payload, other}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  @impl true
+  def remove_sub_issue(parent_node_id, child_node_id) do
+    query = """
+    mutation($issueId: ID!, $subIssueId: ID!) {
+      removeSubIssue(input: {issueId: $issueId, subIssueId: $subIssueId}) {
+        subIssue { id }
+      }
+    }
+    """
+
+    case graphql(query, %{"issueId" => parent_node_id, "subIssueId" => child_node_id}) do
+      {:ok, %{"data" => %{"removeSubIssue" => result}}} -> {:ok, result}
+      {:ok, %{"errors" => errors}} -> {:error, {:graphql_error, errors}}
+      {:ok, other} -> {:error, {:unexpected_payload, other}}
+      {:error, _} = err -> err
     end
   end
 
