@@ -179,7 +179,11 @@
                   data-request-id={card.request.id}
                 >
                   <!-- Request Title -->
-                  <.link navigate={~p"/backlog/#{card.request.id}"} class="block">
+                  <.link
+                    navigate={~p"/backlog/#{card.request.id}"}
+                    class="block"
+                    draggable="false"
+                  >
                     <div class="font-semibold text-base mb-3">{card.request.title}</div>
                   </.link>
                   

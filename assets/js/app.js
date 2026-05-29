@@ -147,17 +147,19 @@ const Hooks = {
 
       // Handle drag start
       this.el.addEventListener('dragstart', (e) => {
-        if (e.target.classList.contains('kanban-card')) {
-          draggedCard = e.target
-          e.target.style.opacity = '0.5'
+        const card = e.target.closest('.kanban-card')
+        if (card) {
+          draggedCard = card
+          card.style.opacity = '0.5'
           e.dataTransfer.effectAllowed = 'move'
         }
       })
 
       // Handle drag end
       this.el.addEventListener('dragend', (e) => {
-        if (e.target.classList.contains('kanban-card')) {
-          e.target.style.opacity = '1'
+        const card = e.target.closest('.kanban-card')
+        if (card) {
+          card.style.opacity = '1'
           draggedCard = null
         }
       })
