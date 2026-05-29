@@ -158,7 +158,7 @@ const Hooks = {
       // Handle drag end
       this.el.addEventListener('dragend', (e) => {
         const card = e.target.closest('.kanban-card')
-        if (card) {
+        if (card && card === draggedCard) {
           card.style.opacity = '1'
           draggedCard = null
         }
