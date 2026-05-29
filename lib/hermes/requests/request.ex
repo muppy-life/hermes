@@ -19,6 +19,11 @@ defmodule Hermes.Requests.Request do
     field :expected_output, :string
     field :solution_diagram, :string
 
+    field :impact_area, Ecto.Enum,
+      values: [:cost_reduction, :revenue_increase, :efficiency, :product_ux, :other]
+
+    field :impact_level, Ecto.Enum, values: [:high, :medium, :low]
+
     field :discard_reason_category, Ecto.Enum,
       values: [
         :duplicate,
@@ -67,6 +72,8 @@ defmodule Hermes.Requests.Request do
       :goal_target,
       :expected_output,
       :solution_diagram,
+      :impact_area,
+      :impact_level,
       :requesting_team_id,
       :assigned_to_team_id,
       :created_by_id,
@@ -119,6 +126,26 @@ defmodule Hermes.Requests.Request do
       :interface_view -> "Interface / View"
       :report_file -> "Report File"
       :alert_message -> "Alert / Message / Communication"
+      _ -> "Unknown"
+    end
+  end
+
+  def impact_area_label(area) do
+    case area do
+      :cost_reduction -> "Reduces costs"
+      :revenue_increase -> "Increases revenue"
+      :efficiency -> "Improves efficiency"
+      :product_ux -> "Improves product / UX"
+      :other -> "Other"
+      _ -> "Unknown"
+    end
+  end
+
+  def impact_level_label(level) do
+    case level do
+      :high -> "High"
+      :medium -> "Medium"
+      :low -> "Low"
       _ -> "Unknown"
     end
   end
