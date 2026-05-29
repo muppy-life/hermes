@@ -33,9 +33,9 @@ msgid "Are you sure you want to delete this request? This action cannot be undon
 msgstr "¿Estás seguro de que quieres eliminar esta solicitud? Esta acción no se puede deshacer."
 
 #: lib/hermes_web/live/request_live/show.html.heex:722
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Assign To Team"
-msgstr "Asignado A"
+msgstr "Asignar al equipo"
 
 #: lib/hermes_web/live/request_live/index.html.heex:141
 #: lib/hermes_web/live/request_live/index.html.heex:279
@@ -136,9 +136,9 @@ msgid "Completed"
 msgstr "Completada"
 
 #: lib/hermes_web/live/request_live/index.html.heex:57
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Completed Requests"
-msgstr "Completada"
+msgstr "Solicitudes completadas"
 
 #: lib/hermes_web/live/request_live/show.html.heex:745
 #, elixir-autogen, elixir-format
@@ -156,9 +156,9 @@ msgid "Created by Us"
 msgstr "Creadas por Nosotros"
 
 #: lib/hermes_web/live/request_live/show.html.heex:625
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Created request"
-msgstr "Creado El"
+msgstr "Solicitud creada"
 
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:842
 #: lib/hermes_web/live/request_live/show.html.heex:584
@@ -221,9 +221,9 @@ msgid "Goal"
 msgstr "Objetivo"
 
 #: lib/hermes_web/live/request_live/show.html.heex:679
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Goal Description"
-msgstr "Descripción"
+msgstr "Descripción del objetivo"
 
 # History and Comments
 #: lib/hermes_web/live/request_live/show.html.heex:609
@@ -342,9 +342,9 @@ msgstr "No hay solicitudes completadas"
 
 # Request actions
 #: lib/hermes_web/live/request_live/index.html.heex:80
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No new requests"
-msgstr "Nueva Solicitud"
+msgstr "Sin solicitudes nuevas"
 
 #: lib/hermes_web/live/request_live/index.html.heex:218
 #, elixir-autogen, elixir-format
@@ -521,9 +521,9 @@ msgstr "Sin asignar"
 #: lib/hermes_web/live/request_live/index.html.heex:289
 #: lib/hermes_web/live/request_live/index.html.heex:417
 #: lib/hermes_web/live/request_live/show.html.heex:531
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Updated"
-msgstr "Actualizado"
+msgstr "Actualizada"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:197
 #: lib/hermes_web/live/dashboard_live.html.heex:259
@@ -557,7 +557,7 @@ msgid "active"
 msgstr "activas"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:302
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "blocked"
 msgstr "Bloqueada"
 
@@ -577,19 +577,19 @@ msgid "new"
 msgstr "nuevas"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:286
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "pending"
 msgstr "Pendiente"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:282
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "need requirement"
-msgstr "requiere requerimiento"
+msgstr "requisito de necesidad"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:294
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "review"
-msgstr "Revisión"
+msgstr "En revisión"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:274
 #, elixir-autogen, elixir-format
@@ -669,7 +669,7 @@ msgstr "Mejora"
 #: lib/hermes_web/components/core_components.ex:687
 #, elixir-autogen, elixir-format
 msgid "New Need"
-msgstr "Nuevo"
+msgstr "Nueva necesidad"
 
 #: lib/hermes_web/components/core_components.ex:684
 #: lib/hermes_web/components/core_components.ex:685
@@ -1016,7 +1016,7 @@ msgstr "Comentario no encontrado"
 #: lib/hermes_web/live/request_live/upload_errors.ex:16
 #, elixir-autogen, elixir-format
 msgid "%{count} images failed to upload. First error: %{detail}"
-msgstr ""
+msgstr "Error al subir %{count} imágenes. Primer error: %{detail}"
 
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:387
 #, elixir-autogen, elixir-format
@@ -1377,7 +1377,7 @@ msgstr "Si hay tiempo"
 #: lib/hermes_web/live/request_live/upload_errors.ex:21
 #, elixir-autogen, elixir-format
 msgid "Image upload failed: %{detail}"
-msgstr ""
+msgstr "Error al subir la imagen: %{detail}"
 
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:343
 #, elixir-autogen, elixir-format
@@ -1810,14 +1810,14 @@ msgstr "p. ej. Reducir el tiempo operativo de 4h a 15 minutos y eliminar errores
 #: lib/hermes_web/live/request_live/upload_errors.ex:40
 #, elixir-autogen, elixir-format
 msgid "unexpected error"
-msgstr ""
+msgstr "error inesperado"
 
 #: lib/hermes_web/live/request_live/upload_errors.ex:46
 #, elixir-autogen, elixir-format
 msgid "unknown error"
-msgstr ""
+msgstr "error desconocido"
 
 #: lib/hermes_web/live/request_live/upload_errors.ex:35
 #, elixir-autogen, elixir-format
 msgid "validation error"
-msgstr ""
+msgstr "error de validación"
