@@ -147,9 +147,14 @@ defmodule Hermes.Services.GitHub.InMemory do
 
     Agent.get_and_update(__MODULE__, fn state ->
       existing = Map.get(state.comments, key, [])
-      remaining = Enum.reject(existing, &(&1.id == comment_id))
-      comments = Map.put(state.comments, key, remaining)
-      {{:ok, %{id: comment_id}}, %{state | comments: comments}}
+
+      if Enum.any?(existing, &(&1.id == comment_id)) do
+        remaining = Enum.reject(existing, &(&1.id == comment_id))
+        comments = Map.put(state.comments, key, remaining)
+        {{:ok, %{id: comment_id}}, %{state | comments: comments}}
+      else
+        {{:error, {:http_error, 404, %{"message" => "Not Found"}}}, state}
+      end
     end)
   end
 

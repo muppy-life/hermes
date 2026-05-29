@@ -181,10 +181,18 @@ defmodule Hermes.Services.GitHub do
   end
 
   # GitHub HTTP returns string-keyed JSON; the InMemory fake returns an atom map.
-  # Falls back to nil if the response carries no id (delete then no-ops).
   defp comment_id(%{"id" => id}), do: id
   defp comment_id(%{id: id}), do: id
-  defp comment_id(_), do: nil
+
+  # No id means the comment was posted but is now unrecoverable (delete keys
+  # off the id). Warn loudly — silent nil would leak the comment forever.
+  defp comment_id(response) do
+    Logger.warning(
+      "GitHub.create_link_comment response missing id, comment cannot be cleaned up: #{inspect(response)}"
+    )
+
+    nil
+  end
 
   @doc """
   Renders the "Linked to Hermes" comment body. The trailing HTML marker lets
