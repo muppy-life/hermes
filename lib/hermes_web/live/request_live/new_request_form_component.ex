@@ -76,18 +76,28 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
   end
 
   def handle_event("go_step", %{"step" => step} = params, socket) do
+    current_step = socket.assigns.current_step
+    target_step = parse_step(step, current_step)
     form_data = Map.merge(socket.assigns.form_data, Map.get(params, "request", %{}))
 
-    case validate_step(socket.assigns.current_step, form_data) do
-      :ok ->
-        {:noreply,
-         socket
-         |> assign(:form_data, form_data)
-         |> assign(:current_step, parse_step(step, socket.assigns.current_step))}
+    # Backward navigation skips validation so users can revise earlier steps.
+    if target_step <= current_step do
+      {:noreply,
+       socket
+       |> assign(:form_data, form_data)
+       |> assign(:current_step, target_step)}
+    else
+      case validate_step(current_step, form_data) do
+        :ok ->
+          {:noreply,
+           socket
+           |> assign(:form_data, form_data)
+           |> assign(:current_step, target_step)}
 
-      {:error, msg} ->
-        send(self(), {:new_request_flash, :error, msg})
-        {:noreply, assign(socket, :form_data, form_data)}
+        {:error, msg} ->
+          send(self(), {:new_request_flash, :error, msg})
+          {:noreply, assign(socket, :form_data, form_data)}
+      end
     end
   end
 
@@ -98,7 +108,15 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
 
   def handle_event("submit", params, socket) do
     form_data = Map.merge(socket.assigns.form_data, Map.get(params, "request", %{}))
-    do_submit(form_data, socket)
+
+    case validate_step(3, form_data) do
+      :ok ->
+        do_submit(form_data, socket)
+
+      {:error, msg} ->
+        send(self(), {:new_request_flash, :error, msg})
+        {:noreply, assign(socket, :form_data, form_data)}
+    end
   end
 
   def handle_event("close_success", _params, socket) do
