@@ -31,6 +31,8 @@ defmodule Hermes.Services.GitHub.InMemory do
       issues: %{},
       counter: %{},
       comments: %{},
+      # auto-increment for synthetic comment ids
+      comment_counter: 0,
       # project_id => [%{id, name}]
       status_options: default_status_options(),
       # item_id => %{project_id, content_node_id, status_option_id}
@@ -130,10 +132,24 @@ defmodule Hermes.Services.GitHub.InMemory do
           {{:error, {:http_error, 404, %{"message" => "Not Found"}}}, state}
 
         _issue ->
-          comment = %{body: body, inserted_at: DateTime.utc_now()}
+          id = state.comment_counter + 1
+          comment = %{id: id, body: body, inserted_at: DateTime.utc_now()}
           comments = Map.update(state.comments, key, [comment], &(&1 ++ [comment]))
-          {{:ok, comment}, %{state | comments: comments}}
+          {{:ok, comment}, %{state | comments: comments, comment_counter: id}}
       end
+    end)
+  end
+
+  @impl true
+  def delete_comment(%{owner: owner, repo: repo, number: number}, comment_id)
+      when is_integer(comment_id) do
+    key = {owner, repo, number}
+
+    Agent.get_and_update(__MODULE__, fn state ->
+      existing = Map.get(state.comments, key, [])
+      remaining = Enum.reject(existing, &(&1.id == comment_id))
+      comments = Map.put(state.comments, key, remaining)
+      {{:ok, %{id: comment_id}}, %{state | comments: comments}}
     end)
   end
 
