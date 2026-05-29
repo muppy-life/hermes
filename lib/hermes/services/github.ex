@@ -146,6 +146,77 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
+  Posts the "Linked to Hermes" comment on the issue. Returns `{:ok, comment_id}`
+  so the caller can persist it for later deletion on unlink.
+  """
+  def create_link_comment(%GitHubIssue{} = issue, %Request{} = request) do
+    case create_comment(issue, link_comment_body(request)) do
+      {:ok, comment} ->
+        {:ok, comment_id(comment)}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  @doc """
+  Deletes the "Linked to Hermes" comment by its stored id. No-op when the id
+  is missing (e.g. issues linked before this feature, or a failed post).
+  """
+  def delete_link_comment(%GitHubIssue{link_comment_id: nil}), do: {:ok, :noop}
+
+  def delete_link_comment(%GitHubIssue{
+        owner: owner,
+        repo: repo,
+        number: number,
+        link_comment_id: comment_id
+      }) do
+    Logger.info(
+      "GitHub.delete_link_comment issue=#{owner}/#{repo}##{number} comment=#{comment_id}"
+    )
+
+    %{owner: owner, repo: repo, number: number}
+    |> adapter().delete_comment(comment_id)
+    |> log_result("delete_link_comment", "#{owner}/#{repo}##{number}")
+  end
+
+  # GitHub HTTP returns string-keyed JSON; the InMemory fake returns an atom map.
+  defp comment_id(%{"id" => id}), do: id
+  defp comment_id(%{id: id}), do: id
+
+  # No id means the comment was posted but is now unrecoverable (delete keys
+  # off the id). Warn loudly — silent nil would leak the comment forever.
+  defp comment_id(response) do
+    Logger.warning(
+      "GitHub.create_link_comment response missing id, comment cannot be cleaned up: #{inspect(response)}"
+    )
+
+    nil
+  end
+
+  @doc """
+  Renders the "Linked to Hermes" comment body. The trailing HTML marker lets
+  Hermes recognise the comment later; the prose warns humans not to touch it.
+  """
+  def link_comment_body(%Request{id: id, title: title}) do
+    title_suffix = if title in [nil, ""], do: "", else: " — \"#{title}\""
+
+    """
+    🔗 **Linked to Hermes**
+
+    This GitHub issue is tracked by Hermes request ##{id}#{title_suffix}.
+
+    👉 #{request_url(id)}
+
+    <!-- hermes:link:#{id} — Do not modify or delete this block; managed automatically by Hermes -->
+    """
+  end
+
+  defp request_url(id) do
+    HermesWeb.Endpoint.url() <> "/backlog/#{id}"
+  end
+
+  @doc """
   Fetches a single issue. Used when linking an existing issue.
 
   Returns `{:ok, %{number, url, state}}`.

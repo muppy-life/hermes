@@ -76,6 +76,16 @@ defmodule Hermes.Services.GitHub.InMemoryTest do
              InMemory.create_comment(%{owner: "a", repo: "r", number: 999}, "ghost")
   end
 
+  test "delete_comment removes the comment by id" do
+    {:ok, %{number: n}} =
+      InMemory.create_issue(%{owner: "a", repo: "r", title: "t", body: "b", labels: []})
+
+    {:ok, %{id: id}} = InMemory.create_comment(%{owner: "a", repo: "r", number: n}, "hello")
+
+    assert {:ok, _} = InMemory.delete_comment(%{owner: "a", repo: "r", number: n}, id)
+    assert [] = InMemory.comments_for("a", "r", n)
+  end
+
   test "set_state dev helper" do
     {:ok, %{number: n}} =
       InMemory.create_issue(%{owner: "a", repo: "r", title: "t", body: "b", labels: []})

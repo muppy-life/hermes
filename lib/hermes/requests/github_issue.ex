@@ -3,7 +3,8 @@ defmodule Hermes.Requests.GitHubIssue do
   A GitHub issue linked to a Hermes request (1:1).
 
   Stores the canonical `(owner, repo, number)` identity, the HTML URL,
-  and project board metadata (item ID + current status column).
+  project board metadata (item ID + current status column), and the id of
+  the "Linked to Hermes" comment so it can be removed on unlink.
   """
 
   use Ecto.Schema
@@ -22,6 +23,17 @@ defmodule Hermes.Requests.GitHubIssue do
     field :last_sync_source, :string
     field :last_sync_at, :utc_datetime
 
+    # GitHub REST id of the "Linked to Hermes" comment Hermes posts when the
+    # issue is linked or created. Kept so `unlink_github_issue/1` can delete
+    # that exact comment via `DELETE /issues/comments/{id}` (the endpoint is
+    # keyed by comment id, not issue) — leaving no residue on GitHub.
+    #
+    # Nullable: issues linked before this feature, or when the best-effort
+    # comment post failed, have no id; deletion then no-ops. The
+    # `<!-- hermes:link:N -->` marker in the comment body is the human/fallback
+    # recognizer; this id is the primary delete key.
+    field :link_comment_id, :integer
+
     belongs_to :request, Hermes.Requests.Request
 
     timestamps(type: :utc_datetime)
@@ -34,7 +46,8 @@ defmodule Hermes.Requests.GitHubIssue do
     :project_item_id,
     :project_status,
     :last_sync_source,
-    :last_sync_at
+    :last_sync_at,
+    :link_comment_id
   ]
 
   def changeset(github_issue, attrs) do

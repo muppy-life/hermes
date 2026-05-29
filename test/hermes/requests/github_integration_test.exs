@@ -54,17 +54,21 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
   end
 
   describe "create_github_issue_for_request/1" do
-    test "creates an issue and inserts a github_issues row", %{request: request} do
-      stub_github(fn conn ->
-        assert conn.method == "POST"
-        assert conn.request_path == "/repos/acme/main/issues"
+    test "creates an issue, inserts a row, and posts a link comment", %{request: request} do
+      test_pid = self()
 
-        conn
-        |> Plug.Conn.put_resp_content_type("application/json")
-        |> Plug.Conn.resp(
-          201,
-          Jason.encode!(%{"number" => 42, "html_url" => "https://github.com/acme/main/issues/42"})
-        )
+      stub_github(fn conn ->
+        cond do
+          conn.method == "POST" and conn.request_path == "/repos/acme/main/issues" ->
+            json(conn, 201, %{
+              "number" => 42,
+              "html_url" => "https://github.com/acme/main/issues/42"
+            })
+
+          conn.request_path == "/repos/acme/main/issues/42/comments" ->
+            send(test_pid, {:comment, read_body(conn)})
+            json(conn, 201, %{"id" => 9001})
+        end
       end)
 
       assert {:ok, issue} = Requests.create_github_issue_for_request(request)
@@ -73,16 +77,20 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
       assert issue.number == 42
       assert issue.url == "https://github.com/acme/main/issues/42"
       assert issue.request_id == request.id
+      assert issue.link_comment_id == 9001
+
+      assert_received {:comment, body}
+      assert body =~ "Linked to Hermes"
+      assert body =~ "hermes:link:#{request.id}"
     end
 
     test "rejects when already linked", %{request: request} do
       stub_github(fn conn ->
-        Plug.Conn.resp(
-          conn,
-          201,
-          Jason.encode!(%{"number" => 1, "html_url" => "https://github.com/acme/main/issues/1"})
-        )
-        |> Plug.Conn.put_resp_content_type("application/json")
+        json(conn, 201, %{
+          "number" => 1,
+          "id" => 1,
+          "html_url" => "https://github.com/acme/main/issues/1"
+        })
       end)
 
       assert {:ok, _} = Requests.create_github_issue_for_request(request)
@@ -91,14 +99,16 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
 
     test "passes :repo override", %{request: request} do
       stub_github(fn conn ->
-        assert conn.request_path == "/repos/acme/other/issues"
+        assert conn.request_path in [
+                 "/repos/acme/other/issues",
+                 "/repos/acme/other/issues/7/comments"
+               ]
 
-        conn
-        |> Plug.Conn.put_resp_content_type("application/json")
-        |> Plug.Conn.resp(
-          201,
-          Jason.encode!(%{"number" => 7, "html_url" => "https://github.com/acme/other/issues/7"})
-        )
+        json(conn, 201, %{
+          "number" => 7,
+          "id" => 7,
+          "html_url" => "https://github.com/acme/other/issues/7"
+        })
       end)
 
       assert {:ok, issue} = Requests.create_github_issue_for_request(request, repo: "other")
@@ -107,43 +117,49 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
   end
 
   describe "link_github_issue/2" do
-    test "links existing issue using bare number", %{request: request} do
-      stub_github(fn conn ->
-        assert conn.method == "GET"
-        assert conn.request_path == "/repos/acme/main/issues/55"
+    test "links existing issue using bare number and posts a link comment", %{request: request} do
+      test_pid = self()
 
-        conn
-        |> Plug.Conn.put_resp_content_type("application/json")
-        |> Plug.Conn.resp(
-          200,
-          Jason.encode!(%{
-            "number" => 55,
-            "html_url" => "https://github.com/acme/main/issues/55",
-            "state" => "open"
-          })
-        )
+      stub_github(fn conn ->
+        cond do
+          conn.method == "GET" and conn.request_path == "/repos/acme/main/issues/55" ->
+            json(conn, 200, %{
+              "number" => 55,
+              "html_url" => "https://github.com/acme/main/issues/55",
+              "state" => "open"
+            })
+
+          conn.request_path == "/repos/acme/main/issues/55/comments" ->
+            send(test_pid, {:comment, read_body(conn)})
+            json(conn, 201, %{"id" => 12_345})
+        end
       end)
 
       assert {:ok, issue} = Requests.link_github_issue(request, "55")
       assert issue.number == 55
       assert issue.repo == "main"
       assert issue.state == "open"
+      assert issue.link_comment_id == 12_345
+
+      assert_received {:comment, body}
+      assert body =~ "hermes:link:#{request.id}"
     end
 
     test "links via full URL with non-default repo", %{request: request} do
       stub_github(fn conn ->
-        assert conn.request_path == "/repos/acme/other/issues/3"
+        cond do
+          conn.method == "GET" ->
+            assert conn.request_path == "/repos/acme/other/issues/3"
 
-        conn
-        |> Plug.Conn.put_resp_content_type("application/json")
-        |> Plug.Conn.resp(
-          200,
-          Jason.encode!(%{
-            "number" => 3,
-            "html_url" => "https://github.com/acme/other/issues/3",
-            "state" => "closed"
-          })
-        )
+            json(conn, 200, %{
+              "number" => 3,
+              "html_url" => "https://github.com/acme/other/issues/3",
+              "state" => "closed"
+            })
+
+          conn.request_path == "/repos/acme/other/issues/3/comments" ->
+            json(conn, 201, %{"id" => 3})
+        end
       end)
 
       assert {:ok, issue} =
@@ -163,18 +179,30 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
   end
 
   describe "unlink_github_issue/1" do
-    test "deletes the link row", %{request: request} do
+    test "deletes the link row and the link comment", %{request: request} do
+      test_pid = self()
+
       stub_github(fn conn ->
-        conn
-        |> Plug.Conn.put_resp_content_type("application/json")
-        |> Plug.Conn.resp(
-          201,
-          Jason.encode!(%{"number" => 9, "html_url" => "https://github.com/acme/main/issues/9"})
-        )
+        cond do
+          conn.method == "POST" and conn.request_path == "/repos/acme/main/issues" ->
+            json(conn, 201, %{
+              "number" => 9,
+              "html_url" => "https://github.com/acme/main/issues/9"
+            })
+
+          conn.request_path == "/repos/acme/main/issues/9/comments" ->
+            json(conn, 201, %{"id" => 777})
+
+          conn.method == "DELETE" and
+              conn.request_path == "/repos/acme/main/issues/comments/777" ->
+            send(test_pid, :comment_deleted)
+            json(conn, 204, %{})
+        end
       end)
 
       {:ok, _issue} = Requests.create_github_issue_for_request(request)
       assert {:ok, _} = Requests.unlink_github_issue(request)
+      assert_received :comment_deleted
       assert {:error, :not_linked} = Requests.unlink_github_issue(request)
     end
   end
@@ -188,6 +216,17 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
     )
 
     Application.put_env(:hermes, :github_req_options, plug: fun)
+  end
+
+  defp json(conn, status, body) do
+    conn
+    |> Plug.Conn.put_resp_content_type("application/json")
+    |> Plug.Conn.resp(status, Jason.encode!(body))
+  end
+
+  defp read_body(conn) do
+    {:ok, body, _conn} = Plug.Conn.read_body(conn)
+    body
   end
 
   defp restore_env(key, nil), do: Application.delete_env(:hermes, key)

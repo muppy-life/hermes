@@ -66,6 +66,11 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
+  def delete_comment(%{owner: owner, repo: repo}, comment_id) when is_integer(comment_id) do
+    delete("/repos/#{owner}/#{repo}/issues/comments/#{comment_id}")
+  end
+
+  @impl true
   def get_issue(owner, repo, number) when is_integer(number) do
     case get("/repos/#{owner}/#{repo}/issues/#{number}") do
       {:ok, %{"number" => n, "html_url" => url, "state" => state}} ->
@@ -297,6 +302,7 @@ defmodule Hermes.Services.GitHub.HTTP do
   defp post(path, body), do: request(:post, path, json: body)
   defp patch(path, body), do: request(:patch, path, json: body)
   defp get(path), do: request(:get, path, [])
+  defp delete(path), do: request(:delete, path, [])
 
   defp request(method, path, opts) do
     cfg = config()

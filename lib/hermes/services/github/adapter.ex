@@ -41,6 +41,14 @@ defmodule Hermes.Services.GitHub.Adapter do
 
   @callback create_comment(issue_ref, String.t()) :: {:ok, map()} | {:error, term()}
 
+  @doc """
+  Deletes a comment by its REST comment id. The issue stays untouched.
+  """
+  # A successful GitHub DELETE returns 204 No Content, so the HTTP adapter
+  # yields `{:ok, ""}`; the InMemory fake yields `{:ok, map()}`.
+  @callback delete_comment(issue_ref, comment_id :: integer()) ::
+              {:ok, map() | String.t()} | {:error, term()}
+
   @callback get_issue(String.t(), String.t(), pos_integer()) ::
               {:ok, %{number: pos_integer(), url: String.t(), state: String.t()}}
               | {:error, term()}

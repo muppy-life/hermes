@@ -802,6 +802,7 @@ defmodule Hermes.Requests do
                      url: url,
                      state: "open"
                    }) do
+              issue = maybe_post_link_comment(issue, request)
               cascade_subtasks_to_github(request, issue, opts)
               {:ok, issue}
             end
@@ -826,14 +827,45 @@ defmodule Hermes.Requests do
            GitHub.get_issue(resolved_owner, resolved_repo, number) do
       # Linking only records the existing GH issue — no cascade, no sub-issue
       # creation, no body/label mutation. The pre-existing GH structure is
-      # preserved.
-      insert_github_issue(request.id, %{
-        owner: resolved_owner,
-        repo: resolved_repo,
-        number: number,
-        url: url,
-        state: state
-      })
+      # preserved; reachability back to Hermes is added as a comment only.
+      with {:ok, issue} <-
+             insert_github_issue(request.id, %{
+               owner: resolved_owner,
+               repo: resolved_repo,
+               number: number,
+               url: url,
+               state: state
+             }) do
+        {:ok, maybe_post_link_comment(issue, request)}
+      end
+    end
+  end
+
+  # Posts the "Linked to Hermes" comment and persists its id for later deletion.
+  # Best-effort: a failed comment never blocks linking.
+  defp maybe_post_link_comment(%GitHubIssue{} = issue, %Request{} = request) do
+    case GitHub.create_link_comment(issue, request) do
+      {:ok, comment_id} ->
+        case issue
+             |> GitHubIssue.changeset(%{link_comment_id: comment_id})
+             |> Repo.update() do
+          {:ok, updated} ->
+            updated
+
+          {:error, reason} ->
+            Logger.warning(
+              "link comment persist failed issue=#{issue.owner}/#{issue.repo}##{issue.number} reason=#{inspect(reason)}"
+            )
+
+            issue
+        end
+
+      {:error, reason} ->
+        Logger.warning(
+          "link comment failed issue=#{issue.owner}/#{issue.repo}##{issue.number} reason=#{inspect(reason)}"
+        )
+
+        issue
     end
   end
 
@@ -928,8 +960,26 @@ defmodule Hermes.Requests do
         {:error, :not_linked}
 
       issue ->
+        maybe_delete_link_comment(issue)
         maybe_remove_project_item(issue)
         Repo.delete(issue)
+    end
+  end
+
+  # Best-effort: a failed comment delete never blocks unlinking.
+  defp maybe_delete_link_comment(%GitHubIssue{link_comment_id: nil}), do: :ok
+
+  defp maybe_delete_link_comment(%GitHubIssue{} = issue) do
+    case GitHub.delete_link_comment(issue) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(
+          "delete link comment failed issue=#{issue.owner}/#{issue.repo}##{issue.number} reason=#{inspect(reason)}"
+        )
+
+        :ok
     end
   end
 
