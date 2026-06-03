@@ -173,7 +173,7 @@ aging = aging_days(@request) %>
             <div
               phx-hook="MermaidDiagram"
               id="solution-diagram-container"
-              class="bg-base-200 rounded-lg p-4"
+              class="bg-base-100 rounded-lg p-4"
             >
               <div class="mermaid">{@request.solution_diagram}</div>
             </div>
@@ -238,7 +238,7 @@ aging = aging_days(@request) %>
         </div>
 
         <%= for entry <- @uploads.images.entries do %>
-          <div class="flex items-center justify-between mt-2 p-2 bg-base-200 rounded-lg">
+          <div class="flex items-center justify-between mt-2 p-2 bg-base-100 rounded-lg">
             <div class="flex items-center gap-2">
               <.live_img_preview entry={entry} class="h-8 w-8 object-cover rounded" />
               <p class="text-xs truncate max-w-[140px]">{entry.client_name}</p>
@@ -609,7 +609,7 @@ aging = aging_days(@request) %>
         <div class="detail-section-t">{gettext("History")}</div>
         <div class="space-y-2 max-h-80 overflow-y-auto">
           <%= for change <- @changes do %>
-            <div class="p-2 bg-base-200 rounded text-xs">
+            <div class="p-2 bg-base-100 rounded text-xs">
               <div class="flex items-center justify-between mb-1">
                 <span class="font-semibold truncate">
                   {if change.user,

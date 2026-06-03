@@ -26,18 +26,18 @@
   default: false;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(30.33% 0.016 252.42);
-  --color-base-200: oklch(25.26% 0.014 253.1);
-  --color-base-300: oklch(20.15% 0.012 254.09);
-  --color-base-content: oklch(97.807% 0.029 256.847);
-  --color-primary: oklch(58% 0.233 277.117);
-  --color-primary-content: oklch(96% 0.018 272.314);
-  --color-secondary: oklch(58% 0.233 277.117);
-  --color-secondary-content: oklch(96% 0.018 272.314);
-  --color-accent: oklch(60% 0.25 292.717);
-  --color-accent-content: oklch(96% 0.016 293.756);
-  --color-neutral: oklch(37% 0.044 257.287);
-  --color-neutral-content: oklch(98% 0.003 247.858);
+  --color-base-100: #09090b;
+  --color-base-200: #18181b;
+  --color-base-300: #27272a;
+  --color-base-content: #fafafa;
+  --color-primary: #fafafa;
+  --color-primary-content: #09090b;
+  --color-secondary: #fafafa;
+  --color-secondary-content: #09090b;
+  --color-accent: #fafafa;
+  --color-accent-content: #09090b;
+  --color-neutral: #3f3f46;
+  --color-neutral-content: #fafafa;
   --color-info: oklch(58% 0.158 241.966);
   --color-info-content: oklch(97% 0.013 236.62);
   --color-success: oklch(60% 0.118 184.704);
@@ -61,18 +61,18 @@
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(96% 0.001 286.375);
-  --color-base-300: oklch(92% 0.004 286.32);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
-  --color-secondary: oklch(55% 0.027 264.364);
-  --color-secondary-content: oklch(98% 0.002 247.839);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(44% 0.017 285.786);
-  --color-neutral-content: oklch(98% 0 0);
+  --color-base-100: #f8fafc;
+  --color-base-200: #ffffff;
+  --color-base-300: #e2e8f0;
+  --color-base-content: #334155;
+  --color-primary: #334155;
+  --color-primary-content: #ffffff;
+  --color-secondary: #64748b;
+  --color-secondary-content: #ffffff;
+  --color-accent: #475569;
+  --color-accent-content: #ffffff;
+  --color-neutral: #cbd5e1;
+  --color-neutral-content: #334155;
   --color-info: oklch(62% 0.214 259.815);
   --color-info-content: oklch(97% 0.014 254.604);
   --color-success: oklch(70% 0.14 182.503);
@@ -102,13 +102,29 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+/* Muted text levels from the design system (no daisyUI equivalent).
+   Use via text-[color:var(--text-2)] etc., or the .text-muted-* helpers below. */
+[data-theme="light"] {
+  --text-2: #64748b;
+  --text-3: #94a3b8;
+  --text-4: #cbd5e1;
+}
+[data-theme="dark"] {
+  --text-2: #a1a1aa;
+  --text-3: #86868d;
+  --text-4: #52525b;
+}
+.text-muted-2 { color: var(--text-2); }
+.text-muted-3 { color: var(--text-3); }
+.text-muted-4 { color: var(--text-4); }
+
 /* This file is for your main application CSS */
 
 /* === Request detail view (new design) === */
 
 .detail-topbar {
   height: 60px;
-  background: var(--color-base-100);
+  background: var(--color-base-200);
   border-bottom: 1px solid var(--color-base-300);
   padding: 0 28px;
   display: flex;
@@ -127,11 +143,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-base-200);
+  background: var(--color-base-300);
   border: none;
 }
 .detail-back:hover {
-  background: var(--color-base-300);
+  background: color-mix(in oklch, var(--color-base-300), var(--color-base-content) 12%);
   opacity: 1;
 }
 
@@ -150,7 +166,7 @@
 }
 
 .detail-section {
-  background: var(--color-base-100);
+  background: var(--color-base-200);
   border: 1px solid var(--color-base-300);
   border-radius: 8px;
   padding: 24px;
@@ -389,7 +405,7 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.subtask-row:hover { background: var(--color-base-200); }
+.subtask-row:hover { background: var(--color-base-300); }
 .subtask-check {
   width: 18px;
   height: 18px;
