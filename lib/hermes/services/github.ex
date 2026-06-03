@@ -301,8 +301,26 @@ defmodule Hermes.Services.GitHub do
   node id first.
   """
   def list_sub_issues(%GitHubIssue{owner: owner, repo: repo, number: number}) do
-    with {:ok, parent_node} <- adapter().get_issue_node_id(owner, repo, number) do
-      adapter().list_sub_issues(parent_node)
+    ref = "#{owner}/#{repo}##{number}"
+
+    with {:ok, parent_node} <- adapter().get_issue_node_id(owner, repo, number),
+         {:ok, subs} <- adapter().list_sub_issues(parent_node) do
+      Logger.info("GitHub.list_sub_issues ok issue=#{ref} count=#{length(subs)}",
+        github_op: "list_sub_issues",
+        github_ref: ref,
+        sub_issue_count: length(subs)
+      )
+
+      {:ok, subs}
+    else
+      {:error, reason} = err ->
+        Logger.warning("GitHub.list_sub_issues failed issue=#{ref} reason=#{inspect(reason)}",
+          github_op: "list_sub_issues",
+          github_ref: ref,
+          reason: inspect(reason)
+        )
+
+        err
     end
   end
 
@@ -475,12 +493,23 @@ defmodule Hermes.Services.GitHub do
   defp config, do: Application.get_env(:hermes, :github, [])
 
   defp log_result({:ok, _} = ok, op, ref) do
-    Logger.info("GitHub.#{op} ok issue=#{ref}")
+    Logger.info("GitHub.#{op} ok issue=#{ref}",
+      github_op: op,
+      github_ref: ref,
+      github_result: :ok
+    )
+
     ok
   end
 
   defp log_result({:error, reason} = err, op, ref) do
-    Logger.warning("GitHub.#{op} failed issue=#{ref} reason=#{inspect(reason)}")
+    Logger.warning("GitHub.#{op} failed issue=#{ref} reason=#{inspect(reason)}",
+      github_op: op,
+      github_ref: ref,
+      github_result: :error,
+      reason: inspect(reason)
+    )
+
     err
   end
 end

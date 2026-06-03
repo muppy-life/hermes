@@ -364,6 +364,13 @@ defmodule Hermes.Services.GitHub.HTTP do
     token = cfg[:token]
 
     if is_nil(token) or token == "" do
+      Logger.warning("GitHub REST #{method} #{path} skipped: missing token",
+        github_api: :rest,
+        github_method: method,
+        github_path: path,
+        github_error: :missing_token
+      )
+
       {:error, :missing_token}
     else
       url = cfg[:api_url] <> path
@@ -380,16 +387,44 @@ defmodule Hermes.Services.GitHub.HTTP do
         |> Keyword.merge(opts)
         |> maybe_put_test_plug()
 
-      case apply(Req, method, [url, opts]) do
-        {:ok, %Req.Response{status: status, body: resp_body}} when status in 200..299 ->
+      started = System.monotonic_time(:millisecond)
+      result = apply(Req, method, [url, opts])
+      duration_ms = System.monotonic_time(:millisecond) - started
+
+      base_meta = [
+        github_api: :rest,
+        github_method: method,
+        github_path: path,
+        duration_ms: duration_ms
+      ]
+
+      case result do
+        {:ok, %Req.Response{status: status, body: resp_body} = resp}
+        when status in 200..299 ->
+          meta = base_meta ++ [status: status] ++ rate_limit_meta(resp)
+
+          Logger.debug("GitHub REST #{method} #{path} -> #{status} (#{duration_ms}ms)", meta)
+
           {:ok, resp_body}
 
-        {:ok, %Req.Response{status: status, body: resp_body}} ->
-          Logger.warning("GitHub #{method} #{path} -> #{status}: #{inspect(resp_body)}")
+        {:ok, %Req.Response{status: status, body: resp_body} = resp} ->
+          meta =
+            base_meta ++
+              [status: status, github_response: truncate(resp_body)] ++ rate_limit_meta(resp)
+
+          Logger.warning(
+            "GitHub REST #{method} #{path} -> #{status} (#{duration_ms}ms): #{inspect(truncate(resp_body))}",
+            meta
+          )
+
           {:error, {:http_error, status, resp_body}}
 
         {:error, reason} ->
-          Logger.warning("GitHub #{method} #{path} transport error: #{inspect(reason)}")
+          Logger.warning(
+            "GitHub REST #{method} #{path} transport error (#{duration_ms}ms): #{inspect(reason)}",
+            base_meta ++ [github_error: :transport_error, reason: inspect(reason)]
+          )
+
           {:error, {:transport_error, reason}}
       end
     end
@@ -399,8 +434,15 @@ defmodule Hermes.Services.GitHub.HTTP do
     cfg = config()
     token = cfg[:token]
     url = cfg[:graphql_url] || "https://api.github.com/graphql"
+    op = graphql_operation(query)
 
     if is_nil(token) or token == "" do
+      Logger.warning("GitHub GraphQL #{op} skipped: missing token",
+        github_api: :graphql,
+        github_operation: op,
+        github_error: :missing_token
+      )
+
       {:error, :missing_token}
     else
       headers = [
@@ -416,18 +458,96 @@ defmodule Hermes.Services.GitHub.HTTP do
         [headers: headers, retry: false, json: body]
         |> maybe_put_test_plug()
 
-      case Req.post(url, opts) do
-        {:ok, %Req.Response{status: 200, body: resp}} ->
+      started = System.monotonic_time(:millisecond)
+      result = Req.post(url, opts)
+      duration_ms = System.monotonic_time(:millisecond) - started
+
+      base_meta = [
+        github_api: :graphql,
+        github_operation: op,
+        duration_ms: duration_ms
+      ]
+
+      case result do
+        {:ok, %Req.Response{status: 200, body: %{"errors" => errors} = resp} = http} ->
+          # GraphQL reports query-level failures with HTTP 200 + an errors array.
+          meta =
+            base_meta ++ [status: 200, github_errors: inspect(errors)] ++ rate_limit_meta(http)
+
+          Logger.warning(
+            "GitHub GraphQL #{op} returned errors (#{duration_ms}ms): #{inspect(errors)}",
+            meta
+          )
+
           {:ok, resp}
 
-        {:ok, %Req.Response{status: status, body: resp}} ->
-          Logger.warning("GitHub GraphQL -> #{status}: #{inspect(resp)}")
+        {:ok, %Req.Response{status: 200, body: resp} = http} ->
+          Logger.debug(
+            "GitHub GraphQL #{op} -> 200 (#{duration_ms}ms)",
+            base_meta ++ [status: 200] ++ rate_limit_meta(http)
+          )
+
+          {:ok, resp}
+
+        {:ok, %Req.Response{status: status, body: resp} = http} ->
+          meta =
+            base_meta ++
+              [status: status, github_response: truncate(resp)] ++ rate_limit_meta(http)
+
+          Logger.warning(
+            "GitHub GraphQL #{op} -> #{status} (#{duration_ms}ms): #{inspect(truncate(resp))}",
+            meta
+          )
+
           {:error, {:http_error, status, resp}}
 
         {:error, reason} ->
-          Logger.warning("GitHub GraphQL transport error: #{inspect(reason)}")
+          Logger.warning(
+            "GitHub GraphQL #{op} transport error (#{duration_ms}ms): #{inspect(reason)}",
+            base_meta ++ [github_error: :transport_error, reason: inspect(reason)]
+          )
+
           {:error, {:transport_error, reason}}
       end
+    end
+  end
+
+  # Extracts GitHub's rate-limit signals from response headers so logs surface
+  # remaining quota and reset time — the first thing to check when calls fail.
+  defp rate_limit_meta(%Req.Response{} = resp) do
+    [
+      rate_remaining: header(resp, "x-ratelimit-remaining"),
+      rate_reset: header(resp, "x-ratelimit-reset"),
+      retry_after: header(resp, "retry-after")
+    ]
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+  end
+
+  defp header(%Req.Response{} = resp, name) do
+    case Req.Response.get_header(resp, name) do
+      [value | _] -> value
+      _ -> nil
+    end
+  end
+
+  # Names the GraphQL operation for logs: the first selected field after the
+  # operation type, e.g. "addSubIssue", "subIssues". Falls back to "graphql".
+  defp graphql_operation(query) when is_binary(query) do
+    case Regex.run(~r/(?:query|mutation)\s*(?:\([^)]*\))?\s*\{\s*([A-Za-z0-9_]+)/, query) do
+      [_, field] -> field
+      _ -> "graphql"
+    end
+  end
+
+  # Keeps error payloads from flooding logs; bodies are usually small but
+  # GraphQL error arrays and HTML error pages can be large.
+  defp truncate(term) do
+    str = inspect(term, limit: :infinity, printable_limit: :infinity)
+
+    if String.length(str) > 800 do
+      String.slice(str, 0, 800) <> "…(truncated)"
+    else
+      term
     end
   end
 
