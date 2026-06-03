@@ -249,7 +249,7 @@ defmodule HermesWeb.DashboardLive do
 
   def roadmap_status_icon(%{status: "future_planning"} = assigns) do
     ~H"""
-    <span class="text-amber-600" title={gettext("Future Planning")}>
+    <span class="text-teal-600" title={gettext("Future Planning")}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="h-3 w-3"
