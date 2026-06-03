@@ -108,6 +108,9 @@ config :hermes, :storage_adapter, Hermes.Storage.Local
 # /dev/github. Set HERMES_GITHUB_USE_REAL_API=1 to opt back into the real REST API.
 if System.get_env("HERMES_GITHUB_USE_REAL_API") in [nil, ""] do
   config :hermes, :github_adapter, Hermes.Services.GitHub.InMemory
+  # Preload a sample parent issue (#1) with attached sub-issues so the
+  # "import GitHub sub-issues" flow is reachable out of the box.
+  config :hermes, :seed_github_fake, true
 end
 
 config :hermes, Oban,
