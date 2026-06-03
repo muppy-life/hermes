@@ -65,6 +65,7 @@ defmodule HermesWeb.DashboardLive do
         new: Enum.count(requests, &(&1.status == "new")),
         need_requirement: Enum.count(requests, &(&1.status == "need_requirement")),
         pending: Enum.count(requests, &(&1.status == "pending")),
+        future_planning: Enum.count(requests, &(&1.status == "future_planning")),
         in_progress: Enum.count(requests, &(&1.status == "in_progress")),
         review: Enum.count(requests, &(&1.status == "review")),
         completed: Enum.count(requests, &(&1.status == "completed")),
@@ -87,6 +88,7 @@ defmodule HermesWeb.DashboardLive do
       new: Enum.count(requests, &(&1.status == "new")),
       need_requirement: Enum.count(requests, &(&1.status == "need_requirement")),
       pending: Enum.count(requests, &(&1.status == "pending")),
+      future_planning: Enum.count(requests, &(&1.status == "future_planning")),
       in_progress: Enum.count(requests, &(&1.status == "in_progress")),
       review: Enum.count(requests, &(&1.status == "review")),
       completed: Enum.count(requests, &(&1.status == "completed")),
@@ -227,6 +229,27 @@ defmodule HermesWeb.DashboardLive do
   def roadmap_status_icon(%{status: "pending"} = assigns) do
     ~H"""
     <span class="text-yellow-600" title={gettext("Pending")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(%{status: "future_planning"} = assigns) do
+    ~H"""
+    <span class="text-amber-600" title={gettext("Future Planning")}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="h-3 w-3"

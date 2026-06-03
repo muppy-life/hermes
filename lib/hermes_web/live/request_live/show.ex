@@ -673,6 +673,7 @@ defmodule HermesWeb.RequestLive.Show do
       {"new", gettext("New")},
       {"need_requirement", gettext("Need requirement")},
       {"pending", gettext("Pending")},
+      {"future_planning", gettext("Future Planning")},
       {"in_progress", gettext("In progress")},
       {"review", gettext("Review")},
       {"completed", gettext("Completed")},

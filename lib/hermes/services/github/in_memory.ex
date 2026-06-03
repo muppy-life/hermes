@@ -50,6 +50,7 @@ defmodule Hermes.Services.GitHub.InMemory do
         %{id: "OPT_NEW", name: "New"},
         %{id: "OPT_NEED", name: "Need requirement"},
         %{id: "OPT_PENDING", name: "Pending"},
+        %{id: "OPT_FUTURE_PLANNING", name: "Future Planning"},
         %{id: "OPT_PROGRESS", name: "In progress"},
         %{id: "OPT_REVIEW", name: "Review"},
         %{id: "OPT_DONE", name: "Done"},

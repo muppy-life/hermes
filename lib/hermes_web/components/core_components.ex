@@ -619,6 +619,7 @@ defmodule HermesWeb.CoreComponents do
     case status do
       "need_requirement" -> gettext("Need requirement")
       "pending" -> gettext("Pending")
+      "future_planning" -> gettext("Future Planning")
       "in_progress" -> gettext("In Progress")
       "completed" -> gettext("Completed")
       "blocked" -> gettext("Blocked")
@@ -634,6 +635,7 @@ defmodule HermesWeb.CoreComponents do
       "new" -> "bg-cyan-200 text-cyan-900 border-cyan-300"
       "need_requirement" -> "bg-purple-200 text-purple-900 border-purple-300"
       "pending" -> "bg-yellow-200 text-yellow-900 border-yellow-300"
+      "future_planning" -> "bg-amber-200 text-amber-900 border-amber-300"
       "in_progress" -> "bg-blue-200 text-blue-900 border-blue-300"
       "review" -> "bg-indigo-500 text-white border-indigo-600"
       "completed" -> "bg-green-200 text-green-900 border-green-300"
@@ -817,6 +819,12 @@ defmodule HermesWeb.CoreComponents do
                 </option>
                 <option value="pending" selected={@filter_status == "pending"}>
                   {gettext("Pending")}
+                </option>
+                <option
+                  value="future_planning"
+                  selected={@filter_status == "future_planning"}
+                >
+                  {gettext("Future Planning")}
                 </option>
                 <option value="in_progress" selected={@filter_status == "in_progress"}>
                   {gettext("In Progress")}
