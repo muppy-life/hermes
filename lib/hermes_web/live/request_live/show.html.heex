@@ -910,3 +910,55 @@ aging = aging_days(@request) %>
     </div>
   </div>
 <% end %>
+
+<!-- Import GitHub sub-issues Modal -->
+<%= if @show_github_subtask_modal do %>
+  <div class="modal modal-open">
+    <div class="modal-box max-w-lg">
+      <h3 class="font-bold text-lg">{gettext("Import GitHub sub-issues")}</h3>
+      <p class="py-2 text-sm opacity-70">
+        {gettext("Select which GitHub sub-issues to create as subtasks of this request.")}
+      </p>
+
+      <div class="max-h-80 overflow-y-auto space-y-2 py-2">
+        <% selected = @github_subtask_selected %>
+        <%= for sub <- @github_subtask_candidates do %>
+          <% key = "#{sub.owner}/#{sub.repo}##{sub.number}" %>
+          <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 cursor-pointer">
+            <input
+              type="checkbox"
+              class="checkbox checkbox-sm"
+              checked={MapSet.member?(selected, key)}
+              phx-click="toggle_github_subtask"
+              phx-value-key={key}
+            />
+            <span class="flex-1 text-sm">
+              <span class="font-mono opacity-70">#{sub.number}</span>
+              {sub.title}
+            </span>
+            <span class={[
+              "badge badge-sm",
+              if(sub.state == "closed", do: "badge-ghost", else: "badge-success")
+            ]}>
+              {sub.state}
+            </span>
+          </label>
+        <% end %>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" phx-click="cancel_github_subtask_modal" class="btn btn-ghost">
+          {gettext("Cancel")}
+        </button>
+        <button
+          type="button"
+          phx-click="import_github_subtasks"
+          class="btn btn-primary"
+          disabled={MapSet.size(@github_subtask_selected) == 0}
+        >
+          {gettext("Import")} ({MapSet.size(@github_subtask_selected)})
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>

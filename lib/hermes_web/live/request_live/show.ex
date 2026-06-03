@@ -67,6 +67,9 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:mentionable_users, mentionable_users)
      |> assign(:github_enabled, Requests.github_integration_enabled?())
      |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
+     |> assign(:show_github_subtask_modal, false)
+     |> assign(:github_subtask_candidates, [])
+     |> assign(:github_subtask_selected, MapSet.new())
      |> assign(:form, to_form(Requests.change_request(request)))
      |> allow_upload(:images,
        accept: ~w(.jpg .jpeg .png),
@@ -570,14 +573,60 @@ defmodule HermesWeb.RequestLive.Show do
   def handle_event("github_link_issue", %{"github_link" => %{"reference" => reference}}, socket) do
     case Requests.link_github_issue(socket.assigns.request, reference) do
       {:ok, issue} ->
-        {:noreply,
-         socket
-         |> assign(:request, %{socket.assigns.request | github_issue: issue})
-         |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
-         |> put_flash(:info, "Linked GitHub issue ##{issue.number}")}
+        socket =
+          socket
+          |> assign(:request, %{socket.assigns.request | github_issue: issue})
+          |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
+          |> put_flash(:info, "Linked GitHub issue ##{issue.number}")
+
+        {:noreply, maybe_open_github_subtask_modal(socket)}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, github_error_message(reason))}
+    end
+  end
+
+  def handle_event("toggle_github_subtask", %{"key" => key}, socket) do
+    selected = socket.assigns.github_subtask_selected
+
+    selected =
+      if MapSet.member?(selected, key),
+        do: MapSet.delete(selected, key),
+        else: MapSet.put(selected, key)
+
+    {:noreply, assign(socket, :github_subtask_selected, selected)}
+  end
+
+  def handle_event("cancel_github_subtask_modal", _params, socket) do
+    {:noreply, close_github_subtask_modal(socket)}
+  end
+
+  def handle_event("import_github_subtasks", _params, socket) do
+    current_user = socket.assigns[:current_user]
+    user_id = if current_user, do: current_user.id, else: nil
+    selected = socket.assigns.github_subtask_selected
+
+    chosen =
+      Enum.filter(
+        socket.assigns.github_subtask_candidates,
+        &MapSet.member?(selected, subtask_key(&1))
+      )
+
+    case Requests.import_github_subtasks(socket.assigns.request, chosen, user_id) do
+      {:ok, count} ->
+        subtasks = Requests.list_subtasks(socket.assigns.request.id)
+
+        {:noreply,
+         socket
+         |> assign(:subtasks, subtasks)
+         |> close_github_subtask_modal()
+         |> put_flash(:info, "Imported #{count} subtask(s) from GitHub")}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> close_github_subtask_modal()
+         |> put_flash(:error, github_error_message(reason))}
     end
   end
 
@@ -602,9 +651,36 @@ defmodule HermesWeb.RequestLive.Show do
     {:noreply, assign(socket, :request, updated_request)}
   end
 
+  # Fetches the linked parent issue's GitHub sub-issues; opens the import modal
+  # (all preselected) only when there are unimported candidates.
+  defp maybe_open_github_subtask_modal(socket) do
+    case Requests.list_linkable_github_subtasks(socket.assigns.request) do
+      {:ok, [_ | _] = candidates} ->
+        selected = candidates |> Enum.map(&subtask_key/1) |> MapSet.new()
+
+        socket
+        |> assign(:github_subtask_candidates, candidates)
+        |> assign(:github_subtask_selected, selected)
+        |> assign(:show_github_subtask_modal, true)
+
+      _ ->
+        socket
+    end
+  end
+
+  defp close_github_subtask_modal(socket) do
+    socket
+    |> assign(:show_github_subtask_modal, false)
+    |> assign(:github_subtask_candidates, [])
+    |> assign(:github_subtask_selected, MapSet.new())
+  end
+
+  defp subtask_key(%{owner: owner, repo: repo, number: number}), do: "#{owner}/#{repo}##{number}"
+
   defp github_error_message(:integration_disabled), do: "GitHub integration is not configured"
   defp github_error_message(:already_linked), do: "Request is already linked to an issue"
   defp github_error_message(:not_linked), do: "Request is not linked to an issue"
+  defp github_error_message(:parent_not_linked), do: "Request is not linked to an issue"
   defp github_error_message(:invalid_reference), do: "Could not parse the issue reference"
   defp github_error_message(:missing_config), do: "Missing GitHub owner/repo configuration"
   defp github_error_message(:missing_token), do: "Missing GitHub token"

@@ -230,27 +230,8 @@ defmodule Hermes.Requests do
   end
 
   def create_subtask(%Request{} = parent, title, user_id) do
-    attrs = %{
-      title: title,
-      priority: parent.priority || 2,
-      status: "new",
-      requesting_team_id: parent.requesting_team_id,
-      assigned_to_team_id: parent.assigned_to_team_id,
-      created_by_id: user_id
-    }
-
-    result =
-      %Request{}
-      |> Request.changeset(attrs)
-      |> Ecto.Changeset.put_change(:parent_id, parent.id)
-      |> Repo.insert()
-
-    case result do
+    case insert_subtask(parent, %{title: title}, user_id) do
       {:ok, subtask} ->
-        log_change(subtask.id, user_id, "created", %{
-          changes: Map.put(attrs, :parent_id, parent.id)
-        })
-
         maybe_auto_sync_subtask(parent, subtask)
 
         # Re-fetch parent issue to also update its Epic label now that it has a subtask
@@ -263,13 +244,138 @@ defmodule Hermes.Requests do
     end
   end
 
+  # Inserts a subtask row under `parent`, inheriting priority/teams, and logs
+  # the change. Does not perform any GitHub sync — callers decide that.
+  defp insert_subtask(%Request{} = parent, overrides, user_id) do
+    attrs =
+      Map.merge(
+        %{
+          title: nil,
+          priority: parent.priority || 2,
+          status: "new",
+          requesting_team_id: parent.requesting_team_id,
+          assigned_to_team_id: parent.assigned_to_team_id,
+          created_by_id: user_id
+        },
+        overrides
+      )
+
+    result =
+      %Request{}
+      |> Request.changeset(attrs)
+      |> Ecto.Changeset.put_change(:parent_id, parent.id)
+      |> Repo.insert()
+
+    with {:ok, subtask} <- result do
+      log_change(subtask.id, user_id, "created", %{
+        changes: Map.put(attrs, :parent_id, parent.id)
+      })
+
+      {:ok, subtask}
+    end
+  end
+
+  @doc """
+  Lists the parent issue's GitHub sub-issues that are not yet imported as
+  Hermes subtasks. Returns `{:ok, []}` when the request is unlinked or has no
+  remote sub-issues. Each entry carries `owner/repo/number/title/state/url`.
+  """
+  def list_linkable_github_subtasks(%Request{} = parent) do
+    case get_github_issue(parent.id) do
+      nil ->
+        {:ok, []}
+
+      %GitHubIssue{} = parent_issue ->
+        with {:ok, subs} <- GitHub.list_sub_issues(parent_issue) do
+          {:ok, Enum.reject(subs, &github_issue_already_imported?/1)}
+        end
+    end
+  end
+
+  defp github_issue_already_imported?(%{owner: owner, repo: repo, number: number}) do
+    Repo.exists?(
+      from(i in GitHubIssue,
+        where: i.owner == ^owner and i.repo == ^repo and i.number == ^number
+      )
+    )
+  end
+
+  @doc """
+  Imports the given GitHub sub-issues as Hermes subtasks of `parent`. For each
+  entry a subtask row is created, the existing GitHub issue is recorded against
+  it (no new issue is created), and the sub-issue relationship is ensured.
+
+  Each `sub` is a map with `:owner, :repo, :number, :title, :state, :url`
+  (as returned by `list_linkable_github_subtasks/1`). Closed issues yield a
+  subtask with status `completed`. Returns `{:ok, count}` of imported subtasks.
+  """
+  def import_github_subtasks(%Request{} = parent, subs, user_id) when is_list(subs) do
+    case get_github_issue(parent.id) do
+      nil ->
+        {:error, :parent_not_linked}
+
+      %GitHubIssue{} = parent_issue ->
+        imported =
+          subs
+          |> Enum.map(&import_github_subtask(parent, parent_issue, &1, user_id))
+          |> Enum.count(&(&1 == :ok))
+
+        maybe_refresh_parent_epic_label(parent)
+        {:ok, imported}
+    end
+  end
+
+  defp import_github_subtask(%Request{} = parent, %GitHubIssue{} = parent_issue, sub, user_id) do
+    if github_issue_already_imported?(sub) do
+      :skip
+    else
+      status = if sub.state == "closed", do: "completed", else: "new"
+
+      with {:ok, subtask} <-
+             insert_subtask(parent, %{title: subtask_title(sub.title), status: status}, user_id),
+           {:ok, child_issue} <-
+             insert_github_issue(subtask.id, %{
+               owner: sub.owner,
+               repo: sub.repo,
+               number: sub.number,
+               url: sub.url,
+               state: sub.state
+             }) do
+        attach_sub_issue(parent_issue, child_issue)
+        maybe_prefix_issue_title(child_issue, subtask)
+        :ok
+      else
+        {:error, reason} ->
+          Logger.warning(
+            "import_github_subtask failed parent_id=#{parent.id} issue=#{sub.owner}/#{sub.repo}##{sub.number} reason=#{inspect(reason)}"
+          )
+
+          :error
+      end
+    end
+  end
+
+  # Strips a leading `[Hermes #N]` marker so re-imported titles stay clean.
+  defp subtask_title(title) when is_binary(title) do
+    title
+    |> String.replace(~r/^\[Hermes #\d+\]\s*/, "")
+    |> String.trim()
+  end
+
+  defp subtask_title(_), do: "GitHub issue"
+
+  # A freshly-created Hermes subtask must NOT spawn a new GitHub issue under a
+  # linked parent — that would diverge from the parent's existing GitHub
+  # sub-issues. We only ensure the sub-issue relationship when the subtask
+  # already has a GitHub issue (e.g. imported). Pushing a Hermes-only subtask to
+  # GitHub stays an explicit action.
   defp maybe_auto_sync_subtask(%Request{} = parent, %Request{} = subtask) do
     case get_github_issue(parent.id) do
       nil ->
         :ok
 
       %GitHubIssue{} = parent_issue ->
-        sync_subtask_to_github_parent(subtask, parent_issue, [])
+        sync_subtask_to_github_parent(subtask, parent_issue, create: false)
     end
   end
 
@@ -1040,6 +1146,11 @@ defmodule Hermes.Requests do
       not is_nil(existing) ->
         # already linked — just attach sub-issue relationship
         attach_sub_issue(parent_issue, existing)
+
+      # Creation suppressed: a subtask of an already-linked parent stays
+      # Hermes-only unless it is explicitly imported or pushed.
+      Keyword.get(opts, :create, true) == false ->
+        :ok
 
       true ->
         case GitHub.create_issue(subtask, opts) do

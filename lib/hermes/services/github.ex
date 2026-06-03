@@ -295,6 +295,17 @@ defmodule Hermes.Services.GitHub do
     adapter().sub_issue_attached?(parent_node_id, child_node_id)
   end
 
+  @doc """
+  Lists the GitHub sub-issues attached to a linked parent issue, with the
+  metadata needed to import each as a Hermes subtask. Resolves the parent's
+  node id first.
+  """
+  def list_sub_issues(%GitHubIssue{owner: owner, repo: repo, number: number}) do
+    with {:ok, parent_node} <- adapter().get_issue_node_id(owner, repo, number) do
+      adapter().list_sub_issues(parent_node)
+    end
+  end
+
   @doc "Attach a child issue as a sub-issue of a parent issue."
   def add_sub_issue(parent_node_id, child_node_id) do
     Logger.info("GitHub.add_sub_issue parent=#{parent_node_id} child=#{child_node_id}")

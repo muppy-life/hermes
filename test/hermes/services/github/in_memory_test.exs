@@ -86,6 +86,30 @@ defmodule Hermes.Services.GitHub.InMemoryTest do
     assert [] = InMemory.comments_for("a", "r", n)
   end
 
+  test "list_sub_issues returns attached children with metadata" do
+    {:ok, %{number: pn}} =
+      InMemory.create_issue(%{owner: "a", repo: "r", title: "parent", body: "b", labels: []})
+
+    {:ok, %{number: cn}} =
+      InMemory.create_issue(%{owner: "a", repo: "r", title: "child", body: "b", labels: []})
+
+    {:ok, parent_node} = InMemory.get_issue_node_id("a", "r", pn)
+    {:ok, child_node} = InMemory.get_issue_node_id("a", "r", cn)
+
+    # No sub-issues attached yet.
+    assert {:ok, []} = InMemory.list_sub_issues(parent_node)
+
+    {:ok, _} = InMemory.add_sub_issue(parent_node, child_node)
+
+    assert {:ok, [sub]} = InMemory.list_sub_issues(parent_node)
+    assert sub.number == cn
+    assert sub.title == "child"
+    assert sub.state == "open"
+    assert sub.owner == "a"
+    assert sub.repo == "r"
+    assert sub.node_id == child_node
+  end
+
   test "set_state dev helper" do
     {:ok, %{number: n}} =
       InMemory.create_issue(%{owner: "a", repo: "r", title: "t", body: "b", labels: []})

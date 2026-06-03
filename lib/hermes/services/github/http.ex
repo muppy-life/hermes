@@ -286,6 +286,55 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
+  def list_sub_issues(parent_node_id) do
+    query = """
+    query($issueId: ID!) {
+      node(id: $issueId) {
+        ... on Issue {
+          subIssues(first: 100) {
+            nodes {
+              id
+              number
+              title
+              state
+              url
+              repository { name owner { login } }
+            }
+          }
+        }
+      }
+    }
+    """
+
+    case graphql(query, %{"issueId" => parent_node_id}) do
+      {:ok, %{"data" => %{"node" => %{"subIssues" => %{"nodes" => nodes}}}}} ->
+        {:ok, Enum.map(nodes, &decode_sub_issue/1)}
+
+      {:ok, %{"errors" => errors}} ->
+        {:error, {:graphql_error, errors}}
+
+      {:ok, other} ->
+        {:error, {:unexpected_payload, other}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  defp decode_sub_issue(node) do
+    %{
+      node_id: node["id"],
+      number: node["number"],
+      title: node["title"],
+      # GraphQL issue state is uppercase ("OPEN"/"CLOSED"); REST uses lowercase.
+      state: node["state"] |> to_string() |> String.downcase(),
+      url: node["url"],
+      owner: get_in(node, ["repository", "owner", "login"]),
+      repo: get_in(node, ["repository", "name"])
+    }
+  end
+
+  @impl true
   def remove_sub_issue(parent_node_id, child_node_id) do
     query = """
     mutation($issueId: ID!, $subIssueId: ID!) {

@@ -128,4 +128,21 @@ defmodule Hermes.Services.GitHub.Adapter do
   """
   @callback sub_issue_attached?(parent_node_id :: String.t(), child_node_id :: String.t()) ::
               {:ok, boolean()} | {:error, term()}
+
+  @type sub_issue :: %{
+          node_id: String.t(),
+          number: pos_integer(),
+          title: String.t(),
+          state: String.t(),
+          url: String.t(),
+          owner: String.t(),
+          repo: String.t()
+        }
+
+  @doc """
+  Lists the sub-issues currently attached to `parent_node_id`, with enough
+  metadata to import each as a Hermes subtask.
+  """
+  @callback list_sub_issues(parent_node_id :: String.t()) ::
+              {:ok, [sub_issue()]} | {:error, term()}
 end
