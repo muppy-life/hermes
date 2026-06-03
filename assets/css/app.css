@@ -111,7 +111,7 @@
 }
 [data-theme="dark"] {
   --text-2: #a1a1aa;
-  --text-3: #71717a;
+  --text-3: #86868d;
   --text-4: #52525b;
 }
 .text-muted-2 { color: var(--text-2); }
