@@ -286,12 +286,17 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
+  # Returns up to @sub_issues_page_size sub-issues. A parent with more than that
+  # is not paginated through — extremely unusual for sub-issues — but we log a
+  # warning so the truncation is never silent.
+  @sub_issues_page_size 100
+
   def list_sub_issues(parent_node_id) do
     query = """
     query($issueId: ID!) {
       node(id: $issueId) {
         ... on Issue {
-          subIssues(first: 100) {
+          subIssues(first: #{@sub_issues_page_size}) {
             nodes {
               id
               number
@@ -300,6 +305,7 @@ defmodule Hermes.Services.GitHub.HTTP do
               url
               repository { name owner { login } }
             }
+            pageInfo { hasNextPage }
           }
         }
       }
@@ -307,7 +313,17 @@ defmodule Hermes.Services.GitHub.HTTP do
     """
 
     case graphql(query, %{"issueId" => parent_node_id}) do
-      {:ok, %{"data" => %{"node" => %{"subIssues" => %{"nodes" => nodes}}}}} ->
+      {:ok, %{"data" => %{"node" => %{"subIssues" => %{"nodes" => nodes} = sub_issues}}}} ->
+        if get_in(sub_issues, ["pageInfo", "hasNextPage"]) do
+          Logger.warning(
+            "GitHub list_sub_issues truncated: parent has more than #{@sub_issues_page_size} sub-issues; only the first #{@sub_issues_page_size} are returned",
+            github_api: :graphql,
+            github_operation: "subIssues",
+            sub_issue_truncated: true,
+            sub_issue_count: length(nodes)
+          )
+        end
+
         {:ok, Enum.map(nodes, &decode_sub_issue/1)}
 
       {:ok, %{"errors" => errors}} ->

@@ -331,20 +331,38 @@ defmodule Hermes.Requests do
     else
       status = if sub.state == "closed", do: "completed", else: "new"
 
-      with {:ok, subtask} <-
-             insert_subtask(parent, %{title: subtask_title(sub.title), status: status}, user_id),
-           {:ok, child_issue} <-
-             insert_github_issue(subtask.id, %{
-               owner: sub.owner,
-               repo: sub.repo,
-               number: sub.number,
-               url: sub.url,
-               state: sub.state
-             }) do
-        attach_sub_issue(parent_issue, child_issue)
-        maybe_prefix_issue_title(child_issue, subtask)
-        :ok
-      else
+      # The subtask row and its GitHub link must persist together — otherwise a
+      # failed link insert (e.g. a unique-constraint clash from a concurrent
+      # import) would leave an orphaned subtask diverging from GitHub. The
+      # GitHub API calls run only after the DB writes commit.
+      txn =
+        Repo.transaction(fn ->
+          with {:ok, subtask} <-
+                 insert_subtask(
+                   parent,
+                   %{title: subtask_title(sub.title), status: status},
+                   user_id
+                 ),
+               {:ok, child_issue} <-
+                 insert_github_issue(subtask.id, %{
+                   owner: sub.owner,
+                   repo: sub.repo,
+                   number: sub.number,
+                   url: sub.url,
+                   state: sub.state
+                 }) do
+            {subtask, child_issue}
+          else
+            {:error, reason} -> Repo.rollback(reason)
+          end
+        end)
+
+      case txn do
+        {:ok, {subtask, child_issue}} ->
+          attach_sub_issue(parent_issue, child_issue)
+          maybe_prefix_issue_title(child_issue, subtask)
+          :ok
+
         {:error, reason} ->
           Logger.warning(
             "import_github_subtask failed parent_id=#{parent.id} issue=#{sub.owner}/#{sub.repo}##{sub.number} reason=#{inspect(reason)}"
@@ -929,7 +947,7 @@ defmodule Hermes.Requests do
     with :ok <- ensure_not_linked(request),
          {:ok, {owner, repo, number}} <- GitHub.parse_issue_reference(reference),
          {:ok, {resolved_owner, resolved_repo}} <- resolve_link_target(owner, repo),
-         {:ok, %{url: url, state: state}} <-
+         {:ok, %{url: url, state: state, title: title}} <-
            GitHub.get_issue(resolved_owner, resolved_repo, number) do
       # Linking only records the existing GH issue — no cascade, no sub-issue
       # creation, no body/label mutation. The pre-existing GH structure is
@@ -943,7 +961,8 @@ defmodule Hermes.Requests do
                url: url,
                state: state
              }) do
-        maybe_prefix_issue_title(issue, request)
+        # Reuse the title just fetched to avoid a redundant GitHub read.
+        maybe_prefix_issue_title(issue, request, current_title: title)
         {:ok, maybe_post_link_comment(issue, request)}
       end
     end
@@ -979,8 +998,8 @@ defmodule Hermes.Requests do
 
   # Prepends `[Hermes #<id>]` to the existing issue title on link.
   # Best-effort: a failed title update never blocks linking.
-  defp maybe_prefix_issue_title(%GitHubIssue{} = issue, %Request{} = request) do
-    case GitHub.prefix_issue_title(issue, request) do
+  defp maybe_prefix_issue_title(%GitHubIssue{} = issue, %Request{} = request, opts \\ []) do
+    case GitHub.prefix_issue_title(issue, request, opts) do
       {:ok, _} ->
         :ok
 

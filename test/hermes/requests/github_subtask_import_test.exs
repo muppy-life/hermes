@@ -164,6 +164,35 @@ defmodule Hermes.Requests.GitHubSubtaskImportTest do
     refute Requests.get_request_with_github_issue(subtask.id).github_issue
   end
 
+  test "linking does not stack a second [Hermes #] marker on the title", %{
+    request: request
+  } do
+    alias Hermes.Requests.GitHubIssue
+    alias Hermes.Services.GitHub
+
+    {:ok, %{number: n}} =
+      InMemory.create_issue(%{
+        owner: "dev-org",
+        repo: "hermes-fake",
+        # Simulate a stale marker from a previous (now-removed) link.
+        title: "[Hermes #99] Build login form",
+        body: "b",
+        labels: []
+      })
+
+    {:ok, _} = Requests.link_github_issue(request, Integer.to_string(n))
+
+    {:ok, %{title: title}} = GitHub.get_issue("dev-org", "hermes-fake", n)
+
+    # The stale marker is replaced, not stacked.
+    assert title == "[Hermes ##{request.id}] Build login form"
+    refute title =~ "[Hermes #99]"
+
+    # Re-prefixing for the same request is a no-op (idempotent).
+    issue = %GitHubIssue{owner: "dev-org", repo: "hermes-fake", number: n}
+    assert {:ok, :noop} = GitHub.prefix_issue_title(issue, request)
+  end
+
   defp restore_env(key, nil), do: Application.delete_env(:hermes, key)
   defp restore_env(key, value), do: Application.put_env(:hermes, key, value)
 end

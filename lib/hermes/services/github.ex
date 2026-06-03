@@ -160,29 +160,41 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
-  Prepends the `[Hermes #<id>]` marker to an existing issue's current title,
-  preserving the rest. No-op when the marker is already present so re-linking or
-  syncing never double-prefixes. Body and labels are left untouched.
+  Prepends the `[Hermes #<id>]` marker to an existing issue's title, preserving
+  the rest. Any existing `[Hermes #N]` marker is stripped first, so re-linking,
+  syncing, or re-linking under a different request never stacks markers. No-op
+  when the title already carries exactly this request's marker. Body and labels
+  are left untouched.
+
+  Pass `current_title:` to skip the GitHub read when the caller already has the
+  issue's current title.
   """
-  def prefix_issue_title(%GitHubIssue{} = issue, %Request{id: id}) do
+  def prefix_issue_title(%GitHubIssue{} = issue, %Request{} = request, opts \\ []) do
+    case Keyword.fetch(opts, :current_title) do
+      {:ok, current} -> apply_issue_title_prefix(issue, request, current)
+      :error -> fetch_and_prefix_issue_title(issue, request)
+    end
+  end
+
+  defp fetch_and_prefix_issue_title(%GitHubIssue{} = issue, %Request{} = request) do
     %GitHubIssue{owner: owner, repo: repo, number: number} = issue
 
     case get_issue(owner, repo, number) do
-      {:ok, %{title: current}} ->
-        prefix = issue_marker(id)
+      {:ok, %{title: current}} -> apply_issue_title_prefix(issue, request, current)
+      {:error, _} = err -> err
+    end
+  end
 
-        if String.starts_with?(current || "", prefix) do
-          {:ok, :noop}
-        else
-          new_title = "#{prefix} #{current}" |> String.trim()
+  defp apply_issue_title_prefix(%GitHubIssue{} = issue, %Request{id: id}, current) do
+    %GitHubIssue{owner: owner, repo: repo, number: number} = issue
+    desired = "#{issue_marker(id)} #{strip_issue_marker(current)}" |> String.trim()
 
-          %{owner: owner, repo: repo, number: number}
-          |> adapter().set_issue_title(new_title)
-          |> log_result("set_issue_title", "#{owner}/#{repo}##{number}")
-        end
-
-      {:error, _} = err ->
-        err
+    if (current || "") == desired do
+      {:ok, :noop}
+    else
+      %{owner: owner, repo: repo, number: number}
+      |> adapter().set_issue_title(desired)
+      |> log_result("set_issue_title", "#{owner}/#{repo}##{number}")
     end
   end
 
@@ -461,6 +473,15 @@ defmodule Hermes.Services.GitHub do
   end
 
   defp issue_marker(id), do: "[Hermes ##{id}]"
+
+  # Removes a leading `[Hermes #N]` marker (any id) so we never stack markers.
+  defp strip_issue_marker(nil), do: ""
+
+  defp strip_issue_marker(title) when is_binary(title) do
+    title
+    |> String.replace(~r/^\[Hermes #\d+\]\s*/, "")
+    |> String.trim()
+  end
 
   defp labels_for(%Request{} = r) do
     []

@@ -663,8 +663,19 @@ defmodule HermesWeb.RequestLive.Show do
         |> assign(:github_subtask_selected, selected)
         |> assign(:show_github_subtask_modal, true)
 
-      _ ->
+      {:ok, []} ->
+        # Linked, but the issue has no (unimported) sub-issues — nothing to offer.
         socket
+
+      {:error, reason} ->
+        # The link itself succeeded; only the sub-issue lookup failed. Surface it
+        # so the user knows sub-issues could not be fetched, rather than silently
+        # showing nothing.
+        put_flash(
+          socket,
+          :error,
+          "Linked, but could not load GitHub sub-issues: #{github_error_message(reason)}"
+        )
     end
   end
 
