@@ -103,6 +103,14 @@ defmodule Hermes.Services.GitHub.InMemory do
   end
 
   @impl true
+  def set_issue_title(%{owner: owner, repo: repo, number: number}, title)
+      when is_binary(title) do
+    mutate(owner, repo, number, fn issue ->
+      %{issue | title: title, updated_at: DateTime.utc_now()}
+    end)
+  end
+
+  @impl true
   def set_issue_state(issue_ref, state) when state in [:open, :closed] do
     set_issue_state(issue_ref, state, [])
   end
@@ -161,8 +169,11 @@ defmodule Hermes.Services.GitHub.InMemory do
   @impl true
   def get_issue(owner, repo, number) when is_integer(number) do
     case Agent.get(__MODULE__, &Map.get(&1.issues, {owner, repo, number})) do
-      nil -> {:error, {:http_error, 404, %{"message" => "Not Found"}}}
-      issue -> {:ok, %{number: issue.number, url: issue.url, state: issue.state}}
+      nil ->
+        {:error, {:http_error, 404, %{"message" => "Not Found"}}}
+
+      issue ->
+        {:ok, %{number: issue.number, url: issue.url, state: issue.state, title: issue.title}}
     end
   end
 

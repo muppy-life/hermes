@@ -45,7 +45,7 @@ defmodule Hermes.Services.GitHubTest do
       assert body =~ "Important"
       assert body =~ "### Current situation"
       assert body =~ "users randomly logged out"
-      assert body =~ "Synced from Hermes request #99"
+      assert body =~ "Synced from Hermes request [#99](http://localhost:4002/backlog/99)"
     end
 
     test "skips empty sections" do

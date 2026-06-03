@@ -160,6 +160,33 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
+  Prepends the `[Hermes #<id>]` marker to an existing issue's current title,
+  preserving the rest. No-op when the marker is already present so re-linking or
+  syncing never double-prefixes. Body and labels are left untouched.
+  """
+  def prefix_issue_title(%GitHubIssue{} = issue, %Request{id: id}) do
+    %GitHubIssue{owner: owner, repo: repo, number: number} = issue
+
+    case get_issue(owner, repo, number) do
+      {:ok, %{title: current}} ->
+        prefix = issue_marker(id)
+
+        if String.starts_with?(current || "", prefix) do
+          {:ok, :noop}
+        else
+          new_title = "#{prefix} #{current}" |> String.trim()
+
+          %{owner: owner, repo: repo, number: number}
+          |> adapter().set_issue_title(new_title)
+          |> log_result("set_issue_title", "#{owner}/#{repo}##{number}")
+        end
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  @doc """
   Deletes the "Linked to Hermes" comment by its stored id. No-op when the id
   is missing (e.g. issues linked before this feature, or a failed post).
   """
@@ -204,7 +231,7 @@ defmodule Hermes.Services.GitHub do
     """
     🔗 **Linked to Hermes**
 
-    This GitHub issue is tracked by Hermes request ##{id}#{title_suffix}.
+    This GitHub issue is tracked by Hermes request [##{id}](#{request_url(id)})#{title_suffix}.
 
     👉 #{request_url(id)}
 
@@ -383,7 +410,7 @@ defmodule Hermes.Services.GitHub do
       ]
       |> Enum.reject(&is_nil/1)
 
-    footer = "\n\n---\n_Synced from Hermes request ##{r.id}_"
+    footer = "\n\n---\n_Synced from Hermes request [##{r.id}](#{request_url(r.id)})_"
 
     Enum.join(sections, "\n\n") <> footer
   end
@@ -401,8 +428,10 @@ defmodule Hermes.Services.GitHub do
 
   defp issue_title(%Request{title: title, id: id}) do
     base = title || "Hermes request"
-    "[Hermes ##{id}] #{base}"
+    "#{issue_marker(id)} #{base}"
   end
+
+  defp issue_marker(id), do: "[Hermes ##{id}]"
 
   defp labels_for(%Request{} = r) do
     []

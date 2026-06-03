@@ -126,8 +126,13 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
             json(conn, 200, %{
               "number" => 55,
               "html_url" => "https://github.com/acme/main/issues/55",
-              "state" => "open"
+              "state" => "open",
+              "title" => "Existing issue title"
             })
+
+          conn.method == "PATCH" and conn.request_path == "/repos/acme/main/issues/55" ->
+            send(test_pid, {:title, read_body(conn)})
+            json(conn, 200, %{"number" => 55})
 
           conn.request_path == "/repos/acme/main/issues/55/comments" ->
             send(test_pid, {:comment, read_body(conn)})
@@ -140,6 +145,9 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
       assert issue.repo == "main"
       assert issue.state == "open"
       assert issue.link_comment_id == 12_345
+
+      assert_received {:title, title_body}
+      assert title_body =~ "[Hermes ##{request.id}] Existing issue title"
 
       assert_received {:comment, body}
       assert body =~ "hermes:link:#{request.id}"
@@ -154,8 +162,12 @@ defmodule Hermes.Requests.GitHubIntegrationTest do
             json(conn, 200, %{
               "number" => 3,
               "html_url" => "https://github.com/acme/other/issues/3",
-              "state" => "closed"
+              "state" => "closed",
+              "title" => "Some issue"
             })
+
+          conn.method == "PATCH" and conn.request_path == "/repos/acme/other/issues/3" ->
+            json(conn, 200, %{"number" => 3})
 
           conn.request_path == "/repos/acme/other/issues/3/comments" ->
             json(conn, 201, %{"id" => 3})

@@ -41,6 +41,12 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
+  def set_issue_title(%{owner: owner, repo: repo, number: number}, title)
+      when is_binary(title) do
+    patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"title" => title})
+  end
+
+  @impl true
   def set_issue_state(issue_ref, state) when state in [:open, :closed] do
     set_issue_state(issue_ref, state, [])
   end
@@ -73,8 +79,8 @@ defmodule Hermes.Services.GitHub.HTTP do
   @impl true
   def get_issue(owner, repo, number) when is_integer(number) do
     case get("/repos/#{owner}/#{repo}/issues/#{number}") do
-      {:ok, %{"number" => n, "html_url" => url, "state" => state}} ->
-        {:ok, %{number: n, url: url, state: state}}
+      {:ok, %{"number" => n, "html_url" => url, "state" => state} = issue} ->
+        {:ok, %{number: n, url: url, state: state, title: Map.get(issue, "title", "")}}
 
       {:ok, other} ->
         {:error, {:unexpected_payload, other}}

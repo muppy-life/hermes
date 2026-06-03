@@ -827,7 +827,8 @@ defmodule Hermes.Requests do
            GitHub.get_issue(resolved_owner, resolved_repo, number) do
       # Linking only records the existing GH issue — no cascade, no sub-issue
       # creation, no body/label mutation. The pre-existing GH structure is
-      # preserved; reachability back to Hermes is added as a comment only.
+      # preserved; the title gains a `[Hermes #<id>]` prefix and reachability
+      # back to Hermes is added as a comment.
       with {:ok, issue} <-
              insert_github_issue(request.id, %{
                owner: resolved_owner,
@@ -836,6 +837,7 @@ defmodule Hermes.Requests do
                url: url,
                state: state
              }) do
+        maybe_prefix_issue_title(issue, request)
         {:ok, maybe_post_link_comment(issue, request)}
       end
     end
@@ -866,6 +868,22 @@ defmodule Hermes.Requests do
         )
 
         issue
+    end
+  end
+
+  # Prepends `[Hermes #<id>]` to the existing issue title on link.
+  # Best-effort: a failed title update never blocks linking.
+  defp maybe_prefix_issue_title(%GitHubIssue{} = issue, %Request{} = request) do
+    case GitHub.prefix_issue_title(issue, request) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(
+          "prefix issue title failed issue=#{issue.owner}/#{issue.repo}##{issue.number} reason=#{inspect(reason)}"
+        )
+
+        :ok
     end
   end
 
