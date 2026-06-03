@@ -381,6 +381,11 @@ msgstr "Normal"
 msgid "Pending"
 msgstr "Pending"
 
+#: lib/hermes_web/components/core_components.ex
+#, elixir-autogen, elixir-format
+msgid "Future Planning"
+msgstr "Future Planning"
+
 #: lib/hermes_web/components/core_components.ex:620
 #: lib/hermes_web/components/core_components.ex:816
 #: lib/hermes_web/live/dashboard_live.ex:208

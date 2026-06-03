@@ -43,6 +43,12 @@
         <div class="text-yellow-700 mt-1">{gettext("Pending")}</div>
       </div>
     </.link>
+    <.link navigate={~p"/backlog?status=future_planning&tab=ongoing"} class="block">
+      <div class="bg-teal-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
+        <div class="text-3xl font-bold text-teal-900">{@stats.future_planning}</div>
+        <div class="text-teal-700 mt-1">{gettext("Future Planning")}</div>
+      </div>
+    </.link>
     <.link navigate={~p"/backlog?status=in_progress&tab=ongoing"} class="block">
       <div class="bg-purple-100 rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all cursor-pointer">
         <div class="text-3xl font-bold text-purple-900">{@stats.in_progress}</div>

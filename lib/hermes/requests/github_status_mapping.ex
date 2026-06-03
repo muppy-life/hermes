@@ -9,7 +9,7 @@ defmodule Hermes.Requests.GitHubStatusMapping do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @hermes_statuses ~w(new need_requirement pending in_progress review completed blocked)
+  @hermes_statuses ~w(new need_requirement pending future_planning in_progress review completed blocked)
 
   schema "github_status_mappings" do
     field :github_option_id, :string
