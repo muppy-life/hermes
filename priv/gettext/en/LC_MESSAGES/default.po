@@ -14,24 +14,24 @@ msgid "All"
 msgstr "All"
 
 # Filters
-#: lib/hermes_web/components/core_components.ex:842
+#: lib/hermes_web/components/core_components.ex:850
 #: lib/hermes_web/live/kanban_live/board.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "All Priorities"
 msgstr "All Priorities"
 
-#: lib/hermes_web/components/core_components.ex:852
+#: lib/hermes_web/components/core_components.ex:860
 #: lib/hermes_web/live/kanban_live/board.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "All Teams"
 msgstr "All Teams"
 
-#: lib/hermes_web/live/request_live/show.html.heex:747
+#: lib/hermes_web/live/request_live/show.html.heex:748
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this request? This action cannot be undone."
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:722
+#: lib/hermes_web/live/request_live/show.html.heex:723
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Assign To Team"
 msgstr "Assigned To"
@@ -48,8 +48,8 @@ msgstr "Assigned To"
 msgid "Assigned to Us"
 msgstr "Assigned to Us"
 
-#: lib/hermes_web/components/layouts.ex:180
-#: lib/hermes_web/components/layouts.ex:192
+#: lib/hermes_web/components/layouts.ex:228
+#: lib/hermes_web/components/layouts.ex:240
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
@@ -62,17 +62,17 @@ msgstr ""
 msgid "Back"
 msgstr "Back"
 
-#: lib/hermes_web/components/core_components.ex:624
-#: lib/hermes_web/components/core_components.ex:831
-#: lib/hermes_web/live/dashboard_live.ex:319
-#: lib/hermes_web/live/dashboard_live.html.heex:67
-#: lib/hermes_web/live/request_live/show.ex:679
-#: lib/hermes_web/live/request_live/show.html.heex:706
+#: lib/hermes_web/components/core_components.ex:625
+#: lib/hermes_web/components/core_components.ex:839
+#: lib/hermes_web/live/dashboard_live.ex:342
+#: lib/hermes_web/live/dashboard_live.html.heex:73
+#: lib/hermes_web/live/request_live/show.ex:680
+#: lib/hermes_web/live/request_live/show.html.heex:707
 #, elixir-autogen, elixir-format
 msgid "Blocked"
 msgstr "Blocked"
 
-#: lib/hermes_web/components/layouts.ex:79
+#: lib/hermes_web/components/layouts.ex:78
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "Boards"
@@ -80,10 +80,10 @@ msgstr "Boards"
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:352
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:525
 #: lib/hermes_web/live/request_live/show.html.heex:425
-#: lib/hermes_web/live/request_live/show.html.heex:730
-#: lib/hermes_web/live/request_live/show.html.heex:751
-#: lib/hermes_web/live/request_live/show.html.heex:853
-#: lib/hermes_web/live/request_live/show.html.heex:903
+#: lib/hermes_web/live/request_live/show.html.heex:731
+#: lib/hermes_web/live/request_live/show.html.heex:752
+#: lib/hermes_web/live/request_live/show.html.heex:854
+#: lib/hermes_web/live/request_live/show.html.heex:904
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "Cancel"
@@ -103,12 +103,12 @@ msgstr ""
 msgid "Choose a status"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:723
+#: lib/hermes_web/live/request_live/show.html.heex:724
 #, elixir-autogen, elixir-format
 msgid "Choose a team (optional)"
 msgstr ""
 
-#: lib/hermes_web/components/core_components.ex:862
+#: lib/hermes_web/components/core_components.ex:870
 #: lib/hermes_web/live/kanban_live/board.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Clear"
@@ -124,12 +124,12 @@ msgstr ""
 msgid "Comments"
 msgstr "Comments"
 
-#: lib/hermes_web/components/core_components.ex:623
-#: lib/hermes_web/components/core_components.ex:828
-#: lib/hermes_web/live/dashboard_live.ex:298
-#: lib/hermes_web/live/dashboard_live.html.heex:61
-#: lib/hermes_web/live/request_live/show.ex:678
-#: lib/hermes_web/live/request_live/show.html.heex:705
+#: lib/hermes_web/components/core_components.ex:624
+#: lib/hermes_web/components/core_components.ex:836
+#: lib/hermes_web/live/dashboard_live.ex:321
+#: lib/hermes_web/live/dashboard_live.html.heex:67
+#: lib/hermes_web/live/request_live/show.ex:679
+#: lib/hermes_web/live/request_live/show.html.heex:706
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr "Completed"
@@ -139,7 +139,7 @@ msgstr "Completed"
 msgid "Completed Requests"
 msgstr "Completed"
 
-#: lib/hermes_web/live/request_live/show.html.heex:745
+#: lib/hermes_web/live/request_live/show.html.heex:746
 #, elixir-autogen, elixir-format
 msgid "Confirm Delete"
 msgstr ""
@@ -166,8 +166,8 @@ msgid "Creating..."
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:542
-#: lib/hermes_web/components/core_components.ex:844
-#: lib/hermes_web/live/dashboard_live.html.heex:182
+#: lib/hermes_web/components/core_components.ex:852
+#: lib/hermes_web/live/dashboard_live.html.heex:188
 #: lib/hermes_web/live/kanban_live/board.html.heex:61
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:246
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:461
@@ -177,7 +177,7 @@ msgid "Critical"
 msgstr "Critical"
 
 # Navigation
-#: lib/hermes_web/components/layouts.ex:73
+#: lib/hermes_web/components/layouts.ex:72
 #, elixir-autogen, elixir-format
 msgid "Dashboard"
 msgstr "Dashboard"
@@ -188,7 +188,7 @@ msgstr "Dashboard"
 msgid "Delete"
 msgstr "Delete"
 
-#: lib/hermes_web/live/request_live/show.html.heex:754
+#: lib/hermes_web/live/request_live/show.html.heex:755
 #, elixir-autogen, elixir-format
 msgid "Delete Request"
 msgstr "Delete Request"
@@ -208,7 +208,7 @@ msgstr "Edit Request"
 msgid "Failed to update status"
 msgstr "Failed to update status"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:220
+#: lib/hermes_web/live/dashboard_live.html.heex:226
 #: lib/hermes_web/live/request_live/show.html.heex:631
 #, elixir-autogen, elixir-format
 msgid "From:"
@@ -231,8 +231,8 @@ msgid "History"
 msgstr "History"
 
 #: lib/hermes_web/components/core_components.ex:541
-#: lib/hermes_web/components/core_components.ex:845
-#: lib/hermes_web/live/dashboard_live.html.heex:179
+#: lib/hermes_web/components/core_components.ex:853
+#: lib/hermes_web/live/dashboard_live.html.heex:185
 #: lib/hermes_web/live/kanban_live/board.html.heex:62
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:247
 #: lib/hermes_web/live/request_live/show.html.heex:690
@@ -245,12 +245,12 @@ msgstr "Important"
 msgid "Improvement suggestion"
 msgstr ""
 
-#: lib/hermes_web/components/core_components.ex:622
-#: lib/hermes_web/components/core_components.ex:822
-#: lib/hermes_web/live/dashboard_live.ex:250
-#: lib/hermes_web/live/dashboard_live.html.heex:49
+#: lib/hermes_web/components/core_components.ex:623
+#: lib/hermes_web/components/core_components.ex:830
+#: lib/hermes_web/live/dashboard_live.ex:273
+#: lib/hermes_web/live/dashboard_live.html.heex:55
 #: lib/hermes_web/live/kanban_live/index.html.heex:19
-#: lib/hermes_web/live/request_live/show.html.heex:703
+#: lib/hermes_web/live/request_live/show.html.heex:704
 #, elixir-autogen, elixir-format
 msgid "In Progress"
 msgstr "In Progress"
@@ -272,8 +272,8 @@ msgstr ""
 
 # Priority levels
 #: lib/hermes_web/components/core_components.ex:539
-#: lib/hermes_web/components/core_components.ex:847
-#: lib/hermes_web/live/dashboard_live.html.heex:173
+#: lib/hermes_web/components/core_components.ex:855
+#: lib/hermes_web/live/dashboard_live.html.heex:179
 #: lib/hermes_web/live/kanban_live/board.html.heex:64
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:249
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:278
@@ -290,9 +290,9 @@ msgid "Manage your team workflows"
 msgstr ""
 
 # Status values
-#: lib/hermes_web/components/core_components.ex:625
-#: lib/hermes_web/components/core_components.ex:811
-#: lib/hermes_web/live/dashboard_live.ex:187
+#: lib/hermes_web/components/core_components.ex:626
+#: lib/hermes_web/components/core_components.ex:813
+#: lib/hermes_web/live/dashboard_live.ex:189
 #: lib/hermes_web/live/dashboard_live.html.heex:31
 #: lib/hermes_web/live/kanban_live/index.html.heex:15
 #: lib/hermes_web/live/notification_live/index.html.heex:44
@@ -329,7 +329,7 @@ msgstr ""
 msgid "No boards available for your team yet."
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:318
+#: lib/hermes_web/live/dashboard_live.html.heex:324
 #, elixir-autogen, elixir-format
 msgid "No boards available."
 msgstr ""
@@ -355,14 +355,14 @@ msgstr ""
 msgid "No requests found matching your filters."
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:251
+#: lib/hermes_web/live/dashboard_live.html.heex:257
 #, elixir-autogen, elixir-format
 msgid "No requests yet."
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:540
-#: lib/hermes_web/components/core_components.ex:846
-#: lib/hermes_web/live/dashboard_live.html.heex:176
+#: lib/hermes_web/components/core_components.ex:854
+#: lib/hermes_web/live/dashboard_live.html.heex:182
 #: lib/hermes_web/live/kanban_live/board.html.heex:63
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:248
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:475
@@ -372,8 +372,8 @@ msgid "Normal"
 msgstr "Normal"
 
 #: lib/hermes_web/components/core_components.ex:621
-#: lib/hermes_web/components/core_components.ex:819
-#: lib/hermes_web/live/dashboard_live.ex:229
+#: lib/hermes_web/components/core_components.ex:821
+#: lib/hermes_web/live/dashboard_live.ex:231
 #: lib/hermes_web/live/dashboard_live.html.heex:43
 #: lib/hermes_web/live/request_live/show.ex:675
 #: lib/hermes_web/live/request_live/show.html.heex:702
@@ -381,14 +381,19 @@ msgstr "Normal"
 msgid "Pending"
 msgstr "Pending"
 
-#: lib/hermes_web/components/core_components.ex
+#: lib/hermes_web/components/core_components.ex:622
+#: lib/hermes_web/components/core_components.ex:827
+#: lib/hermes_web/live/dashboard_live.ex:252
+#: lib/hermes_web/live/dashboard_live.html.heex:49
+#: lib/hermes_web/live/request_live/show.ex:676
+#: lib/hermes_web/live/request_live/show.html.heex:703
 #, elixir-autogen, elixir-format
 msgid "Future Planning"
 msgstr "Future Planning"
 
 #: lib/hermes_web/components/core_components.ex:620
-#: lib/hermes_web/components/core_components.ex:816
-#: lib/hermes_web/live/dashboard_live.ex:208
+#: lib/hermes_web/components/core_components.ex:818
+#: lib/hermes_web/live/dashboard_live.ex:210
 #: lib/hermes_web/live/dashboard_live.html.heex:37
 #: lib/hermes_web/live/request_live/show.ex:674
 #: lib/hermes_web/live/request_live/show.html.heex:701
@@ -413,7 +418,7 @@ msgstr "Priority"
 msgid "Problem with current app or service"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:195
+#: lib/hermes_web/live/dashboard_live.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Recent Requests"
 msgstr ""
@@ -428,32 +433,32 @@ msgstr "Request created successfully"
 #: lib/hermes_web/live/request_live/index.html.heex:111
 #: lib/hermes_web/live/request_live/index.html.heex:249
 #: lib/hermes_web/live/request_live/index.html.heex:387
-#: lib/hermes_web/live/request_live/show.html.heex:715
+#: lib/hermes_web/live/request_live/show.html.heex:716
 #, elixir-autogen, elixir-format
 msgid "Requesting Team"
 msgstr "Requesting Team"
 
-#: lib/hermes_web/components/core_components.ex:626
-#: lib/hermes_web/components/core_components.ex:825
-#: lib/hermes_web/live/dashboard_live.ex:271
-#: lib/hermes_web/live/dashboard_live.html.heex:55
-#: lib/hermes_web/live/request_live/show.ex:677
-#: lib/hermes_web/live/request_live/show.html.heex:704
+#: lib/hermes_web/components/core_components.ex:627
+#: lib/hermes_web/components/core_components.ex:833
+#: lib/hermes_web/live/dashboard_live.ex:294
+#: lib/hermes_web/live/dashboard_live.html.heex:61
+#: lib/hermes_web/live/request_live/show.ex:678
+#: lib/hermes_web/live/request_live/show.html.heex:705
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr "Review"
 
-#: lib/hermes_web/live/request_live/show.html.heex:733
+#: lib/hermes_web/live/request_live/show.html.heex:734
 #, elixir-autogen, elixir-format
 msgid "Save Changes"
 msgstr "Save Changes"
 
-#: lib/hermes_web/live/request_live/show.html.heex:732
+#: lib/hermes_web/live/request_live/show.html.heex:733
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr ""
 
-#: lib/hermes_web/components/layouts.ex:187
+#: lib/hermes_web/components/layouts.ex:235
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
@@ -492,7 +497,7 @@ msgstr ""
 msgid "Title"
 msgstr "Title"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:225
+#: lib/hermes_web/live/dashboard_live.html.heex:231
 #: lib/hermes_web/live/request_live/show.html.heex:637
 #, elixir-autogen, elixir-format
 msgid "To:"
@@ -518,8 +523,8 @@ msgstr ""
 msgid "Unassigned"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:231
-#: lib/hermes_web/live/dashboard_live.html.heex:307
+#: lib/hermes_web/live/dashboard_live.html.heex:237
+#: lib/hermes_web/live/dashboard_live.html.heex:313
 #: lib/hermes_web/live/kanban_live/board.html.heex:212
 #: lib/hermes_web/live/request_live/index.html.heex:151
 #: lib/hermes_web/live/request_live/index.html.heex:289
@@ -529,13 +534,13 @@ msgstr ""
 msgid "Updated"
 msgstr "Updated At"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:197
-#: lib/hermes_web/live/dashboard_live.html.heex:259
+#: lib/hermes_web/live/dashboard_live.html.heex:203
+#: lib/hermes_web/live/dashboard_live.html.heex:265
 #, elixir-autogen, elixir-format
 msgid "View all"
 msgstr ""
 
-#: lib/hermes_web/components/layouts.ex:175
+#: lib/hermes_web/components/layouts.ex:223
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -550,17 +555,17 @@ msgstr ""
 msgid "What form should the solution take?"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:257
+#: lib/hermes_web/live/dashboard_live.html.heex:263
 #, elixir-autogen, elixir-format
 msgid "Your Boards"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:290
+#: lib/hermes_web/live/dashboard_live.html.heex:296
 #, elixir-autogen, elixir-format
 msgid "active"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:302
+#: lib/hermes_web/live/dashboard_live.html.heex:308
 #, elixir-autogen, elixir-format, fuzzy
 msgid "blocked"
 msgstr "Blocked"
@@ -570,32 +575,32 @@ msgstr "Blocked"
 msgid "close"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:298
+#: lib/hermes_web/live/dashboard_live.html.heex:304
 #, elixir-autogen, elixir-format
 msgid "done"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:278
+#: lib/hermes_web/live/dashboard_live.html.heex:284
 #, elixir-autogen, elixir-format
 msgid "new"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:286
+#: lib/hermes_web/live/dashboard_live.html.heex:292
 #, elixir-autogen, elixir-format, fuzzy
 msgid "pending"
 msgstr "Pending"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:282
+#: lib/hermes_web/live/dashboard_live.html.heex:288
 #, elixir-autogen, elixir-format, fuzzy
 msgid "need requirement"
 msgstr "need requirement"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:294
+#: lib/hermes_web/live/dashboard_live.html.heex:300
 #, elixir-autogen, elixir-format, fuzzy
 msgid "review"
 msgstr "Review"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:274
+#: lib/hermes_web/live/dashboard_live.html.heex:280
 #, elixir-autogen, elixir-format
 msgid "total"
 msgstr ""
@@ -661,46 +666,47 @@ msgstr "New Request"
 msgid "user@example.com"
 msgstr ""
 
-#: lib/hermes_web/components/core_components.ex:688
-#: lib/hermes_web/components/core_components.ex:689
+#: lib/hermes_web/components/core_components.ex:690
+#: lib/hermes_web/components/core_components.ex:691
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:254
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:441
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Improvement"
 msgstr ""
 
-#: lib/hermes_web/components/core_components.ex:686
-#: lib/hermes_web/components/core_components.ex:687
+#: lib/hermes_web/components/core_components.ex:688
+#: lib/hermes_web/components/core_components.ex:689
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New Need"
 msgstr ""
 
-#: lib/hermes_web/components/core_components.ex:684
-#: lib/hermes_web/components/core_components.ex:685
+#: lib/hermes_web/components/core_components.ex:686
+#: lib/hermes_web/components/core_components.ex:687
 #, elixir-autogen, elixir-format
 msgid "Problem"
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:543
-#: lib/hermes_web/components/core_components.ex:692
-#: lib/hermes_web/live/request_live/show.ex:693
-#: lib/hermes_web/live/request_live/show.ex:705
+#: lib/hermes_web/components/core_components.ex:694
+#: lib/hermes_web/live/request_live/show.ex:694
+#: lib/hermes_web/live/request_live/show.ex:706
 #: lib/hermes_web/live/request_live/show.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr ""
 
-#: lib/hermes_web/components/core_components.ex:809
+#: lib/hermes_web/components/core_components.ex:811
 #, elixir-autogen, elixir-format, fuzzy
 msgid "All Statuses"
 msgstr "Status"
 
-#: lib/hermes_web/components/core_components.ex:869
+#: lib/hermes_web/components/core_components.ex:877
 #, elixir-autogen, elixir-format
 msgid "items"
 msgstr ""
 
-#: lib/hermes_web/components/layouts.ex:83
+#: lib/hermes_web/components/layouts.ex:82
+#: lib/hermes_web/components/layouts.ex:363
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr ""
@@ -725,7 +731,7 @@ msgstr ""
 msgid "Avg Time to Complete"
 msgstr ""
 
-#: lib/hermes_web/components/layouts.ex:76
+#: lib/hermes_web/components/layouts.ex:75
 #: lib/hermes_web/live/request_live/index.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Backlog"
@@ -736,7 +742,7 @@ msgstr ""
 msgid "Board"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:716
+#: lib/hermes_web/live/request_live/show.html.heex:717
 #, elixir-autogen, elixir-format
 msgid "Choose a team"
 msgstr ""
@@ -855,7 +861,7 @@ msgstr ""
 msgid "No data available"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:159
+#: lib/hermes_web/live/dashboard_live.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "No deadlines"
 msgstr ""
@@ -874,6 +880,7 @@ msgstr ""
 msgid "Not authorized"
 msgstr "Not authorized"
 
+#: lib/hermes_web/components/layouts.ex:108
 #: lib/hermes_web/live/notification_live/index.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Notifications"
@@ -895,7 +902,7 @@ msgstr ""
 msgid "Priority Distribution"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:171
+#: lib/hermes_web/live/dashboard_live.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Priority:"
 msgstr ""
@@ -927,7 +934,7 @@ msgstr ""
 msgid "Requests Created"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:75
+#: lib/hermes_web/live/dashboard_live.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Roadmap"
 msgstr ""
@@ -937,13 +944,13 @@ msgstr ""
 msgid "Save"
 msgstr "Save"
 
-#: lib/hermes_web/live/request_live/show.html.heex:848
+#: lib/hermes_web/live/request_live/show.html.heex:849
 #, elixir-autogen, elixir-format
 msgid "Selected:"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:781
-#: lib/hermes_web/live/request_live/show.html.heex:856
+#: lib/hermes_web/live/request_live/show.html.heex:782
+#: lib/hermes_web/live/request_live/show.html.heex:857
 #, elixir-autogen, elixir-format
 msgid "Set Deadline"
 msgstr ""
@@ -958,8 +965,8 @@ msgstr ""
 msgid "Time to Complete"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:107
-#: lib/hermes_web/live/dashboard_live.html.heex:185
+#: lib/hermes_web/live/dashboard_live.html.heex:113
+#: lib/hermes_web/live/dashboard_live.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Today"
 msgstr ""
@@ -1227,7 +1234,7 @@ msgstr ""
 msgid "Desired output"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:889
+#: lib/hermes_web/live/request_live/show.html.heex:890
 #, elixir-autogen, elixir-format
 msgid "Detailed justification"
 msgstr ""
@@ -1243,25 +1250,25 @@ msgid "Diagram is being generated…"
 msgstr ""
 
 #: lib/hermes_web/live/request_live/show.html.heex:114
-#: lib/hermes_web/live/request_live/show.html.heex:906
+#: lib/hermes_web/live/request_live/show.html.heex:907
 #, elixir-autogen, elixir-format
 msgid "Discard"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:876
+#: lib/hermes_web/live/request_live/show.html.heex:877
 #, elixir-autogen, elixir-format
 msgid "Discard category"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:867
+#: lib/hermes_web/live/request_live/show.html.heex:868
 #, elixir-autogen, elixir-format
 msgid "Discard request"
 msgstr ""
 
-#: lib/hermes_web/components/core_components.ex:627
-#: lib/hermes_web/components/core_components.ex:834
+#: lib/hermes_web/components/core_components.ex:628
+#: lib/hermes_web/components/core_components.ex:842
 #: lib/hermes_web/live/request_live/index.html.heex:70
-#: lib/hermes_web/live/request_live/show.ex:680
+#: lib/hermes_web/live/request_live/show.ex:681
 #, elixir-autogen, elixir-format
 msgid "Discarded"
 msgstr ""
@@ -1281,7 +1288,7 @@ msgstr ""
 msgid "Drag files or click to upload"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:696
+#: lib/hermes_web/live/request_live/show.ex:697
 #, elixir-autogen, elixir-format
 msgid "Duplicate"
 msgstr ""
@@ -1291,7 +1298,7 @@ msgstr ""
 msgid "Estimated priority"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:896
+#: lib/hermes_web/live/request_live/show.html.heex:897
 #, elixir-autogen, elixir-format
 msgid "Explain why this request is being discarded..."
 msgstr ""
@@ -1410,7 +1417,7 @@ msgstr ""
 msgid "Improves product / UX"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:676
+#: lib/hermes_web/live/request_live/show.ex:677
 #, elixir-autogen, elixir-format
 msgid "In progress"
 msgstr ""
@@ -1467,12 +1474,12 @@ msgstr ""
 msgid "No discarded requests"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:703
+#: lib/hermes_web/live/request_live/show.ex:704
 #, elixir-autogen, elixir-format
 msgid "No longer applicable"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:702
+#: lib/hermes_web/live/request_live/show.ex:703
 #, elixir-autogen, elixir-format
 msgid "No resources available"
 msgstr ""
@@ -1482,12 +1489,12 @@ msgstr ""
 msgid "No urgency"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:701
+#: lib/hermes_web/live/request_live/show.ex:702
 #, elixir-autogen, elixir-format
 msgid "Not a priority"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:698
+#: lib/hermes_web/live/request_live/show.ex:699
 #, elixir-autogen, elixir-format
 msgid "Not technically viable"
 msgstr ""
@@ -1519,12 +1526,12 @@ msgstr ""
 msgid "Other"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:704
+#: lib/hermes_web/live/request_live/show.ex:705
 #, elixir-autogen, elixir-format
 msgid "Other reason"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:697
+#: lib/hermes_web/live/request_live/show.ex:698
 #, elixir-autogen, elixir-format
 msgid "Out of scope"
 msgstr ""
@@ -1544,7 +1551,7 @@ msgstr ""
 msgid "PNG, JPG, PDF, XLSX, DOCX · max. 15 MB"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:700
+#: lib/hermes_web/live/request_live/show.ex:701
 #, elixir-autogen, elixir-format
 msgid "Postponed indefinitely"
 msgstr ""
@@ -1570,7 +1577,7 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.ex:699
+#: lib/hermes_web/live/request_live/show.ex:700
 #, elixir-autogen, elixir-format
 msgid "Replaced by another request"
 msgstr ""
@@ -1681,7 +1688,7 @@ msgstr ""
 msgid "Something is broken or blocking"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:869
+#: lib/hermes_web/live/request_live/show.html.heex:870
 #, elixir-autogen, elixir-format
 msgid "State the reason. The justification is recorded for team audit."
 msgstr ""
@@ -1756,7 +1763,7 @@ msgstr ""
 msgid "Upload error"
 msgstr ""
 
-#: lib/hermes_web/live/request_live/show.html.heex:710
+#: lib/hermes_web/live/request_live/show.html.heex:711
 #, elixir-autogen, elixir-format
 msgid "Use the Discard action to discard a request."
 msgstr ""
@@ -1824,4 +1831,53 @@ msgstr ""
 #: lib/hermes_web/live/request_live/upload_errors.ex:35
 #, elixir-autogen, elixir-format
 msgid "validation error"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:262
+#, elixir-autogen, elixir-format
+msgid "Change language"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:389
+#, elixir-autogen, elixir-format
+msgid "Dark mode"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:397
+#, elixir-autogen, elixir-format
+msgid "Light mode"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:414
+#, elixir-autogen, elixir-format
+msgid "Logout"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:355
+#: lib/hermes_web/components/layouts.ex:357
+#, elixir-autogen, elixir-format
+msgid "My profile"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:97
+#: lib/hermes_web/components/layouts.ex:98
+#, elixir-autogen, elixir-format
+msgid "Search"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:404
+#: lib/hermes_web/components/layouts.ex:406
+#, elixir-autogen, elixir-format
+msgid "Help center"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:373
+#: lib/hermes_web/components/layouts.ex:375
+#, elixir-autogen, elixir-format
+msgid "Shortcuts"
+msgstr ""
+
+#: lib/hermes_web/components/layouts.ex:178
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{feature} is coming soon. Stay tuned!"
 msgstr ""

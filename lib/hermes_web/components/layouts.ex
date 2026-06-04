@@ -95,12 +95,12 @@ defmodule HermesWeb.Layouts do
               type="button"
               class="shrink-0 w-[38px] h-[38px] bg-base-300 hover:bg-base-content/10 rounded-full flex items-center justify-center text-base-content/70 hover:text-base-content transition-colors"
               title={gettext("Search")}
+              phx-click={show_coming_soon(gettext("Search"))}
             >
               <.icon name="hero-magnifying-glass" class="size-[17px]" />
             </button>
           <% end %>
           <.language_selector locale={assigns[:locale] || "en"} />
-          <.theme_toggle />
           <%= if @current_user do %>
             <.link
               href={~p"/notifications"}
@@ -116,31 +116,9 @@ defmodule HermesWeb.Layouts do
                 </span>
               <% end %>
             </.link>
-            <div class="dropdown dropdown-end">
-              <button
-                tabindex="0"
-                class="shrink-0 w-[38px] h-[38px] rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-semibold tracking-wide cursor-pointer"
-                title={@current_user.email}
-              >
-                {user_initials(@current_user.email)}
-              </button>
-              <ul
-                tabindex="0"
-                class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-56 border border-base-300 mt-1"
-              >
-                <li class="menu-title">
-                  <span class="font-semibold text-base-content truncate">{@current_user.email}</span>
-                  <span class="text-xs text-base-content/60">
-                    {Phoenix.Naming.humanize(@current_user.role)}
-                  </span>
-                </li>
-                <li>
-                  <.link href={~p"/logout"} method="delete">
-                    <.icon name="hero-arrow-right-on-rectangle" class="size-4" />{gettext("Logout")}
-                  </.link>
-                </li>
-              </ul>
-            </div>
+            <.user_menu current_user={@current_user} />
+          <% else %>
+            <.theme_toggle />
           <% end %>
         </div>
       </header>
@@ -177,8 +155,28 @@ defmodule HermesWeb.Layouts do
       </footer>
     </div>
 
+    <%!-- Client-only toast for "coming soon" stubs; reuses the flash/alert styling.
+         Populated and shown by the phx:coming-soon handler in app.js. --%>
+    <div
+      id="coming-soon-toast"
+      role="alert"
+      class="toast toast-end z-[100] top-20 hidden"
+    >
+      <div class="alert alert-info w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap">
+        <.icon name="hero-information-circle" class="size-5 shrink-0" />
+        <p id="coming-soon-toast-msg"></p>
+      </div>
+    </div>
+
     <.flash_group flash={@flash} />
     """
+  end
+
+  # Client-side JS to show the shared "coming soon" toast. The full message
+  # is composed here (gettext is server-side) and shown by app.js.
+  defp show_coming_soon(feature) do
+    message = gettext("%{feature} is coming soon. Stay tuned!", feature: feature)
+    JS.dispatch("phx:coming-soon", detail: %{message: message})
   end
 
   # Tailwind/daisyUI classes for a top-nav pill tab. The active state
@@ -310,6 +308,114 @@ defmodule HermesWeb.Layouts do
     >
       <.icon name="hero-sun" class="size-[17px]" />
     </button>
+    """
+  end
+
+  @doc """
+  Profile dropdown anchored to the avatar. Holds account info plus the
+  profile, theme and logout actions (the theme toggle lives here rather
+  than as a standalone header button).
+  """
+  attr :current_user, :map, required: true
+
+  def user_menu(assigns) do
+    ~H"""
+    <div class="dropdown dropdown-end">
+      <button
+        tabindex="0"
+        class="shrink-0 w-[38px] h-[38px] rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-semibold tracking-wide cursor-pointer"
+        title={@current_user.email}
+      >
+        {user_initials(@current_user.email)}
+      </button>
+      <ul
+        tabindex="0"
+        class="dropdown-content z-[1] menu p-1.5 shadow-md bg-base-200 rounded-box w-72 border border-base-300 mt-1 gap-0.5"
+      >
+        <li class="menu-title pointer-events-none -mx-1.5 -mt-1.5 mb-1.5 !p-0 border-b border-base-content/15">
+          <div class="flex items-center gap-3 px-3 py-3.5">
+            <span class="shrink-0 w-[38px] h-[38px] rounded-full bg-primary text-primary-content flex items-center justify-center text-[13px] font-semibold tracking-wide">
+              {user_initials(@current_user.email)}
+            </span>
+            <div class="min-w-0 flex-1">
+              <div class="text-[13px] font-semibold text-base-content truncate leading-tight">
+                {@current_user.email}
+              </div>
+              <div class="text-[11px] text-base-content/50 leading-tight mt-0.5">
+                {Phoenix.Naming.humanize(@current_user.role)}
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li>
+          <button
+            type="button"
+            class="gap-2.5 text-base-content/70"
+            phx-click={show_coming_soon(gettext("My profile"))}
+          >
+            <.icon name="hero-user" class="size-[15px] text-base-content/40" />{gettext("My profile")}
+          </button>
+        </li>
+        <%= if Hermes.Accounts.is_admin?(@current_user) do %>
+          <li>
+            <.link href={~p"/admin"} class="gap-2.5 text-base-content/70">
+              <.icon name="hero-shield-check" class="size-[15px] text-base-content/40" />{gettext(
+                "Admin"
+              )}
+            </.link>
+          </li>
+        <% end %>
+        <li>
+          <button
+            type="button"
+            class="gap-2.5 text-base-content/70"
+            phx-click={show_coming_soon(gettext("Shortcuts"))}
+          >
+            <.icon name="hero-command-line" class="size-[15px] text-base-content/40" />{gettext(
+              "Shortcuts"
+            )}
+            <kbd class="ml-auto text-[10.5px] text-base-content/40 font-normal">⌘K</kbd>
+          </button>
+        </li>
+
+        <li class="mt-1.5 -mx-1.5 px-1.5 border-t border-base-content/15 pt-1.5">
+          <button
+            type="button"
+            class="gap-2.5 text-base-content/70 [[data-theme=dark]_&]:hidden"
+            phx-click={JS.dispatch("phx:set-theme")}
+            data-phx-theme="dark"
+          >
+            <.icon name="hero-moon" class="size-[15px] text-base-content/40" />{gettext("Dark mode")}
+          </button>
+          <button
+            type="button"
+            class="gap-2.5 text-base-content/70 hidden [[data-theme=dark]_&]:flex"
+            phx-click={JS.dispatch("phx:set-theme")}
+            data-phx-theme="light"
+          >
+            <.icon name="hero-sun" class="size-[15px] text-base-content/40" />{gettext("Light mode")}
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            class="gap-2.5 text-base-content/70"
+            phx-click={show_coming_soon(gettext("Help center"))}
+          >
+            <.icon name="hero-question-mark-circle" class="size-[15px] text-base-content/40" />{gettext(
+              "Help center"
+            )}
+          </button>
+        </li>
+
+        <li class="mt-1.5 -mx-1.5 px-1.5 border-t border-base-content/15 pt-1.5">
+          <.link href={~p"/logout"} method="delete" class="gap-2.5 text-error hover:bg-error/10">
+            <.icon name="hero-arrow-right-on-rectangle" class="size-[15px]" />{gettext("Logout")}
+          </.link>
+        </li>
+      </ul>
+    </div>
     """
   end
 end

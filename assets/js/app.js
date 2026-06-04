@@ -370,6 +370,18 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Show the shared "coming soon" toast, naming the feature that was clicked
+let comingSoonTimer = null
+window.addEventListener("phx:coming-soon", (e) => {
+  const toast = document.getElementById("coming-soon-toast")
+  const msg = document.getElementById("coming-soon-toast-msg")
+  if (!toast || !msg) return
+  msg.textContent = e.detail?.message || ""
+  toast.classList.remove("hidden")
+  clearTimeout(comingSoonTimer)
+  comingSoonTimer = setTimeout(() => toast.classList.add("hidden"), 3500)
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
