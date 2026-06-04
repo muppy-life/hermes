@@ -41,6 +41,12 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
+  def set_issue_title(%{owner: owner, repo: repo, number: number}, title)
+      when is_binary(title) do
+    patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"title" => title})
+  end
+
+  @impl true
   def set_issue_state(issue_ref, state) when state in [:open, :closed] do
     set_issue_state(issue_ref, state, [])
   end
@@ -73,8 +79,8 @@ defmodule Hermes.Services.GitHub.HTTP do
   @impl true
   def get_issue(owner, repo, number) when is_integer(number) do
     case get("/repos/#{owner}/#{repo}/issues/#{number}") do
-      {:ok, %{"number" => n, "html_url" => url, "state" => state}} ->
-        {:ok, %{number: n, url: url, state: state}}
+      {:ok, %{"number" => n, "html_url" => url, "state" => state} = issue} ->
+        {:ok, %{number: n, url: url, state: state, title: Map.get(issue, "title", "")}}
 
       {:ok, other} ->
         {:error, {:unexpected_payload, other}}
@@ -280,6 +286,71 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
+  # Returns up to @sub_issues_page_size sub-issues. A parent with more than that
+  # is not paginated through — extremely unusual for sub-issues — but we log a
+  # warning so the truncation is never silent.
+  @sub_issues_page_size 100
+
+  def list_sub_issues(parent_node_id) do
+    query = """
+    query($issueId: ID!) {
+      node(id: $issueId) {
+        ... on Issue {
+          subIssues(first: #{@sub_issues_page_size}) {
+            nodes {
+              id
+              number
+              title
+              state
+              url
+              repository { name owner { login } }
+            }
+            pageInfo { hasNextPage }
+          }
+        }
+      }
+    }
+    """
+
+    case graphql(query, %{"issueId" => parent_node_id}) do
+      {:ok, %{"data" => %{"node" => %{"subIssues" => %{"nodes" => nodes} = sub_issues}}}} ->
+        if get_in(sub_issues, ["pageInfo", "hasNextPage"]) do
+          Logger.warning(
+            "GitHub list_sub_issues truncated: parent has more than #{@sub_issues_page_size} sub-issues; only the first #{@sub_issues_page_size} are returned",
+            github_api: :graphql,
+            github_operation: "subIssues",
+            sub_issue_truncated: true,
+            sub_issue_count: length(nodes)
+          )
+        end
+
+        {:ok, Enum.map(nodes, &decode_sub_issue/1)}
+
+      {:ok, %{"errors" => errors}} ->
+        {:error, {:graphql_error, errors}}
+
+      {:ok, other} ->
+        {:error, {:unexpected_payload, other}}
+
+      {:error, _} = err ->
+        err
+    end
+  end
+
+  defp decode_sub_issue(node) do
+    %{
+      node_id: node["id"],
+      number: node["number"],
+      title: node["title"],
+      # GraphQL issue state is uppercase ("OPEN"/"CLOSED"); REST uses lowercase.
+      state: node["state"] |> to_string() |> String.downcase(),
+      url: node["url"],
+      owner: get_in(node, ["repository", "owner", "login"]),
+      repo: get_in(node, ["repository", "name"])
+    }
+  end
+
+  @impl true
   def remove_sub_issue(parent_node_id, child_node_id) do
     query = """
     mutation($issueId: ID!, $subIssueId: ID!) {
@@ -309,6 +380,13 @@ defmodule Hermes.Services.GitHub.HTTP do
     token = cfg[:token]
 
     if is_nil(token) or token == "" do
+      Logger.warning("GitHub REST #{method} #{path} skipped: missing token",
+        github_api: :rest,
+        github_method: method,
+        github_path: path,
+        github_error: :missing_token
+      )
+
       {:error, :missing_token}
     else
       url = cfg[:api_url] <> path
@@ -325,16 +403,44 @@ defmodule Hermes.Services.GitHub.HTTP do
         |> Keyword.merge(opts)
         |> maybe_put_test_plug()
 
-      case apply(Req, method, [url, opts]) do
-        {:ok, %Req.Response{status: status, body: resp_body}} when status in 200..299 ->
+      started = System.monotonic_time(:millisecond)
+      result = apply(Req, method, [url, opts])
+      duration_ms = System.monotonic_time(:millisecond) - started
+
+      base_meta = [
+        github_api: :rest,
+        github_method: method,
+        github_path: path,
+        duration_ms: duration_ms
+      ]
+
+      case result do
+        {:ok, %Req.Response{status: status, body: resp_body} = resp}
+        when status in 200..299 ->
+          meta = base_meta ++ [status: status] ++ rate_limit_meta(resp)
+
+          Logger.debug("GitHub REST #{method} #{path} -> #{status} (#{duration_ms}ms)", meta)
+
           {:ok, resp_body}
 
-        {:ok, %Req.Response{status: status, body: resp_body}} ->
-          Logger.warning("GitHub #{method} #{path} -> #{status}: #{inspect(resp_body)}")
+        {:ok, %Req.Response{status: status, body: resp_body} = resp} ->
+          meta =
+            base_meta ++
+              [status: status, github_response: truncate(resp_body)] ++ rate_limit_meta(resp)
+
+          Logger.warning(
+            "GitHub REST #{method} #{path} -> #{status} (#{duration_ms}ms): #{inspect(truncate(resp_body))}",
+            meta
+          )
+
           {:error, {:http_error, status, resp_body}}
 
         {:error, reason} ->
-          Logger.warning("GitHub #{method} #{path} transport error: #{inspect(reason)}")
+          Logger.warning(
+            "GitHub REST #{method} #{path} transport error (#{duration_ms}ms): #{inspect(reason)}",
+            base_meta ++ [github_error: :transport_error, reason: inspect(reason)]
+          )
+
           {:error, {:transport_error, reason}}
       end
     end
@@ -344,8 +450,15 @@ defmodule Hermes.Services.GitHub.HTTP do
     cfg = config()
     token = cfg[:token]
     url = cfg[:graphql_url] || "https://api.github.com/graphql"
+    op = graphql_operation(query)
 
     if is_nil(token) or token == "" do
+      Logger.warning("GitHub GraphQL #{op} skipped: missing token",
+        github_api: :graphql,
+        github_operation: op,
+        github_error: :missing_token
+      )
+
       {:error, :missing_token}
     else
       headers = [
@@ -361,18 +474,96 @@ defmodule Hermes.Services.GitHub.HTTP do
         [headers: headers, retry: false, json: body]
         |> maybe_put_test_plug()
 
-      case Req.post(url, opts) do
-        {:ok, %Req.Response{status: 200, body: resp}} ->
+      started = System.monotonic_time(:millisecond)
+      result = Req.post(url, opts)
+      duration_ms = System.monotonic_time(:millisecond) - started
+
+      base_meta = [
+        github_api: :graphql,
+        github_operation: op,
+        duration_ms: duration_ms
+      ]
+
+      case result do
+        {:ok, %Req.Response{status: 200, body: %{"errors" => errors} = resp} = http} ->
+          # GraphQL reports query-level failures with HTTP 200 + an errors array.
+          meta =
+            base_meta ++ [status: 200, github_errors: inspect(errors)] ++ rate_limit_meta(http)
+
+          Logger.warning(
+            "GitHub GraphQL #{op} returned errors (#{duration_ms}ms): #{inspect(errors)}",
+            meta
+          )
+
           {:ok, resp}
 
-        {:ok, %Req.Response{status: status, body: resp}} ->
-          Logger.warning("GitHub GraphQL -> #{status}: #{inspect(resp)}")
+        {:ok, %Req.Response{status: 200, body: resp} = http} ->
+          Logger.debug(
+            "GitHub GraphQL #{op} -> 200 (#{duration_ms}ms)",
+            base_meta ++ [status: 200] ++ rate_limit_meta(http)
+          )
+
+          {:ok, resp}
+
+        {:ok, %Req.Response{status: status, body: resp} = http} ->
+          meta =
+            base_meta ++
+              [status: status, github_response: truncate(resp)] ++ rate_limit_meta(http)
+
+          Logger.warning(
+            "GitHub GraphQL #{op} -> #{status} (#{duration_ms}ms): #{inspect(truncate(resp))}",
+            meta
+          )
+
           {:error, {:http_error, status, resp}}
 
         {:error, reason} ->
-          Logger.warning("GitHub GraphQL transport error: #{inspect(reason)}")
+          Logger.warning(
+            "GitHub GraphQL #{op} transport error (#{duration_ms}ms): #{inspect(reason)}",
+            base_meta ++ [github_error: :transport_error, reason: inspect(reason)]
+          )
+
           {:error, {:transport_error, reason}}
       end
+    end
+  end
+
+  # Extracts GitHub's rate-limit signals from response headers so logs surface
+  # remaining quota and reset time — the first thing to check when calls fail.
+  defp rate_limit_meta(%Req.Response{} = resp) do
+    [
+      rate_remaining: header(resp, "x-ratelimit-remaining"),
+      rate_reset: header(resp, "x-ratelimit-reset"),
+      retry_after: header(resp, "retry-after")
+    ]
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+  end
+
+  defp header(%Req.Response{} = resp, name) do
+    case Req.Response.get_header(resp, name) do
+      [value | _] -> value
+      _ -> nil
+    end
+  end
+
+  # Names the GraphQL operation for logs: the first selected field after the
+  # operation type, e.g. "addSubIssue", "subIssues". Falls back to "graphql".
+  defp graphql_operation(query) when is_binary(query) do
+    case Regex.run(~r/(?:query|mutation)\s*(?:\([^)]*\))?\s*\{\s*([A-Za-z0-9_]+)/, query) do
+      [_, field] -> field
+      _ -> "graphql"
+    end
+  end
+
+  # Keeps error payloads from flooding logs; bodies are usually small but
+  # GraphQL error arrays and HTML error pages can be large.
+  defp truncate(term) do
+    str = inspect(term, limit: :infinity, printable_limit: :infinity)
+
+    if String.length(str) > 800 do
+      String.slice(str, 0, 800) <> "…(truncated)"
+    else
+      term
     end
   end
 

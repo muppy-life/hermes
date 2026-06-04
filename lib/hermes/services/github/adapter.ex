@@ -30,6 +30,11 @@ defmodule Hermes.Services.GitHub.Adapter do
 
   @callback update_issue(update_payload) :: {:ok, map()} | {:error, term()}
 
+  @doc """
+  Updates only the issue title, leaving body and labels untouched.
+  """
+  @callback set_issue_title(issue_ref, String.t()) :: {:ok, map()} | {:error, term()}
+
   @type close_reason :: :completed | :not_planned
 
   @callback set_issue_state(issue_ref, :open | :closed) :: {:ok, map()} | {:error, term()}
@@ -50,7 +55,13 @@ defmodule Hermes.Services.GitHub.Adapter do
               {:ok, map() | String.t()} | {:error, term()}
 
   @callback get_issue(String.t(), String.t(), pos_integer()) ::
-              {:ok, %{number: pos_integer(), url: String.t(), state: String.t()}}
+              {:ok,
+               %{
+                 number: pos_integer(),
+                 url: String.t(),
+                 state: String.t(),
+                 title: String.t()
+               }}
               | {:error, term()}
 
   @doc """
@@ -117,4 +128,21 @@ defmodule Hermes.Services.GitHub.Adapter do
   """
   @callback sub_issue_attached?(parent_node_id :: String.t(), child_node_id :: String.t()) ::
               {:ok, boolean()} | {:error, term()}
+
+  @type sub_issue :: %{
+          node_id: String.t(),
+          number: pos_integer(),
+          title: String.t(),
+          state: String.t(),
+          url: String.t(),
+          owner: String.t(),
+          repo: String.t()
+        }
+
+  @doc """
+  Lists the sub-issues currently attached to `parent_node_id`, with enough
+  metadata to import each as a Hermes subtask.
+  """
+  @callback list_sub_issues(parent_node_id :: String.t()) ::
+              {:ok, [sub_issue()]} | {:error, term()}
 end

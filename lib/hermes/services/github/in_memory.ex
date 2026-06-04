@@ -104,6 +104,14 @@ defmodule Hermes.Services.GitHub.InMemory do
   end
 
   @impl true
+  def set_issue_title(%{owner: owner, repo: repo, number: number}, title)
+      when is_binary(title) do
+    mutate(owner, repo, number, fn issue ->
+      %{issue | title: title, updated_at: DateTime.utc_now()}
+    end)
+  end
+
+  @impl true
   def set_issue_state(issue_ref, state) when state in [:open, :closed] do
     set_issue_state(issue_ref, state, [])
   end
@@ -162,8 +170,11 @@ defmodule Hermes.Services.GitHub.InMemory do
   @impl true
   def get_issue(owner, repo, number) when is_integer(number) do
     case Agent.get(__MODULE__, &Map.get(&1.issues, {owner, repo, number})) do
-      nil -> {:error, {:http_error, 404, %{"message" => "Not Found"}}}
-      issue -> {:ok, %{number: issue.number, url: issue.url, state: issue.state}}
+      nil ->
+        {:error, {:http_error, 404, %{"message" => "Not Found"}}}
+
+      issue ->
+        {:ok, %{number: issue.number, url: issue.url, state: issue.state, title: issue.title}}
     end
   end
 
@@ -171,9 +182,11 @@ defmodule Hermes.Services.GitHub.InMemory do
   def get_issue_node_id(owner, repo, number) when is_integer(number) do
     case Agent.get(__MODULE__, &Map.get(&1.issues, {owner, repo, number})) do
       nil -> {:error, {:http_error, 404, %{"message" => "Not Found"}}}
-      _issue -> {:ok, "ISSUE_NODE_#{owner}_#{repo}_#{number}"}
+      _issue -> {:ok, node_id(owner, repo, number)}
     end
   end
+
+  defp node_id(owner, repo, number), do: "ISSUE_NODE_#{owner}_#{repo}_#{number}"
 
   @impl true
   def add_issue_to_project(project_id, content_node_id) do
@@ -271,6 +284,33 @@ defmodule Hermes.Services.GitHub.InMemory do
       end)
 
     {:ok, attached}
+  end
+
+  @impl true
+  def list_sub_issues(parent_node_id) do
+    sub_issues =
+      Agent.get(__MODULE__, fn state ->
+        child_ids = Map.get(state.sub_issues, parent_node_id, MapSet.new())
+
+        state.issues
+        |> Map.values()
+        |> Enum.filter(fn issue ->
+          MapSet.member?(child_ids, node_id(issue.owner, issue.repo, issue.number))
+        end)
+        |> Enum.map(fn issue ->
+          %{
+            node_id: node_id(issue.owner, issue.repo, issue.number),
+            number: issue.number,
+            title: issue.title,
+            state: issue.state,
+            url: issue.url,
+            owner: issue.owner,
+            repo: issue.repo
+          }
+        end)
+      end)
+
+    {:ok, sub_issues}
   end
 
   @impl true

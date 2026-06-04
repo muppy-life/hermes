@@ -160,6 +160,45 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
+  Prepends the `[Hermes #<id>]` marker to an existing issue's title, preserving
+  the rest. Any existing `[Hermes #N]` marker is stripped first, so re-linking,
+  syncing, or re-linking under a different request never stacks markers. No-op
+  when the title already carries exactly this request's marker. Body and labels
+  are left untouched.
+
+  Pass `current_title:` to skip the GitHub read when the caller already has the
+  issue's current title.
+  """
+  def prefix_issue_title(%GitHubIssue{} = issue, %Request{} = request, opts \\ []) do
+    case Keyword.fetch(opts, :current_title) do
+      {:ok, current} -> apply_issue_title_prefix(issue, request, current)
+      :error -> fetch_and_prefix_issue_title(issue, request)
+    end
+  end
+
+  defp fetch_and_prefix_issue_title(%GitHubIssue{} = issue, %Request{} = request) do
+    %GitHubIssue{owner: owner, repo: repo, number: number} = issue
+
+    case get_issue(owner, repo, number) do
+      {:ok, %{title: current}} -> apply_issue_title_prefix(issue, request, current)
+      {:error, _} = err -> err
+    end
+  end
+
+  defp apply_issue_title_prefix(%GitHubIssue{} = issue, %Request{id: id}, current) do
+    %GitHubIssue{owner: owner, repo: repo, number: number} = issue
+    desired = "#{issue_marker(id)} #{strip_issue_marker(current)}" |> String.trim()
+
+    if (current || "") == desired do
+      {:ok, :noop}
+    else
+      %{owner: owner, repo: repo, number: number}
+      |> adapter().set_issue_title(desired)
+      |> log_result("set_issue_title", "#{owner}/#{repo}##{number}")
+    end
+  end
+
+  @doc """
   Deletes the "Linked to Hermes" comment by its stored id. No-op when the id
   is missing (e.g. issues linked before this feature, or a failed post).
   """
@@ -204,7 +243,7 @@ defmodule Hermes.Services.GitHub do
     """
     🔗 **Linked to Hermes**
 
-    This GitHub issue is tracked by Hermes request ##{id}#{title_suffix}.
+    This GitHub issue is tracked by Hermes request [##{id}](#{request_url(id)})#{title_suffix}.
 
     👉 #{request_url(id)}
 
@@ -266,6 +305,35 @@ defmodule Hermes.Services.GitHub do
   @doc "Returns whether a child issue is already attached as a sub-issue."
   def sub_issue_attached?(parent_node_id, child_node_id) do
     adapter().sub_issue_attached?(parent_node_id, child_node_id)
+  end
+
+  @doc """
+  Lists the GitHub sub-issues attached to a linked parent issue, with the
+  metadata needed to import each as a Hermes subtask. Resolves the parent's
+  node id first.
+  """
+  def list_sub_issues(%GitHubIssue{owner: owner, repo: repo, number: number}) do
+    ref = "#{owner}/#{repo}##{number}"
+
+    with {:ok, parent_node} <- adapter().get_issue_node_id(owner, repo, number),
+         {:ok, subs} <- adapter().list_sub_issues(parent_node) do
+      Logger.info("GitHub.list_sub_issues ok issue=#{ref} count=#{length(subs)}",
+        github_op: "list_sub_issues",
+        github_ref: ref,
+        sub_issue_count: length(subs)
+      )
+
+      {:ok, subs}
+    else
+      {:error, reason} = err ->
+        Logger.warning("GitHub.list_sub_issues failed issue=#{ref} reason=#{inspect(reason)}",
+          github_op: "list_sub_issues",
+          github_ref: ref,
+          reason: inspect(reason)
+        )
+
+        err
+    end
   end
 
   @doc "Attach a child issue as a sub-issue of a parent issue."
@@ -383,7 +451,7 @@ defmodule Hermes.Services.GitHub do
       ]
       |> Enum.reject(&is_nil/1)
 
-    footer = "\n\n---\n_Synced from Hermes request ##{r.id}_"
+    footer = "\n\n---\n_Synced from Hermes request [##{r.id}](#{request_url(r.id)})_"
 
     Enum.join(sections, "\n\n") <> footer
   end
@@ -401,7 +469,18 @@ defmodule Hermes.Services.GitHub do
 
   defp issue_title(%Request{title: title, id: id}) do
     base = title || "Hermes request"
-    "[Hermes ##{id}] #{base}"
+    "#{issue_marker(id)} #{base}"
+  end
+
+  defp issue_marker(id), do: "[Hermes ##{id}]"
+
+  # Removes a leading `[Hermes #N]` marker (any id) so we never stack markers.
+  defp strip_issue_marker(nil), do: ""
+
+  defp strip_issue_marker(title) when is_binary(title) do
+    title
+    |> String.replace(~r/^\[Hermes #\d+\]\s*/, "")
+    |> String.trim()
   end
 
   defp labels_for(%Request{} = r) do
@@ -435,12 +514,23 @@ defmodule Hermes.Services.GitHub do
   defp config, do: Application.get_env(:hermes, :github, [])
 
   defp log_result({:ok, _} = ok, op, ref) do
-    Logger.info("GitHub.#{op} ok issue=#{ref}")
+    Logger.info("GitHub.#{op} ok issue=#{ref}",
+      github_op: op,
+      github_ref: ref,
+      github_result: :ok
+    )
+
     ok
   end
 
   defp log_result({:error, reason} = err, op, ref) do
-    Logger.warning("GitHub.#{op} failed issue=#{ref} reason=#{inspect(reason)}")
+    Logger.warning("GitHub.#{op} failed issue=#{ref} reason=#{inspect(reason)}",
+      github_op: op,
+      github_ref: ref,
+      github_result: :error,
+      reason: inspect(reason)
+    )
+
     err
   end
 end
