@@ -155,28 +155,20 @@ defmodule HermesWeb.Layouts do
       </footer>
     </div>
 
-    <%!-- Client-only toast for "coming soon" stubs; reuses the flash/alert styling.
-         Populated and shown by the phx:coming-soon handler in app.js. --%>
-    <div
-      id="coming-soon-toast"
-      role="alert"
-      class="toast toast-end z-[100] top-20 hidden"
-    >
-      <div class="alert alert-info w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap">
-        <.icon name="hero-information-circle" class="size-5 shrink-0" />
-        <p id="coming-soon-toast-msg"></p>
-      </div>
-    </div>
+    <%!-- Toast stack (bottom-right). Toasts are appended by the app-toast
+         handler in app.js; styling lives in app.css (.app-toast). --%>
+    <div id="toast-c" class="fixed bottom-6 right-6 z-[500] flex flex-col gap-2"></div>
 
     <.flash_group flash={@flash} />
     """
   end
 
-  # Client-side JS to show the shared "coming soon" toast. The full message
-  # is composed here (gettext is server-side) and shown by app.js.
+  # Client-side JS to show a "coming soon" toast. The full message is
+  # composed here (gettext is server-side) and shown by the app-toast
+  # handler in app.js.
   defp show_coming_soon(feature) do
     message = gettext("%{feature} is coming soon. Stay tuned!", feature: feature)
-    JS.dispatch("phx:coming-soon", detail: %{message: message})
+    JS.dispatch("phx:app-toast", detail: %{message: message, type: "info"})
   end
 
   # Tailwind/daisyUI classes for a top-nav pill tab. The active state

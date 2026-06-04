@@ -370,16 +370,35 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
-// Show the shared "coming soon" toast, naming the feature that was clicked
-let comingSoonTimer = null
-window.addEventListener("phx:coming-soon", (e) => {
-  const toast = document.getElementById("coming-soon-toast")
-  const msg = document.getElementById("coming-soon-toast-msg")
-  if (!toast || !msg) return
-  msg.textContent = e.detail?.message || ""
-  toast.classList.remove("hidden")
-  clearTimeout(comingSoonTimer)
-  comingSoonTimer = setTimeout(() => toast.classList.add("hidden"), 3500)
+// Toast stack — append a styled toast (info | success | error | warning)
+const TOAST_ICONS = {
+  info: '<path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/>',
+  success: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>',
+  error: '<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>',
+  warning: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>'
+}
+
+function showAppToast(message, type = "info") {
+  const c = document.getElementById("toast-c")
+  if (!c || !message) return
+  const el = document.createElement("div")
+  el.className = "app-toast" + (type !== "info" ? " " + type : "")
+  el.setAttribute("role", "alert")
+  const icon = TOAST_ICONS[type] || TOAST_ICONS.info
+  el.innerHTML =
+    '<svg class="app-toast-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">' +
+    icon + "</svg><span></span>"
+  el.querySelector("span").textContent = message
+  c.appendChild(el)
+  setTimeout(() => {
+    el.style.opacity = "0"
+    el.style.transform = "translateY(8px)"
+    setTimeout(() => el.remove(), 200)
+  }, 3500)
+}
+
+window.addEventListener("phx:app-toast", (e) => {
+  showAppToast(e.detail?.message, e.detail?.type || "info")
 })
 
 // connect if there are any LiveViews on the page
