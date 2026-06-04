@@ -27,7 +27,7 @@ defmodule Hermes.Services.GitHub.InMemory do
   end
 
   defp initial_state do
-    base = %{
+    %{
       issues: %{},
       counter: %{},
       comments: %{},
@@ -41,64 +41,6 @@ defmodule Hermes.Services.GitHub.InMemory do
       item_counter: 0,
       # parent_node_id => MapSet.new([child_node_id, ...])
       sub_issues: %{}
-    }
-
-    # In dev we preload a parent issue with attached sub-issues so the
-    # "import GitHub sub-issues" flow is reachable without manual seeding.
-    # Tests keep the store empty (and `reset/0` returns to this baseline).
-    if Application.get_env(:hermes, :seed_github_fake, false) do
-      seed_sample_sub_issues(base)
-    else
-      base
-    end
-  end
-
-  @sample_owner "dev-org"
-  @sample_repo "hermes-fake"
-
-  # Seeds a parent issue (#1) with three attached sub-issues (#2, #3 open; #4
-  # closed). Link a request to issue #1 to see the import modal offer them.
-  defp seed_sample_sub_issues(state) do
-    parent = build_sample_issue(1, "Sample parent issue", "open")
-
-    children = [
-      build_sample_issue(2, "Build login form", "open"),
-      build_sample_issue(3, "Add OAuth provider", "open"),
-      build_sample_issue(4, "Handle session expiry", "closed")
-    ]
-
-    issues =
-      [parent | children]
-      |> Map.new(fn issue -> {{issue.owner, issue.repo, issue.number}, issue} end)
-
-    parent_node = node_id(parent.owner, parent.repo, parent.number)
-
-    child_nodes =
-      children
-      |> Enum.map(&node_id(&1.owner, &1.repo, &1.number))
-      |> MapSet.new()
-
-    %{
-      state
-      | issues: issues,
-        counter: %{{@sample_owner, @sample_repo} => 4},
-        sub_issues: %{parent_node => child_nodes}
-    }
-  end
-
-  defp build_sample_issue(number, title, state) do
-    %{
-      owner: @sample_owner,
-      repo: @sample_repo,
-      number: number,
-      title: title,
-      body: "Seeded sample issue for local development.",
-      labels: [],
-      state: state,
-      state_reason: nil,
-      url: "https://github.example/#{@sample_owner}/#{@sample_repo}/issues/#{number}",
-      created_at: ~U[2024-01-01 00:00:00Z],
-      updated_at: ~U[2024-01-01 00:00:00Z]
     }
   end
 
