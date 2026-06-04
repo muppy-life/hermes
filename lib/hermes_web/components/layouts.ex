@@ -242,38 +242,20 @@ defmodule HermesWeb.Layouts do
   attr :locale, :string, default: nil
 
   def language_selector(assigns) do
-    # Get current locale from Gettext
+    # Get current locale from Gettext; the button toggles to the other locale.
     current_locale = Gettext.get_locale(HermesWeb.Gettext)
-    assigns = assign(assigns, :current_locale, current_locale)
+    next_locale = if current_locale == "es", do: "en", else: "es"
+    assigns = assign(assigns, current_locale: current_locale, next_locale: next_locale)
 
     ~H"""
-    <div class="dropdown dropdown-end">
-      <button
-        tabindex="0"
-        class="shrink-0 h-[38px] px-3 bg-base-300 hover:bg-base-content/10 rounded-full flex items-center justify-center gap-1.5 text-base-content/70 hover:text-base-content text-[11.5px] font-semibold tracking-wider transition-colors"
-        title={gettext("Change language")}
-      >
-        <.icon name="hero-language" class="size-[15px] text-base-content/50" />
-        {String.upcase(@current_locale)}
-      </button>
-      <ul
-        tabindex="0"
-        class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-40 border border-base-300 mt-1"
-      >
-        <li>
-          <a href="?locale=en" class={["gap-2", @current_locale == "en" && "active"]}>
-            <span class="text-lg">🇺🇸</span>
-            <span>English</span>
-          </a>
-        </li>
-        <li>
-          <a href="?locale=es" class={["gap-2", @current_locale == "es" && "active"]}>
-            <span class="text-lg">🇪🇸</span>
-            <span>Español</span>
-          </a>
-        </li>
-      </ul>
-    </div>
+    <a
+      href={"?locale=#{@next_locale}"}
+      class="shrink-0 h-[38px] px-3 bg-base-300 hover:bg-base-content/10 rounded-full flex items-center justify-center gap-1.5 text-base-content/70 hover:text-base-content text-[11.5px] font-semibold tracking-wider transition-colors"
+      title={gettext("Change language")}
+    >
+      <.icon name="hero-language" class="size-[15px] text-base-content/50" />
+      {String.upcase(@current_locale)}
+    </a>
     """
   end
 
