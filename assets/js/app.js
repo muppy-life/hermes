@@ -28,6 +28,23 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 const Hooks = {
+  ActiveNav: {
+    mounted() { this.highlight() },
+    updated() { this.highlight() },
+    highlight() {
+      const path = window.location.pathname
+      this.el.querySelectorAll(".nav-tab").forEach((tab) => {
+        const base = tab.dataset.path
+        const active = base === "/dashboard"
+          ? path === "/" || path.startsWith("/dashboard")
+          : path === base || path.startsWith(base + "/")
+        tab.classList.toggle("bg-primary", active)
+        tab.classList.toggle("text-primary-content", active)
+        tab.classList.toggle("font-semibold", active)
+        tab.classList.toggle("text-base-content/70", !active)
+      })
+    }
+  },
   SubtaskInput: {
     mounted() {
       this.handleEvent('clear_subtask_input', () => {
