@@ -30,21 +30,101 @@ aging = aging_days(@request) %>
       <%= if @request.kind do %>
         <.kind_badge kind={@request.kind} size="sm" />
       <% end %>
-      <.status_badge status={@request.status} size="sm" />
-      <.priority_badge priority={@request.priority} size="sm" />
-      <%= if @request.deadline do %>
-        <.deadline_badge deadline={@request.deadline} size="sm" />
-      <% end %>
 
-      <%= if @github_enabled && @request.github_issue do %>
-        <a
-          class="gh-badge ok"
-          href={@request.github_issue.url}
-          target="_blank"
-          rel="noopener"
-        >
-          <.icon name="hero-link" class="size-3" /> Issue #{@request.github_issue.number}
-        </a>
+      <%= if @github_enabled do %>
+        <%= cond do %>
+          <% @request.github_issue -> %>
+            <%!-- Linked issue: badge + dropdown to open / unlink --%>
+            <div class="dropdown dropdown-end">
+              <button tabindex="0" type="button" class="gh-badge ok">
+                <.icon name="hero-link" class="size-3" /> Issue #{@request.github_issue.number}
+                <.icon name="hero-chevron-down" class="size-3 opacity-60" />
+              </button>
+              <ul
+                tabindex="0"
+                class="dropdown-content z-[10] menu p-1.5 shadow-md bg-base-200 rounded-box w-56 border border-base-300 mt-1 gap-0.5"
+              >
+                <li>
+                  <a
+                    href={@request.github_issue.url}
+                    target="_blank"
+                    rel="noopener"
+                    class="gap-2.5"
+                  >
+                    <.icon
+                      name="hero-arrow-top-right-on-square"
+                      class="size-[15px] text-base-content/40"
+                    />
+                    {gettext("Open on GitHub")}
+                  </a>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    phx-click="github_unlink"
+                    data-confirm={gettext("Unlink this issue from the request?")}
+                    class="gap-2.5 text-error hover:bg-error/10"
+                  >
+                    <.icon name="hero-x-mark" class="size-[15px]" />{gettext("Unlink issue")}
+                  </button>
+                </li>
+              </ul>
+            </div>
+          <% @current_user.role == "dev_team" -> %>
+            <%!-- Dev with no issue yet: CTA to create or link --%>
+            <div class="dropdown dropdown-end">
+              <button tabindex="0" type="button" class="gh-badge gh-cta">
+                <.github_icon class="size-3.5" />{gettext("No sync")}
+                <.icon name="hero-chevron-down" class="size-3 opacity-70" />
+              </button>
+              <ul
+                tabindex="0"
+                class="dropdown-content z-[10] menu p-1.5 shadow-md bg-base-200 rounded-box w-72 border border-base-300 mt-1 gap-0.5"
+              >
+                <li class="-mx-1.5 px-1.5 pb-1 mb-1 border-b border-base-content/15">
+                  <button
+                    type="button"
+                    phx-click="github_create_issue"
+                    phx-disable-with={gettext("Creating...")}
+                    class="gap-2.5"
+                  >
+                    <.icon name="hero-plus-circle" class="size-[15px] text-base-content/40" />
+                    {gettext("Create GitHub issue")}
+                  </button>
+                </li>
+                <li class="menu-title !px-2 !pt-1 !pb-1.5">
+                  <span class="text-[11px] uppercase tracking-wider text-base-content/40">
+                    {gettext("Link existing")}
+                  </span>
+                </li>
+                <li class="p-0 [&>*]:p-0 [&>*]:cursor-default hover:[&>*]:bg-transparent">
+                  <.form
+                    for={@github_link_form}
+                    phx-submit="github_link_issue"
+                    class="flex gap-1.5 p-1"
+                  >
+                    <input
+                      type="text"
+                      name="github_link[reference]"
+                      value={Phoenix.HTML.Form.input_value(@github_link_form, :reference)}
+                      placeholder={gettext("123 or full URL")}
+                      class="flex-1 min-w-0 px-2.5 py-1.5 text-[12.5px] bg-base-100 border border-base-300 rounded-md outline-none focus:border-primary"
+                    />
+                    <button
+                      type="submit"
+                      class="shrink-0 px-3 bg-primary text-primary-content rounded-md text-[12px] font-semibold cursor-pointer hover:bg-primary/90 transition-colors"
+                    >
+                      {gettext("Link")}
+                    </button>
+                  </.form>
+                </li>
+              </ul>
+            </div>
+          <% true -> %>
+            <span class="gh-badge">
+              <.github_icon class="size-3.5" />{gettext("No sync")}
+            </span>
+        <% end %>
       <% end %>
     </div>
 
@@ -111,24 +191,24 @@ aging = aging_days(@request) %>
           <% end %>
 
           <div class="detail-actions">
-            <button phx-click="open_edit_modal" class="btn btn-sm btn-ghost">
-              <.icon name="hero-pencil" class="size-4" /> {gettext("Edit")}
+            <button phx-click="open_edit_modal" class="det-btn">
+              <.icon name="hero-pencil" class="size-3.5" /> {gettext("Edit")}
             </button>
             <%= if @can_set_deadline do %>
-              <button phx-click="open_deadline_modal" class="btn btn-sm btn-ghost">
-                <.icon name="hero-calendar" class="size-4" />
+              <button phx-click="open_deadline_modal" class="det-btn">
+                <.icon name="hero-calendar" class="size-3.5" />
                 {if @request.deadline,
                   do: gettext("Change deadline"),
                   else: gettext("Set deadline")}
               </button>
             <% end %>
             <%= if not is_discarded and not is_completed do %>
-              <button phx-click="open_discard_modal" class="btn btn-sm btn-ghost">
-                <.icon name="hero-archive-box" class="size-4" /> {gettext("Discard")}
+              <button phx-click="open_discard_modal" class="det-btn">
+                <.icon name="hero-archive-box" class="size-3.5" /> {gettext("Discard")}
               </button>
             <% end %>
-            <button phx-click="open_delete_modal" class="btn btn-sm btn-error btn-outline">
-              <.icon name="hero-trash" class="size-4" /> {gettext("Delete")}
+            <button phx-click="open_delete_modal" class="det-btn det-btn-danger">
+              <.icon name="hero-trash" class="size-3.5" /> {gettext("Delete")}
             </button>
           </div>
         </div>
@@ -344,8 +424,8 @@ aging = aging_days(@request) %>
                 placeholder={gettext("Add subtask…")}
                 autocomplete="off"
               />
-              <button type="submit" class="btn btn-primary btn-sm">
-                <.icon name="hero-plus" class="size-4" /> {gettext("Add")}
+              <button type="submit" class="subtask-btn">
+                <.icon name="hero-plus" class="size-3.5" /> {gettext("Add")}
               </button>
             </form>
           <% end %>
@@ -458,7 +538,7 @@ aging = aging_days(@request) %>
                 id="comment-textarea"
                 name="content"
                 rows="3"
-                class="textarea textarea-bordered w-full text-sm"
+                class="c-input w-full"
                 placeholder={gettext("Write a comment… use @ to mention")}
                 phx-update="ignore"
               ></textarea>
@@ -469,8 +549,8 @@ aging = aging_days(@request) %>
               </ul>
             </div>
             <div class="flex justify-end mt-2">
-              <button type="submit" class="btn btn-primary btn-sm">
-                <.icon name="hero-paper-airplane" class="size-4" /> {gettext("Comment")}
+              <button type="submit" class="det-btn det-btn-accent">
+                <.icon name="hero-paper-airplane" class="size-3.5" /> {gettext("Comment")}
               </button>
             </div>
           </form>
@@ -503,18 +583,20 @@ aging = aging_days(@request) %>
           <div class="detail-meta-row mt-4">
             <span class="detail-meta-l">{gettext("Priority")}</span>
             <span class="detail-meta-v">
-              <.priority_badge priority={@request.priority} size="sm" />
+              <.priority_dot priority={@request.priority} />
             </span>
           </div>
           <div class="detail-meta-row">
             <span class="detail-meta-l">{gettext("Requesting team")}</span>
-            <span class="detail-meta-v">{@request.requesting_team.name}</span>
+            <span class="detail-meta-v">
+              <span class="dept">{@request.requesting_team.name}</span>
+            </span>
           </div>
           <div class="detail-meta-row">
             <span class="detail-meta-l">{gettext("Assigned team")}</span>
             <span class="detail-meta-v">
               <%= if @request.assigned_to_team do %>
-                {@request.assigned_to_team.name}
+                <span class="dept">{@request.assigned_to_team.name}</span>
               <% else %>
                 <span class="opacity-60">—</span>
               <% end %>
@@ -554,70 +636,6 @@ aging = aging_days(@request) %>
               <span class={"aging #{aging_class(aging)}"}>{aging}d</span>
             </span>
           </div>
-        </div>
-        
-<!-- GitHub -->
-        <div class="detail-section">
-          <div class="detail-section-t">{gettext("GitHub issue")}</div>
-
-          <%= cond do %>
-            <% not @github_enabled -> %>
-              <p class="text-xs opacity-60">
-                {gettext("GitHub integration is not configured.")}
-              </p>
-            <% @request.github_issue -> %>
-              <div class="flex items-center gap-2 flex-wrap text-xs">
-                <a
-                  href={@request.github_issue.url}
-                  target="_blank"
-                  rel="noopener"
-                  class="link link-primary truncate"
-                >
-                  {@request.github_issue.owner}/{@request.github_issue.repo}#{@request.github_issue.number}
-                </a>
-                <span class={
-              "badge badge-xs " <>
-                if(@request.github_issue.state == "closed",
-                  do: "badge-neutral",
-                  else: "badge-success"
-                )
-            }>
-                  {@request.github_issue.state || "open"}
-                </span>
-                <button
-                  type="button"
-                  phx-click="github_unlink"
-                  data-confirm={gettext("Unlink this issue from the request?")}
-                  class="btn btn-xs btn-ghost ml-auto"
-                >
-                  {gettext("Unlink")}
-                </button>
-              </div>
-            <% true -> %>
-              <div class="space-y-2">
-                <button
-                  type="button"
-                  phx-click="github_create_issue"
-                  phx-disable-with={gettext("Creating...")}
-                  class="btn btn-primary btn-xs w-full"
-                >
-                  {gettext("Create GitHub issue")}
-                </button>
-
-                <.form for={@github_link_form} phx-submit="github_link_issue" class="space-y-2">
-                  <input
-                    type="text"
-                    name="github_link[reference]"
-                    value={Phoenix.HTML.Form.input_value(@github_link_form, :reference)}
-                    placeholder="123 or full URL"
-                    class="input input-bordered input-xs w-full"
-                  />
-                  <button type="submit" class="btn btn-xs w-full">
-                    {gettext("Link existing")}
-                  </button>
-                </.form>
-              </div>
-          <% end %>
         </div>
         
 <!-- History -->
