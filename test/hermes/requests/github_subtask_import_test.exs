@@ -119,7 +119,8 @@ defmodule Hermes.Requests.GitHubSubtaskImportTest do
     {:ok, subs} = Requests.list_linkable_github_subtasks(request)
     issues_before = length(InMemory.list_issues())
 
-    assert {:ok, 2} = Requests.import_github_subtasks(request, subs, user.id)
+    assert {:ok, %{imported: 2, skipped: 0, failed: 0}} =
+             Requests.import_github_subtasks(request, subs, user.id)
 
     # No new GitHub issues were created — only the parent + 2 children exist.
     assert length(InMemory.list_issues()) == issues_before
@@ -136,8 +137,10 @@ defmodule Hermes.Requests.GitHubSubtaskImportTest do
       assert Requests.get_request_with_github_issue(st.id).github_issue
     end)
 
-    # Re-importing the same set is a no-op (already imported).
-    assert {:ok, 0} = Requests.import_github_subtasks(request, subs, user.id)
+    # Re-importing the same set is a no-op (already imported → skipped).
+    assert {:ok, %{imported: 0, skipped: 2, failed: 0}} =
+             Requests.import_github_subtasks(request, subs, user.id)
+
     assert length(Requests.list_subtasks(request.id)) == 2
   end
 

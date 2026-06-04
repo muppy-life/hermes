@@ -613,14 +613,15 @@ defmodule HermesWeb.RequestLive.Show do
       )
 
     case Requests.import_github_subtasks(socket.assigns.request, chosen, user_id) do
-      {:ok, count} ->
+      {:ok, tally} ->
         subtasks = Requests.list_subtasks(socket.assigns.request.id)
+        {kind, message} = import_flash(tally)
 
         {:noreply,
          socket
          |> assign(:subtasks, subtasks)
          |> close_github_subtask_modal()
-         |> put_flash(:info, "Imported #{count} subtask(s) from GitHub")}
+         |> put_flash(kind, message)}
 
       {:error, reason} ->
         {:noreply,
@@ -687,6 +688,16 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   defp subtask_key(%{owner: owner, repo: repo, number: number}), do: "#{owner}/#{repo}##{number}"
+
+  # Builds the flash from the import tally. Any failures make it an error flash
+  # so the user knows some selections were dropped and can retry.
+  defp import_flash(%{imported: imported, failed: failed}) when failed > 0 do
+    {:error, "Imported #{imported} subtask(s); #{failed} failed — please try again"}
+  end
+
+  defp import_flash(%{imported: imported}) do
+    {:info, "Imported #{imported} subtask(s) from GitHub"}
+  end
 
   defp github_error_message(:integration_disabled), do: "GitHub integration is not configured"
   defp github_error_message(:already_linked), do: "Request is already linked to an issue"

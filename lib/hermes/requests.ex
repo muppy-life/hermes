@@ -307,7 +307,11 @@ defmodule Hermes.Requests do
 
   Each `sub` is a map with `:owner, :repo, :number, :title, :state, :url`
   (as returned by `list_linkable_github_subtasks/1`). Closed issues yield a
-  subtask with status `completed`. Returns `{:ok, count}` of imported subtasks.
+  subtask with status `completed`.
+
+  Returns `{:ok, %{imported: i, skipped: s, failed: f}}` so the caller can tell
+  the user how many imports actually succeeded versus were already present or
+  failed (each subtask import is atomic, so a failure leaves no partial row).
   """
   def import_github_subtasks(%Request{} = parent, subs, user_id) when is_list(subs) do
     case get_github_issue(parent.id) do
@@ -315,13 +319,19 @@ defmodule Hermes.Requests do
         {:error, :parent_not_linked}
 
       %GitHubIssue{} = parent_issue ->
-        imported =
+        tally =
           subs
           |> Enum.map(&import_github_subtask(parent, parent_issue, &1, user_id))
-          |> Enum.count(&(&1 == :ok))
+          |> Enum.frequencies()
 
         maybe_refresh_parent_epic_label(parent)
-        {:ok, imported}
+
+        {:ok,
+         %{
+           imported: Map.get(tally, :ok, 0),
+           skipped: Map.get(tally, :skip, 0),
+           failed: Map.get(tally, :error, 0)
+         }}
     end
   end
 
