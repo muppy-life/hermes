@@ -122,6 +122,41 @@
 
 /* === Request detail view (new design) === */
 
+/* Full-screen detail overlay (request detail rendered as a modal layer) */
+.detail-overlay {
+  position: fixed;
+  top: 72px;
+  bottom: 30px;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: var(--color-base-100);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: detail-overlay-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.detail-panel > .detail-body {
+  flex: 1;
+  overflow-y: auto;
+}
+@keyframes detail-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .detail-topbar {
   height: 60px;
   background: var(--color-base-200);
@@ -130,6 +165,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-shrink: 0;
 }
 
 .detail-back {

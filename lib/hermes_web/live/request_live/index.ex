@@ -4,6 +4,26 @@ defmodule HermesWeb.RequestLive.Index do
   alias Hermes.Accounts
   alias Hermes.Requests
 
+  @doc "Sortable table header cell for the backlog table."
+  attr :label, :string, required: true
+  attr :field, :string, required: true
+  attr :sort_by, :atom, required: true
+  attr :sort_order, :atom, required: true
+  attr :width, :string, default: nil
+
+  def th(assigns) do
+    ~H"""
+    <th
+      style={@width && "width: #{@width}"}
+      phx-click="sort"
+      phx-value-by={@field}
+      class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 hover:text-base-content/70 border-b border-base-300 whitespace-nowrap cursor-pointer select-none"
+    >
+      {@label}<span :if={to_string(@sort_by) == @field} class="ml-1">{if @sort_order == :asc, do: "↑", else: "↓"}</span>
+    </th>
+    """
+  end
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
@@ -20,7 +40,7 @@ defmodule HermesWeb.RequestLive.Index do
     filter_status = params["status"] || "all"
     filter_priority = params["priority"] || "all"
     filter_team = params["team"] || "all"
-    active_tab = params["tab"] || "ongoing"
+    filter_search = params["search"] || ""
 
     {:noreply,
      socket
@@ -29,7 +49,7 @@ defmodule HermesWeb.RequestLive.Index do
      |> assign(:filter_status, filter_status)
      |> assign(:filter_priority, filter_priority)
      |> assign(:filter_team, filter_team)
-     |> assign(:active_tab, active_tab)
+     |> assign(:filter_search, filter_search)
      |> load_requests()}
   end
 
@@ -76,27 +96,22 @@ defmodule HermesWeb.RequestLive.Index do
 
   def handle_event(
         "apply_filters",
-        %{"status" => status, "priority" => priority, "team" => team},
+        %{"status" => status, "priority" => priority, "team" => team} = params,
         socket
       ) do
+    search = Map.get(params, "search", socket.assigns.filter_search)
+
     {:noreply,
      push_patch(socket,
-       to: ~p"/backlog?#{build_params(socket, status: status, priority: priority, team: team)}"
+       to:
+         ~p"/backlog?#{build_params(socket, status: status, priority: priority, team: team, search: search)}"
      )}
   end
 
   def handle_event("clear_filters", _params, socket) do
     {:noreply,
      push_patch(socket,
-       to:
-         ~p"/backlog?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}&tab=#{socket.assigns.active_tab}"
-     )}
-  end
-
-  def handle_event("change_tab", %{"tab" => tab}, socket) do
-    {:noreply,
-     push_patch(socket,
-       to: ~p"/backlog?#{build_params(socket, tab: tab)}"
+       to: ~p"/backlog?sort_by=#{socket.assigns.sort_by}&sort_order=#{socket.assigns.sort_order}"
      )}
   end
 
@@ -125,49 +140,24 @@ defmodule HermesWeb.RequestLive.Index do
       "status" => socket.assigns.filter_status,
       "priority" => socket.assigns.filter_priority,
       "team" => socket.assigns.filter_team,
-      "tab" => Map.get(updates_map, "tab", socket.assigns.active_tab)
+      "search" => socket.assigns.filter_search
     }
     |> Map.merge(updates_map)
-    |> Enum.filter(fn {k, v} -> v != "all" and k != "tab" end)
+    |> Enum.reject(fn {_k, v} -> v in ["all", ""] end)
     |> Enum.into(%{})
-    |> Map.put("tab", Map.get(updates_map, "tab", socket.assigns.active_tab))
   end
 
   defp load_requests(socket) do
     current_user = socket.assigns[:current_user]
 
-    all_requests = Requests.list_requests_by_team(current_user.team_id)
-    filtered_requests = apply_filters(all_requests, socket.assigns)
-
-    # Split into three categories
-    new_requests =
-      filtered_requests
-      |> Enum.filter(&(&1.status in ["new", "need_requirement"]))
-      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
-
-    ongoing_requests =
-      filtered_requests
-      |> Enum.filter(
-        &(&1.status in ["pending", "future_planning", "in_progress", "review", "blocked"])
-      )
-      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
-
-    completed_requests =
-      filtered_requests
-      |> Enum.filter(&(&1.status == "completed"))
-      |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
-
-    discarded_requests =
-      filtered_requests
-      |> Enum.filter(&(&1.status == "discarded"))
+    requests =
+      Requests.list_requests_by_team(current_user.team_id)
+      |> apply_filters(socket.assigns)
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
     socket
-    |> assign(:new_requests, new_requests)
-    |> assign(:ongoing_requests, ongoing_requests)
-    |> assign(:completed_requests, completed_requests)
-    |> assign(:discarded_requests, discarded_requests)
-    |> assign(:total_count, length(filtered_requests) - length(discarded_requests))
+    |> assign(:requests, requests)
+    |> assign(:total_count, length(requests))
   end
 
   defp apply_filters(requests, assigns) do
@@ -175,6 +165,19 @@ defmodule HermesWeb.RequestLive.Index do
     |> filter_by_status(assigns.filter_status)
     |> filter_by_priority(assigns.filter_priority)
     |> filter_by_team(assigns.filter_team)
+    |> filter_by_search(assigns.filter_search)
+  end
+
+  defp filter_by_search(requests, ""), do: requests
+
+  defp filter_by_search(requests, search) do
+    q = String.downcase(search)
+
+    Enum.filter(requests, fn r ->
+      String.contains?(String.downcase(r.title || ""), q) or
+        String.contains?(String.downcase(r.description || ""), q) or
+        String.contains?("##{r.id}", q)
+    end)
   end
 
   defp filter_by_status(requests, "all"), do: requests
@@ -202,4 +205,19 @@ defmodule HermesWeb.RequestLive.Index do
     requests
     |> Enum.sort_by(&Map.get(&1, sort_by), sort_order)
   end
+
+  @doc "Days since the request was created."
+  def aging_days(%{inserted_at: nil}), do: 0
+
+  def aging_days(%{inserted_at: inserted_at}) do
+    DateTime.diff(DateTime.utc_now(), to_datetime(inserted_at), :day)
+  end
+
+  defp to_datetime(%DateTime{} = dt), do: dt
+  defp to_datetime(%NaiveDateTime{} = ndt), do: DateTime.from_naive!(ndt, "Etc/UTC")
+
+  @doc "Tailwind text color class for an aging value (green <7d, amber <30d, red otherwise)."
+  def aging_class(days) when days < 7, do: "text-success"
+  def aging_class(days) when days < 30, do: "text-warning"
+  def aging_class(_days), do: "text-error"
 end

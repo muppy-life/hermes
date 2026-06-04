@@ -4,649 +4,659 @@ is_discarded = @request.status == "discarded"
 is_completed = @request.status == "completed"
 aging = aging_days(@request) %>
 
-<div class="detail-topbar">
-  <.link navigate={@return_to} class="detail-back" aria-label={gettext("Back")}>
-    <.icon name="hero-arrow-left" class="size-5" />
-  </.link>
-
-  <div class="flex-1">
-    <div class="text-[11.5px] font-medium opacity-60">#{@request.id}</div>
-    <div class="text-base font-bold tracking-tight truncate">
-      {gettext("Request detail")}
-    </div>
-  </div>
-
-  <%= if @request.kind do %>
-    <.kind_badge kind={@request.kind} size="sm" />
-  <% end %>
-  <.status_badge status={@request.status} size="sm" />
-  <.priority_badge priority={@request.priority} size="sm" />
-  <%= if @request.deadline do %>
-    <.deadline_badge deadline={@request.deadline} size="sm" />
-  <% end %>
-
-  <%= if @github_enabled && @request.github_issue do %>
-    <a
-      class="gh-badge ok"
-      href={@request.github_issue.url}
-      target="_blank"
-      rel="noopener"
-    >
-      <.icon name="hero-link" class="size-3" /> Issue #{@request.github_issue.number}
-    </a>
-  <% end %>
-</div>
-
-<div class="detail-body">
-  <!-- Left column -->
-  <div>
-    <%= if @request.parent do %>
-      <.link navigate={~p"/backlog/#{@request.parent.id}"} class="parent-link">
-        <.icon name="hero-arrow-uturn-left" class="size-3.5" />
-        {gettext("Subtask of")}
-        <strong class="ml-1">#{@request.parent.id} {@request.parent.title}</strong>
+<div class="detail-overlay" phx-window-keydown={JS.navigate(@return_to)} phx-key="Escape">
+  <div class="detail-panel">
+    <div class="detail-topbar">
+      <.link navigate={@return_to} class="detail-back" aria-label={gettext("Back")}>
+        <.icon name="hero-arrow-left" class="size-5" />
       </.link>
-    <% end %>
 
-    <%= if is_discarded && @request.discard_reason do %>
-      <div class="discard-card">
-        <div class="discard-card-icon">
-          <.icon name="hero-archive-box" class="size-5" />
-        </div>
-        <div class="discard-card-body">
-          <div class="discard-card-h">
-            {gettext("Request discarded")}
-            <span class="discard-card-cat">
-              {discard_category_label(@request.discard_reason_category || "other")}
-            </span>
-          </div>
-          <div class="discard-card-p">{@request.discard_reason}</div>
-          <div class="discard-card-meta">
-            {gettext("Discarded by")}
-            <strong>
-              {if @request.discarded_by,
-                do: String.split(@request.discarded_by.email, "@") |> List.first(),
-                else: gettext("Unknown")}
-            </strong>
-            <%= if @request.discarded_at do %>
-              · {Calendar.strftime(@request.discarded_at, "%b %d, %Y")}
-            <% end %>
-            <button
-              type="button"
-              phx-click="restore_request"
-              data-confirm={gettext("Restore this request?")}
-              class="discard-card-undo"
-            >
-              <.icon name="hero-arrow-path" class="size-3" /> {gettext("Restore")}
-            </button>
-          </div>
+      <div class="flex-1">
+        <div class="text-[11.5px] font-medium opacity-60">#{@request.id}</div>
+        <div class="text-base font-bold tracking-tight truncate">
+          {gettext("Request detail")}
         </div>
       </div>
-    <% end %>
-    
-<!-- Title + description + actions -->
-    <div class="detail-section">
-      <div class={["detail-title", is_discarded && "discarded"]}>
-        {@request.title}
-        <%= if is_epic do %>
-          <span class="epic-tag">
-            <.icon name="hero-square-3-stack-3d" class="size-3" /> EPIC
-          </span>
-        <% end %>
-      </div>
 
-      <%= if @request.description && String.trim(@request.description) != "" do %>
-        <div class="detail-desc">{@request.description}</div>
+      <%= if @request.kind do %>
+        <.kind_badge kind={@request.kind} size="sm" />
+      <% end %>
+      <.status_badge status={@request.status} size="sm" />
+      <.priority_badge priority={@request.priority} size="sm" />
+      <%= if @request.deadline do %>
+        <.deadline_badge deadline={@request.deadline} size="sm" />
       <% end %>
 
-      <div class="detail-actions">
-        <button phx-click="open_edit_modal" class="btn btn-sm btn-ghost">
-          <.icon name="hero-pencil" class="size-4" /> {gettext("Edit")}
-        </button>
-        <%= if @can_set_deadline do %>
-          <button phx-click="open_deadline_modal" class="btn btn-sm btn-ghost">
-            <.icon name="hero-calendar" class="size-4" />
-            {if @request.deadline, do: gettext("Change deadline"), else: gettext("Set deadline")}
-          </button>
-        <% end %>
-        <%= if not is_discarded and not is_completed do %>
-          <button phx-click="open_discard_modal" class="btn btn-sm btn-ghost">
-            <.icon name="hero-archive-box" class="size-4" /> {gettext("Discard")}
-          </button>
-        <% end %>
-        <button phx-click="open_delete_modal" class="btn btn-sm btn-error btn-outline">
-          <.icon name="hero-trash" class="size-4" /> {gettext("Delete")}
-        </button>
-      </div>
+      <%= if @github_enabled && @request.github_issue do %>
+        <a
+          class="gh-badge ok"
+          href={@request.github_issue.url}
+          target="_blank"
+          rel="noopener"
+        >
+          <.icon name="hero-link" class="size-3" /> Issue #{@request.github_issue.number}
+        </a>
+      <% end %>
     </div>
-    
-<!-- Current Problem -->
-    <%= if @request.current_situation do %>
-      <div class="detail-section">
-        <div class="detail-section-t">{gettext("Current problem")}</div>
-        <div class="detail-desc">{@request.current_situation}</div>
-      </div>
-    <% end %>
-    
-<!-- Proposed Solution -->
-    <%= if @request.goal_description || @request.expected_output do %>
-      <div class="detail-section">
-        <div class="detail-section-t">{gettext("Proposed solution")}</div>
 
-        <div role="tablist" class="tabs tabs-boxed mb-4 inline-flex">
-          <button
-            role="tab"
-            class={["tab tab-sm", @solution_tab == "goal" && "tab-active"]}
-            phx-click="switch_solution_tab"
-            phx-value-tab="goal"
-          >
-            {gettext("Goal")}
-          </button>
-          <button
-            role="tab"
-            class={["tab tab-sm", @solution_tab == "output" && "tab-active"]}
-            phx-click="switch_solution_tab"
-            phx-value-tab="output"
-          >
-            {gettext("Desired output")}
-          </button>
-          <%= if @diagram_feature_enabled do %>
-            <button
-              role="tab"
-              class={["tab tab-sm", @solution_tab == "diagram" && "tab-active"]}
-              phx-click="switch_solution_tab"
-              phx-value-tab="diagram"
-            >
-              {gettext("Diagram")}
+    <div class="detail-body">
+      <!-- Left column -->
+      <div>
+        <%= if @request.parent do %>
+          <.link navigate={~p"/backlog/#{@request.parent.id}"} class="parent-link">
+            <.icon name="hero-arrow-uturn-left" class="size-3.5" />
+            {gettext("Subtask of")}
+            <strong class="ml-1">#{@request.parent.id} {@request.parent.title}</strong>
+          </.link>
+        <% end %>
+
+        <%= if is_discarded && @request.discard_reason do %>
+          <div class="discard-card">
+            <div class="discard-card-icon">
+              <.icon name="hero-archive-box" class="size-5" />
+            </div>
+            <div class="discard-card-body">
+              <div class="discard-card-h">
+                {gettext("Request discarded")}
+                <span class="discard-card-cat">
+                  {discard_category_label(@request.discard_reason_category || "other")}
+                </span>
+              </div>
+              <div class="discard-card-p">{@request.discard_reason}</div>
+              <div class="discard-card-meta">
+                {gettext("Discarded by")}
+                <strong>
+                  {if @request.discarded_by,
+                    do: String.split(@request.discarded_by.email, "@") |> List.first(),
+                    else: gettext("Unknown")}
+                </strong>
+                <%= if @request.discarded_at do %>
+                  · {Calendar.strftime(@request.discarded_at, "%b %d, %Y")}
+                <% end %>
+                <button
+                  type="button"
+                  phx-click="restore_request"
+                  data-confirm={gettext("Restore this request?")}
+                  class="discard-card-undo"
+                >
+                  <.icon name="hero-arrow-path" class="size-3" /> {gettext("Restore")}
+                </button>
+              </div>
+            </div>
+          </div>
+        <% end %>
+        
+<!-- Title + description + actions -->
+        <div class="detail-section">
+          <div class={["detail-title", is_discarded && "discarded"]}>
+            {@request.title}
+            <%= if is_epic do %>
+              <span class="epic-tag">
+                <.icon name="hero-square-3-stack-3d" class="size-3" /> EPIC
+              </span>
+            <% end %>
+          </div>
+
+          <%= if @request.description && String.trim(@request.description) != "" do %>
+            <div class="detail-desc">{@request.description}</div>
+          <% end %>
+
+          <div class="detail-actions">
+            <button phx-click="open_edit_modal" class="btn btn-sm btn-ghost">
+              <.icon name="hero-pencil" class="size-4" /> {gettext("Edit")}
             </button>
+            <%= if @can_set_deadline do %>
+              <button phx-click="open_deadline_modal" class="btn btn-sm btn-ghost">
+                <.icon name="hero-calendar" class="size-4" />
+                {if @request.deadline,
+                  do: gettext("Change deadline"),
+                  else: gettext("Set deadline")}
+              </button>
+            <% end %>
+            <%= if not is_discarded and not is_completed do %>
+              <button phx-click="open_discard_modal" class="btn btn-sm btn-ghost">
+                <.icon name="hero-archive-box" class="size-4" /> {gettext("Discard")}
+              </button>
+            <% end %>
+            <button phx-click="open_delete_modal" class="btn btn-sm btn-error btn-outline">
+              <.icon name="hero-trash" class="size-4" /> {gettext("Delete")}
+            </button>
+          </div>
+        </div>
+        
+<!-- Current Problem -->
+        <%= if @request.current_situation do %>
+          <div class="detail-section">
+            <div class="detail-section-t">{gettext("Current problem")}</div>
+            <div class="detail-desc">{@request.current_situation}</div>
+          </div>
+        <% end %>
+        
+<!-- Proposed Solution -->
+        <%= if @request.goal_description || @request.expected_output do %>
+          <div class="detail-section">
+            <div class="detail-section-t">{gettext("Proposed solution")}</div>
+
+            <div role="tablist" class="tabs tabs-boxed mb-4 inline-flex">
+              <button
+                role="tab"
+                class={["tab tab-sm", @solution_tab == "goal" && "tab-active"]}
+                phx-click="switch_solution_tab"
+                phx-value-tab="goal"
+              >
+                {gettext("Goal")}
+              </button>
+              <button
+                role="tab"
+                class={["tab tab-sm", @solution_tab == "output" && "tab-active"]}
+                phx-click="switch_solution_tab"
+                phx-value-tab="output"
+              >
+                {gettext("Desired output")}
+              </button>
+              <%= if @diagram_feature_enabled do %>
+                <button
+                  role="tab"
+                  class={["tab tab-sm", @solution_tab == "diagram" && "tab-active"]}
+                  phx-click="switch_solution_tab"
+                  phx-value-tab="diagram"
+                >
+                  {gettext("Diagram")}
+                </button>
+              <% end %>
+            </div>
+
+            <%= if @solution_tab == "goal" && @request.goal_description do %>
+              <div class="detail-desc">{@request.goal_description}</div>
+            <% end %>
+            <%= if @solution_tab == "output" && @request.expected_output do %>
+              <div class="detail-desc">{@request.expected_output}</div>
+            <% end %>
+            <%= if @diagram_feature_enabled && @solution_tab == "diagram" do %>
+              <%= if @request.solution_diagram do %>
+                <div
+                  phx-hook="MermaidDiagram"
+                  id="solution-diagram-container"
+                  class="bg-base-100 rounded-lg p-4"
+                >
+                  <div class="mermaid">{@request.solution_diagram}</div>
+                </div>
+              <% else %>
+                <div class="opacity-60 text-sm py-4 text-center">
+                  {gettext("Diagram is being generated…")}
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+        
+<!-- Business Data -->
+        <%= if @request.data_description && String.trim(@request.data_description) != "" do %>
+          <div class="detail-section">
+            <div class="detail-section-t">{gettext("Related business data")}</div>
+            <div class="detail-desc">{@request.data_description}</div>
+          </div>
+        <% end %>
+        
+<!-- Images -->
+        <div class="detail-section">
+          <div class="detail-section-t">{gettext("Images")}</div>
+
+          <%= if @images != [] do %>
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <%= for image <- @images do %>
+                <div class="relative group">
+                  <img
+                    src={Hermes.Requests.image_url(image)}
+                    alt={image.filename}
+                    class="w-full h-32 object-cover rounded-lg border border-base-300"
+                  />
+                  <button
+                    phx-click="delete_image"
+                    phx-value-id={image.id}
+                    data-confirm={gettext("Delete this image?")}
+                    aria-label={gettext("Delete image %{filename}", filename: image.filename)}
+                    class="absolute top-1 right-1 btn btn-error btn-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ✕
+                  </button>
+                  <p class="text-xs opacity-60 truncate mt-1">{image.filename}</p>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <form phx-submit="upload_images" phx-change="validate_images">
+            <div
+              class="border-2 border-dashed border-base-300 rounded-lg p-4 text-center hover:border-primary transition-colors"
+              phx-drop-target={@uploads.images.ref}
+            >
+              <label for={@uploads.images.ref} class="cursor-pointer">
+                <div class="flex flex-col items-center gap-1">
+                  <.icon name="hero-photo" class="h-7 w-7 opacity-40" />
+                  <span class="text-xs opacity-60">{gettext("Drop or click to upload")}</span>
+                  <span class="text-xs opacity-40">{gettext("JPG, PNG — max 14 MB")}</span>
+                </div>
+                <.live_file_input upload={@uploads.images} class="hidden" />
+              </label>
+            </div>
+
+            <%= for entry <- @uploads.images.entries do %>
+              <div class="flex items-center justify-between mt-2 p-2 bg-base-100 rounded-lg">
+                <div class="flex items-center gap-2">
+                  <.live_img_preview entry={entry} class="h-8 w-8 object-cover rounded" />
+                  <p class="text-xs truncate max-w-[140px]">{entry.client_name}</p>
+                </div>
+                <div class="flex items-center gap-1">
+                  <%= if entry.progress > 0 and entry.progress < 100 do %>
+                    <progress class="progress w-16" value={entry.progress} max="100"></progress>
+                  <% end %>
+                  <button
+                    type="button"
+                    phx-click="cancel_upload"
+                    phx-value-ref={entry.ref}
+                    class="btn btn-ghost btn-xs text-error"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <%= for err <- upload_errors(@uploads.images, entry) do %>
+                <p class="text-error text-xs mt-1">{upload_error_to_string(err)}</p>
+              <% end %>
+            <% end %>
+
+            <%= if @uploads.images.entries != [] do %>
+              <button
+                type="submit"
+                class="btn btn-primary btn-sm w-full mt-3"
+                disabled={Enum.any?(@uploads.images.entries, &(&1.progress < 100))}
+              >
+                {gettext("Upload")}
+              </button>
+            <% end %>
+          </form>
+        </div>
+        
+<!-- Subtasks -->
+        <div class="detail-section">
+          <div class="subtask-head">
+            <div class="detail-section-t" style="margin-bottom:0">
+              <.icon name="hero-square-3-stack-3d" class="size-3.5 align-[-2px] mr-1" />
+              {gettext("Subtasks")}
+            </div>
+            <%= if subtasks_total > 0 do %>
+              <div class="subtask-count">
+                <strong>{subtasks_done}/{subtasks_total}</strong> {gettext("completed")} · {subtasks_pct}%
+              </div>
+            <% end %>
+          </div>
+
+          <%= if subtasks_total > 0 do %>
+            <div class="subtask-progress-wrap">
+              <div style={"width:#{subtasks_pct}%"}></div>
+            </div>
+          <% end %>
+
+          <div class="subtask-list">
+            <%= for s <- @subtasks do %>
+              <div
+                class={["subtask-row", s.status == "completed" && "done"]}
+                phx-click={JS.navigate(~p"/backlog/#{s.id}")}
+              >
+                <div
+                  class="subtask-check"
+                  phx-click="toggle_subtask"
+                  phx-value-id={s.id}
+                  onclick="event.stopPropagation()"
+                >
+                </div>
+                <span class="subtask-id">#{s.id}</span>
+                <span class="subtask-title">{s.title}</span>
+                <div class="subtask-meta">
+                  <.priority_badge priority={s.priority} size="sm" />
+                  <.status_badge status={s.status} size="sm" />
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <%= unless is_discarded do %>
+            <form
+              phx-submit="add_subtask"
+              class="subtask-add"
+              id="subtask-add-form"
+              phx-hook="SubtaskInput"
+            >
+              <input
+                type="text"
+                name="title"
+                class="subtask-input"
+                placeholder={gettext("Add subtask…")}
+                autocomplete="off"
+              />
+              <button type="submit" class="btn btn-primary btn-sm">
+                <.icon name="hero-plus" class="size-4" /> {gettext("Add")}
+              </button>
+            </form>
           <% end %>
         </div>
+        
+<!-- Comments -->
+        <div class="detail-section">
+          <div class="detail-section-t">
+            {gettext("Comments")} · {length(@comments)}
+          </div>
 
-        <%= if @solution_tab == "goal" && @request.goal_description do %>
-          <div class="detail-desc">{@request.goal_description}</div>
-        <% end %>
-        <%= if @solution_tab == "output" && @request.expected_output do %>
-          <div class="detail-desc">{@request.expected_output}</div>
-        <% end %>
-        <%= if @diagram_feature_enabled && @solution_tab == "diagram" do %>
-          <%= if @request.solution_diagram do %>
-            <div
-              phx-hook="MermaidDiagram"
-              id="solution-diagram-container"
-              class="bg-base-100 rounded-lg p-4"
-            >
-              <div class="mermaid">{@request.solution_diagram}</div>
+          <%= if Enum.empty?(@comments) do %>
+            <div class="opacity-60 text-sm text-center py-6">
+              {gettext("No comments yet")}
             </div>
           <% else %>
-            <div class="opacity-60 text-sm py-4 text-center">
-              {gettext("Diagram is being generated…")}
-            </div>
-          <% end %>
-        <% end %>
-      </div>
-    <% end %>
-    
-<!-- Business Data -->
-    <%= if @request.data_description && String.trim(@request.data_description) != "" do %>
-      <div class="detail-section">
-        <div class="detail-section-t">{gettext("Related business data")}</div>
-        <div class="detail-desc">{@request.data_description}</div>
-      </div>
-    <% end %>
-    
-<!-- Images -->
-    <div class="detail-section">
-      <div class="detail-section-t">{gettext("Images")}</div>
-
-      <%= if @images != [] do %>
-        <div class="grid grid-cols-3 gap-3 mb-4">
-          <%= for image <- @images do %>
-            <div class="relative group">
-              <img
-                src={Hermes.Requests.image_url(image)}
-                alt={image.filename}
-                class="w-full h-32 object-cover rounded-lg border border-base-300"
-              />
-              <button
-                phx-click="delete_image"
-                phx-value-id={image.id}
-                data-confirm={gettext("Delete this image?")}
-                aria-label={gettext("Delete image %{filename}", filename: image.filename)}
-                class="absolute top-1 right-1 btn btn-error btn-xs opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                ✕
-              </button>
-              <p class="text-xs opacity-60 truncate mt-1">{image.filename}</p>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-
-      <form phx-submit="upload_images" phx-change="validate_images">
-        <div
-          class="border-2 border-dashed border-base-300 rounded-lg p-4 text-center hover:border-primary transition-colors"
-          phx-drop-target={@uploads.images.ref}
-        >
-          <label for={@uploads.images.ref} class="cursor-pointer">
-            <div class="flex flex-col items-center gap-1">
-              <.icon name="hero-photo" class="h-7 w-7 opacity-40" />
-              <span class="text-xs opacity-60">{gettext("Drop or click to upload")}</span>
-              <span class="text-xs opacity-40">{gettext("JPG, PNG — max 14 MB")}</span>
-            </div>
-            <.live_file_input upload={@uploads.images} class="hidden" />
-          </label>
-        </div>
-
-        <%= for entry <- @uploads.images.entries do %>
-          <div class="flex items-center justify-between mt-2 p-2 bg-base-100 rounded-lg">
-            <div class="flex items-center gap-2">
-              <.live_img_preview entry={entry} class="h-8 w-8 object-cover rounded" />
-              <p class="text-xs truncate max-w-[140px]">{entry.client_name}</p>
-            </div>
-            <div class="flex items-center gap-1">
-              <%= if entry.progress > 0 and entry.progress < 100 do %>
-                <progress class="progress w-16" value={entry.progress} max="100"></progress>
-              <% end %>
-              <button
-                type="button"
-                phx-click="cancel_upload"
-                phx-value-ref={entry.ref}
-                class="btn btn-ghost btn-xs text-error"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-          <%= for err <- upload_errors(@uploads.images, entry) do %>
-            <p class="text-error text-xs mt-1">{upload_error_to_string(err)}</p>
-          <% end %>
-        <% end %>
-
-        <%= if @uploads.images.entries != [] do %>
-          <button
-            type="submit"
-            class="btn btn-primary btn-sm w-full mt-3"
-            disabled={Enum.any?(@uploads.images.entries, &(&1.progress < 100))}
-          >
-            {gettext("Upload")}
-          </button>
-        <% end %>
-      </form>
-    </div>
-    
-<!-- Subtasks -->
-    <div class="detail-section">
-      <div class="subtask-head">
-        <div class="detail-section-t" style="margin-bottom:0">
-          <.icon name="hero-square-3-stack-3d" class="size-3.5 align-[-2px] mr-1" />
-          {gettext("Subtasks")}
-        </div>
-        <%= if subtasks_total > 0 do %>
-          <div class="subtask-count">
-            <strong>{subtasks_done}/{subtasks_total}</strong> {gettext("completed")} · {subtasks_pct}%
-          </div>
-        <% end %>
-      </div>
-
-      <%= if subtasks_total > 0 do %>
-        <div class="subtask-progress-wrap">
-          <div style={"width:#{subtasks_pct}%"}></div>
-        </div>
-      <% end %>
-
-      <div class="subtask-list">
-        <%= for s <- @subtasks do %>
-          <div
-            class={["subtask-row", s.status == "completed" && "done"]}
-            phx-click={JS.navigate(~p"/backlog/#{s.id}")}
-          >
-            <div
-              class="subtask-check"
-              phx-click="toggle_subtask"
-              phx-value-id={s.id}
-              onclick="event.stopPropagation()"
-            >
-            </div>
-            <span class="subtask-id">#{s.id}</span>
-            <span class="subtask-title">{s.title}</span>
-            <div class="subtask-meta">
-              <.priority_badge priority={s.priority} size="sm" />
-              <.status_badge status={s.status} size="sm" />
-            </div>
-          </div>
-        <% end %>
-      </div>
-
-      <%= unless is_discarded do %>
-        <form
-          phx-submit="add_subtask"
-          class="subtask-add"
-          id="subtask-add-form"
-          phx-hook="SubtaskInput"
-        >
-          <input
-            type="text"
-            name="title"
-            class="subtask-input"
-            placeholder={gettext("Add subtask…")}
-            autocomplete="off"
-          />
-          <button type="submit" class="btn btn-primary btn-sm">
-            <.icon name="hero-plus" class="size-4" /> {gettext("Add")}
-          </button>
-        </form>
-      <% end %>
-    </div>
-    
-<!-- Comments -->
-    <div class="detail-section">
-      <div class="detail-section-t">
-        {gettext("Comments")} · {length(@comments)}
-      </div>
-
-      <%= if Enum.empty?(@comments) do %>
-        <div class="opacity-60 text-sm text-center py-6">
-          {gettext("No comments yet")}
-        </div>
-      <% else %>
-        <%= for comment <- @comments do %>
-          <div class="comment">
-            <div class="c-avatar">
-              {String.first(comment.user.email) |> String.upcase()}
-            </div>
-            <div class="c-bubble">
-              <div class="c-meta flex items-center justify-between gap-2">
-                <span>
-                  <strong>{String.split(comment.user.email, "@") |> List.first()}</strong>
-                  · {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
-                </span>
-                <%= if @current_user && comment.user_id == @current_user.id && @editing_comment_id != comment.id do %>
-                  <div class="dropdown dropdown-end">
-                    <div
-                      tabindex="0"
-                      role="button"
-                      class="cursor-pointer p-1 rounded opacity-60 hover:opacity-100"
-                      aria-label={gettext("Comment actions")}
-                    >
-                      <.icon name="hero-ellipsis-vertical" class="size-3" />
-                    </div>
-                    <ul
-                      tabindex="0"
-                      class="dropdown-content menu menu-sm bg-base-100 rounded-box shadow border border-base-300 z-50 w-36 p-1"
-                    >
-                      <li>
-                        <button
-                          type="button"
-                          phx-click="start_edit_comment"
-                          phx-value-id={comment.id}
+            <%= for comment <- @comments do %>
+              <div class="comment">
+                <div class="c-avatar">
+                  {String.first(comment.user.email) |> String.upcase()}
+                </div>
+                <div class="c-bubble">
+                  <div class="c-meta flex items-center justify-between gap-2">
+                    <span>
+                      <strong>{String.split(comment.user.email, "@") |> List.first()}</strong>
+                      · {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
+                    </span>
+                    <%= if @current_user && comment.user_id == @current_user.id && @editing_comment_id != comment.id do %>
+                      <div class="dropdown dropdown-end">
+                        <div
+                          tabindex="0"
+                          role="button"
+                          class="cursor-pointer p-1 rounded opacity-60 hover:opacity-100"
+                          aria-label={gettext("Comment actions")}
                         >
-                          {gettext("Edit")}
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          type="button"
-                          phx-click="delete_comment"
-                          phx-value-id={comment.id}
-                          data-confirm={gettext("Delete this comment?")}
-                          class="text-error"
+                          <.icon name="hero-ellipsis-vertical" class="size-3" />
+                        </div>
+                        <ul
+                          tabindex="0"
+                          class="dropdown-content menu menu-sm bg-base-100 rounded-box shadow border border-base-300 z-50 w-36 p-1"
                         >
-                          {gettext("Delete")}
-                        </button>
-                      </li>
-                    </ul>
+                          <li>
+                            <button
+                              type="button"
+                              phx-click="start_edit_comment"
+                              phx-value-id={comment.id}
+                            >
+                              {gettext("Edit")}
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              phx-click="delete_comment"
+                              phx-value-id={comment.id}
+                              data-confirm={gettext("Delete this comment?")}
+                              class="text-error"
+                            >
+                              {gettext("Delete")}
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    <% end %>
                   </div>
-                <% end %>
+
+                  <%= if @editing_comment_id == comment.id and @edit_comment_form do %>
+                    <.form
+                      for={@edit_comment_form}
+                      phx-submit="save_edit_comment"
+                      phx-change="validate_edit_comment"
+                      phx-value-id={comment.id}
+                      class="space-y-1"
+                    >
+                      <.input
+                        field={@edit_comment_form[:content]}
+                        type="textarea"
+                        rows="2"
+                        class="textarea textarea-bordered textarea-sm w-full text-xs"
+                      />
+                      <div class="flex gap-1">
+                        <button type="submit" class="btn btn-primary btn-xs">
+                          {gettext("Save")}
+                        </button>
+                        <button
+                          type="button"
+                          phx-click="cancel_edit_comment"
+                          class="btn btn-ghost btn-xs"
+                        >
+                          {gettext("Cancel")}
+                        </button>
+                      </div>
+                    </.form>
+                  <% else %>
+                    <p phx-no-format class="c-text">{render_comment_content(comment.content)}</p>
+                  <% end %>
+                </div>
               </div>
+            <% end %>
+          <% end %>
 
-              <%= if @editing_comment_id == comment.id and @edit_comment_form do %>
-                <.form
-                  for={@edit_comment_form}
-                  phx-submit="save_edit_comment"
-                  phx-change="validate_edit_comment"
-                  phx-value-id={comment.id}
-                  class="space-y-1"
-                >
-                  <.input
-                    field={@edit_comment_form[:content]}
-                    type="textarea"
-                    rows="2"
-                    class="textarea textarea-bordered textarea-sm w-full text-xs"
-                  />
-                  <div class="flex gap-1">
-                    <button type="submit" class="btn btn-primary btn-xs">
-                      {gettext("Save")}
-                    </button>
-                    <button
-                      type="button"
-                      phx-click="cancel_edit_comment"
-                      class="btn btn-ghost btn-xs"
-                    >
-                      {gettext("Cancel")}
-                    </button>
-                  </div>
-                </.form>
-              <% else %>
-                <p phx-no-format class="c-text">{render_comment_content(comment.content)}</p>
-              <% end %>
+          <form phx-submit="add_comment" class="pt-4 mt-2 border-t border-base-300">
+            <div
+              id="mention-input-wrapper"
+              class="relative"
+              phx-hook="MentionInput"
+              data-users={Jason.encode!(@mentionable_users)}
+            >
+              <textarea
+                id="comment-textarea"
+                name="content"
+                rows="3"
+                class="textarea textarea-bordered w-full text-sm"
+                placeholder={gettext("Write a comment… use @ to mention")}
+                phx-update="ignore"
+              ></textarea>
+              <ul
+                id="mention-dropdown"
+                class="hidden absolute bottom-full left-0 mb-1 w-56 bg-base-100 border border-base-300 rounded shadow-lg z-50 max-h-40 overflow-y-auto"
+              >
+              </ul>
             </div>
-          </div>
-        <% end %>
-      <% end %>
-
-      <form phx-submit="add_comment" class="pt-4 mt-2 border-t border-base-300">
-        <div
-          id="mention-input-wrapper"
-          class="relative"
-          phx-hook="MentionInput"
-          data-users={Jason.encode!(@mentionable_users)}
-        >
-          <textarea
-            id="comment-textarea"
-            name="content"
-            rows="3"
-            class="textarea textarea-bordered w-full text-sm"
-            placeholder={gettext("Write a comment… use @ to mention")}
-            phx-update="ignore"
-          ></textarea>
-          <ul
-            id="mention-dropdown"
-            class="hidden absolute bottom-full left-0 mb-1 w-56 bg-base-100 border border-base-300 rounded shadow-lg z-50 max-h-40 overflow-y-auto"
-          >
-          </ul>
+            <div class="flex justify-end mt-2">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <.icon name="hero-paper-airplane" class="size-4" /> {gettext("Comment")}
+              </button>
+            </div>
+          </form>
         </div>
-        <div class="flex justify-end mt-2">
-          <button type="submit" class="btn btn-primary btn-sm">
-            <.icon name="hero-paper-airplane" class="size-4" /> {gettext("Comment")}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-  
+      </div>
+      
 <!-- Right sidebar -->
-  <div>
-    <div class="detail-section">
-      <div class="detail-section-t">{gettext("Status")}</div>
-      <form phx-change="change_status">
-        <select
-          name="status"
-          class="select select-bordered select-sm w-full"
-          disabled={is_discarded}
-        >
-          <%= for {value, label} <- status_options(),
+      <div>
+        <div class="detail-section">
+          <div class="detail-section-t">{gettext("Status")}</div>
+          <form phx-change="change_status">
+            <select
+              name="status"
+              class="select select-bordered select-sm w-full"
+              disabled={is_discarded}
+            >
+              <%= for {value, label} <- status_options(),
                   value != "discarded" or is_discarded,
                   not (value == "discarded" and is_completed) do %>
-            <option value={value} selected={@request.status == value}>{label}</option>
+                <option value={value} selected={@request.status == value}>{label}</option>
+              <% end %>
+            </select>
+          </form>
+          <%= if is_discarded do %>
+            <p class="text-xs opacity-60 mt-1">
+              {gettext("Restore the request to change its status.")}
+            </p>
           <% end %>
-        </select>
-      </form>
-      <%= if is_discarded do %>
-        <p class="text-xs opacity-60 mt-1">
-          {gettext("Restore the request to change its status.")}
-        </p>
-      <% end %>
 
-      <div class="detail-meta-row mt-4">
-        <span class="detail-meta-l">{gettext("Priority")}</span>
-        <span class="detail-meta-v">
-          <.priority_badge priority={@request.priority} size="sm" />
-        </span>
-      </div>
-      <div class="detail-meta-row">
-        <span class="detail-meta-l">{gettext("Requesting team")}</span>
-        <span class="detail-meta-v">{@request.requesting_team.name}</span>
-      </div>
-      <div class="detail-meta-row">
-        <span class="detail-meta-l">{gettext("Assigned team")}</span>
-        <span class="detail-meta-v">
-          <%= if @request.assigned_to_team do %>
-            {@request.assigned_to_team.name}
-          <% else %>
-            <span class="opacity-60">—</span>
-          <% end %>
-        </span>
-      </div>
-      <div class="detail-meta-row">
-        <span class="detail-meta-l">{gettext("Reporter")}</span>
-        <span class="detail-meta-v">
-          {String.split(@request.created_by.email, "@") |> List.first()}
-        </span>
-      </div>
-      <div class="detail-meta-row">
-        <span class="detail-meta-l">{gettext("Created")}</span>
-        <span class="detail-meta-v">{Calendar.strftime(@request.inserted_at, "%b %d, %Y")}</span>
-      </div>
-      <div class="detail-meta-row">
-        <span class="detail-meta-l">{gettext("Deadline")}</span>
-        <span class="detail-meta-v">
-          <%= if @request.deadline do %>
-            {Calendar.strftime(@request.deadline, "%b %d, %Y")}
-          <% else %>
-            <span class="opacity-60">—</span>
-          <% end %>
-        </span>
-      </div>
-      <div class="detail-meta-row">
-        <span class="detail-meta-l">{gettext("Updated")}</span>
-        <span class="detail-meta-v">{Calendar.strftime(@request.updated_at, "%b %d, %Y")}</span>
-      </div>
-      <div class="detail-meta-row">
-        <span class="detail-meta-l">{gettext("Aging")}</span>
-        <span class="detail-meta-v">
-          <span class={"aging #{aging_class(aging)}"}>{aging}d</span>
-        </span>
-      </div>
-    </div>
-    
+          <div class="detail-meta-row mt-4">
+            <span class="detail-meta-l">{gettext("Priority")}</span>
+            <span class="detail-meta-v">
+              <.priority_badge priority={@request.priority} size="sm" />
+            </span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-l">{gettext("Requesting team")}</span>
+            <span class="detail-meta-v">{@request.requesting_team.name}</span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-l">{gettext("Assigned team")}</span>
+            <span class="detail-meta-v">
+              <%= if @request.assigned_to_team do %>
+                {@request.assigned_to_team.name}
+              <% else %>
+                <span class="opacity-60">—</span>
+              <% end %>
+            </span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-l">{gettext("Reporter")}</span>
+            <span class="detail-meta-v">
+              {String.split(@request.created_by.email, "@") |> List.first()}
+            </span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-l">{gettext("Created")}</span>
+            <span class="detail-meta-v">
+              {Calendar.strftime(@request.inserted_at, "%b %d, %Y")}
+            </span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-l">{gettext("Deadline")}</span>
+            <span class="detail-meta-v">
+              <%= if @request.deadline do %>
+                {Calendar.strftime(@request.deadline, "%b %d, %Y")}
+              <% else %>
+                <span class="opacity-60">—</span>
+              <% end %>
+            </span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-l">{gettext("Updated")}</span>
+            <span class="detail-meta-v">
+              {Calendar.strftime(@request.updated_at, "%b %d, %Y")}
+            </span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-l">{gettext("Aging")}</span>
+            <span class="detail-meta-v">
+              <span class={"aging #{aging_class(aging)}"}>{aging}d</span>
+            </span>
+          </div>
+        </div>
+        
 <!-- GitHub -->
-    <div class="detail-section">
-      <div class="detail-section-t">{gettext("GitHub issue")}</div>
+        <div class="detail-section">
+          <div class="detail-section-t">{gettext("GitHub issue")}</div>
 
-      <%= cond do %>
-        <% not @github_enabled -> %>
-          <p class="text-xs opacity-60">
-            {gettext("GitHub integration is not configured.")}
-          </p>
-        <% @request.github_issue -> %>
-          <div class="flex items-center gap-2 flex-wrap text-xs">
-            <a
-              href={@request.github_issue.url}
-              target="_blank"
-              rel="noopener"
-              class="link link-primary truncate"
-            >
-              {@request.github_issue.owner}/{@request.github_issue.repo}#{@request.github_issue.number}
-            </a>
-            <span class={
+          <%= cond do %>
+            <% not @github_enabled -> %>
+              <p class="text-xs opacity-60">
+                {gettext("GitHub integration is not configured.")}
+              </p>
+            <% @request.github_issue -> %>
+              <div class="flex items-center gap-2 flex-wrap text-xs">
+                <a
+                  href={@request.github_issue.url}
+                  target="_blank"
+                  rel="noopener"
+                  class="link link-primary truncate"
+                >
+                  {@request.github_issue.owner}/{@request.github_issue.repo}#{@request.github_issue.number}
+                </a>
+                <span class={
               "badge badge-xs " <>
                 if(@request.github_issue.state == "closed",
                   do: "badge-neutral",
                   else: "badge-success"
                 )
             }>
-              {@request.github_issue.state || "open"}
-            </span>
-            <button
-              type="button"
-              phx-click="github_unlink"
-              data-confirm={gettext("Unlink this issue from the request?")}
-              class="btn btn-xs btn-ghost ml-auto"
-            >
-              {gettext("Unlink")}
-            </button>
-          </div>
-        <% true -> %>
-          <div class="space-y-2">
-            <button
-              type="button"
-              phx-click="github_create_issue"
-              phx-disable-with={gettext("Creating...")}
-              class="btn btn-primary btn-xs w-full"
-            >
-              {gettext("Create GitHub issue")}
-            </button>
-
-            <.form for={@github_link_form} phx-submit="github_link_issue" class="space-y-2">
-              <input
-                type="text"
-                name="github_link[reference]"
-                value={Phoenix.HTML.Form.input_value(@github_link_form, :reference)}
-                placeholder="123 or full URL"
-                class="input input-bordered input-xs w-full"
-              />
-              <button type="submit" class="btn btn-xs w-full">
-                {gettext("Link existing")}
-              </button>
-            </.form>
-          </div>
-      <% end %>
-    </div>
-    
-<!-- History -->
-    <%= if @changes != [] do %>
-      <div class="detail-section">
-        <div class="detail-section-t">{gettext("History")}</div>
-        <div class="space-y-2 max-h-80 overflow-y-auto">
-          <%= for change <- @changes do %>
-            <div class="p-2 bg-base-100 rounded text-xs">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-semibold truncate">
-                  {if change.user,
-                    do: String.split(change.user.email, "@") |> List.first(),
-                    else: gettext("System")}
+                  {@request.github_issue.state || "open"}
                 </span>
-                <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
-                  {Calendar.strftime(change.inserted_at, "%b %d, %H:%M")}
-                </span>
+                <button
+                  type="button"
+                  phx-click="github_unlink"
+                  data-confirm={gettext("Unlink this issue from the request?")}
+                  class="btn btn-xs btn-ghost ml-auto"
+                >
+                  {gettext("Unlink")}
+                </button>
               </div>
+            <% true -> %>
+              <div class="space-y-2">
+                <button
+                  type="button"
+                  phx-click="github_create_issue"
+                  phx-disable-with={gettext("Creating...")}
+                  class="btn btn-primary btn-xs w-full"
+                >
+                  {gettext("Create GitHub issue")}
+                </button>
 
-              <%= if change.action == "created" do %>
-                <p class="text-[10px] opacity-70">{gettext("Created request")}</p>
-              <% else %>
-                <div class="text-[10px]">
-                  <div class="font-medium mb-1">{humanize_field(change.field)}</div>
-                  <div class="space-y-0.5">
-                    <div>
-                      <span class="opacity-60">{gettext("From:")}</span>
-                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
-                        {format_change_value(change.old_value)}
-                      </span>
-                    </div>
-                    <div>
-                      <span class="opacity-60">{gettext("To:")}</span>
-                      <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
-                        {format_change_value(change.new_value)}
-                      </span>
-                    </div>
+                <.form for={@github_link_form} phx-submit="github_link_issue" class="space-y-2">
+                  <input
+                    type="text"
+                    name="github_link[reference]"
+                    value={Phoenix.HTML.Form.input_value(@github_link_form, :reference)}
+                    placeholder="123 or full URL"
+                    class="input input-bordered input-xs w-full"
+                  />
+                  <button type="submit" class="btn btn-xs w-full">
+                    {gettext("Link existing")}
+                  </button>
+                </.form>
+              </div>
+          <% end %>
+        </div>
+        
+<!-- History -->
+        <%= if @changes != [] do %>
+          <div class="detail-section">
+            <div class="detail-section-t">{gettext("History")}</div>
+            <div class="space-y-2 max-h-80 overflow-y-auto">
+              <%= for change <- @changes do %>
+                <div class="p-2 bg-base-100 rounded text-xs">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-semibold truncate">
+                      {if change.user,
+                        do: String.split(change.user.email, "@") |> List.first(),
+                        else: gettext("System")}
+                    </span>
+                    <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
+                      {Calendar.strftime(change.inserted_at, "%b %d, %H:%M")}
+                    </span>
                   </div>
+
+                  <%= if change.action == "created" do %>
+                    <p class="text-[10px] opacity-70">{gettext("Created request")}</p>
+                  <% else %>
+                    <div class="text-[10px]">
+                      <div class="font-medium mb-1">{humanize_field(change.field)}</div>
+                      <div class="space-y-0.5">
+                        <div>
+                          <span class="opacity-60">{gettext("From:")}</span>
+                          <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
+                            {format_change_value(change.old_value)}
+                          </span>
+                        </div>
+                        <div>
+                          <span class="opacity-60">{gettext("To:")}</span>
+                          <span class="font-mono bg-base-300 px-1 rounded text-[9px]">
+                            {format_change_value(change.new_value)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
                 </div>
               <% end %>
             </div>
-          <% end %>
-        </div>
+          </div>
+        <% end %>
       </div>
-    <% end %>
+    </div>
   </div>
 </div>
 
