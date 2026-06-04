@@ -4,12 +4,21 @@ is_discarded = @request.status == "discarded"
 is_completed = @request.status == "completed"
 aging = aging_days(@request) %>
 
-<div class="detail-overlay" phx-window-keydown={JS.navigate(@return_to)} phx-key="Escape">
+<div
+  class="detail-overlay"
+  phx-window-keydown={JS.dispatch("phx:history-back")}
+  phx-key="Escape"
+>
   <div class="detail-panel">
     <div class="detail-topbar">
-      <.link navigate={@return_to} class="detail-back" aria-label={gettext("Back")}>
+      <button
+        type="button"
+        onclick="history.back()"
+        class="detail-back"
+        aria-label={gettext("Back")}
+      >
         <.icon name="hero-arrow-left" class="size-5" />
-      </.link>
+      </button>
 
       <div class="flex-1">
         <div class="text-[11.5px] font-medium opacity-60">#{@request.id}</div>

@@ -5,7 +5,6 @@ defmodule HermesWeb.RequestLive.Show do
 
   alias Hermes.Accounts
   alias Hermes.Requests
-  alias HermesWeb.NavigationHistory
   alias HermesWeb.RequestLive.UploadErrors
 
   @max_image_size 14 * 1_024 * 1_024
@@ -44,7 +43,6 @@ defmodule HermesWeb.RequestLive.Show do
 
     {:ok,
      socket
-     |> NavigationHistory.assign_return_path(default: ~p"/backlog")
      |> assign(:page_title, "Request Details")
      |> assign(:request, request)
      |> assign(:changes, changes)
