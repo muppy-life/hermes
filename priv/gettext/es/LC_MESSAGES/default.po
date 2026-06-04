@@ -181,7 +181,7 @@ msgstr "Crítica"
 #: lib/hermes_web/components/layouts.ex:72
 #, elixir-autogen, elixir-format
 msgid "Dashboard"
-msgstr "Panel de Control"
+msgstr "Panel"
 
 #: lib/hermes_web/live/request_live/show.html.heex:118
 #: lib/hermes_web/live/request_live/show.html.heex:394

@@ -29,20 +29,49 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 
 const Hooks = {
   ActiveNav: {
-    mounted() { this.highlight() },
-    updated() { this.highlight() },
-    highlight() {
+    mounted() {
+      this.highlight(false)
+      this._onResize = () => this.highlight(false)
+      window.addEventListener("resize", this._onResize)
+      // The nav lives in the layout and is not patched on live navigation,
+      // so updated() won't fire. Re-highlight whenever a live nav completes.
+      this._onNav = () => this.highlight(true)
+      window.addEventListener("phx:navigate", this._onNav)
+    },
+    updated() { this.highlight(true) },
+    destroyed() {
+      window.removeEventListener("resize", this._onResize)
+      window.removeEventListener("phx:navigate", this._onNav)
+    },
+    highlight(animate) {
       const path = window.location.pathname
+      const indicator = this.el.querySelector("#nav-indicator")
+      let activeTab = null
       this.el.querySelectorAll(".nav-tab").forEach((tab) => {
         const base = tab.dataset.path
         const active = base === "/dashboard"
           ? path === "/" || path.startsWith("/dashboard")
           : path === base || path.startsWith(base + "/")
-        tab.classList.toggle("bg-primary", active)
+        if (active) activeTab = tab
+        // Active tab shows white text (over the slate indicator); inactive
+        // tabs are muted and get the hover recolor.
         tab.classList.toggle("text-primary-content", active)
         tab.classList.toggle("font-semibold", active)
         tab.classList.toggle("text-base-content/70", !active)
+        tab.classList.toggle("hover:text-base-content", !active)
+        tab.classList.add("relative", "z-10")
       })
+      if (!indicator || !activeTab) return
+      // Skip the slide transition on first paint / resize, animate on nav.
+      indicator.style.transition = animate ? "" : "none"
+      indicator.style.left = activeTab.offsetLeft + "px"
+      indicator.style.width = activeTab.offsetWidth + "px"
+      indicator.style.opacity = "1"
+      if (!animate) {
+        // Re-enable transitions after the initial positioning paint.
+        indicator.offsetWidth
+        indicator.style.transition = ""
+      }
     }
   },
   SubtaskInput: {

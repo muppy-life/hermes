@@ -67,21 +67,22 @@ defmodule HermesWeb.Layouts do
 
         <%= if @current_user do %>
           <nav id="nav-tabs" phx-hook="ActiveNav" class="flex-1 flex justify-center">
-            <div class="flex gap-0.5 bg-base-300 p-1 rounded-full">
-              <a href={~p"/dashboard"} class={nav_tab_class()} data-path="/dashboard">
+            <div class="relative flex gap-0.5 bg-base-300 p-1 rounded-full">
+              <%!-- Sliding indicator positioned by the ActiveNav hook. --%>
+              <span
+                id="nav-indicator"
+                class="absolute top-1 bottom-1 rounded-full bg-primary transition-all duration-300 ease-out pointer-events-none opacity-0"
+              >
+              </span>
+              <.link navigate={~p"/dashboard"} class={nav_tab_class()} data-path="/dashboard">
                 <.icon name="hero-squares-2x2" class="size-3.5" />{gettext("Dashboard")}
-              </a>
-              <a href={~p"/backlog"} class={nav_tab_class()} data-path="/backlog">
+              </.link>
+              <.link navigate={~p"/backlog"} class={nav_tab_class()} data-path="/backlog">
                 <.icon name="hero-list-bullet" class="size-3.5" />{gettext("Backlog")}
-              </a>
-              <a href={~p"/boards"} class={nav_tab_class()} data-path="/boards">
+              </.link>
+              <.link navigate={~p"/boards"} class={nav_tab_class()} data-path="/boards">
                 <.icon name="hero-view-columns" class="size-3.5" />{gettext("Boards")}
-              </a>
-              <%= if Hermes.Accounts.is_admin?(@current_user) do %>
-                <a href={~p"/admin"} class={nav_tab_class()} data-path="/admin">
-                  <.icon name="hero-cog-6-tooth" class="size-3.5" />{gettext("Admin")}
-                </a>
-              <% end %>
+              </.link>
             </div>
           </nav>
         <% else %>
