@@ -548,7 +548,7 @@ defmodule HermesWeb.CoreComponents do
   defp priority_dot_class(priority) do
     case priority do
       4 -> "p-alta"
-      3 -> "p-alta"
+      3 -> "p-importante"
       2 -> "p-media"
       1 -> "p-baja"
       _ -> "p-baja"
@@ -634,6 +634,28 @@ defmodule HermesWeb.CoreComponents do
       {status_label(@status)}
     </span>
     """
+  end
+
+  @doc """
+  Renders a status as a grey pill with a colored status dot (backlog table style).
+  """
+  attr :status, :string, required: true
+
+  def status_pill(assigns) do
+    ~H"""
+    <span class={["status-pill", status_dot_class(@status)]}>{status_label(@status)}</span>
+    """
+  end
+
+  defp status_dot_class(status) do
+    case status do
+      "in_progress" -> "s-progress"
+      "review" -> "s-review"
+      "completed" -> "s-done"
+      "blocked" -> "s-blocked"
+      "discarded" -> "s-discarded"
+      _ -> "s-pending"
+    end
   end
 
   def status_label(status) do

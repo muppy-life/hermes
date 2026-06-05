@@ -900,47 +900,43 @@ aging = aging_days(@request) %>
 
 <!-- Discard Modal -->
 <%= if @show_discard_modal do %>
-  <div class="modal modal-open">
-    <div class="modal-box max-w-lg">
-      <h3 class="font-bold text-lg">{gettext("Discard request")}</h3>
-      <p class="text-sm opacity-70 mt-1">
+  <div class="app-modal" phx-click={JS.push("close_discard_modal")}>
+    <div class="app-modal-box" onclick="event.stopPropagation()">
+      <div class="app-modal-title">{gettext("Discard request")}</div>
+      <div class="app-modal-sub">
         {gettext("State the reason. The justification is recorded for team audit.")}
-      </p>
+      </div>
 
-      <form phx-submit="confirm_discard" class="mt-4 space-y-4">
-        <div>
-          <label class="label">
-            <span class="label-text font-semibold text-sm">
-              {gettext("Discard category")}<span class="text-error ml-1">*</span>
-            </span>
+      <form phx-submit="confirm_discard">
+        <div class="form-field">
+          <label class="form-label">
+            {gettext("Discard category")}<span class="req">*</span>
           </label>
-          <select name="category" class="select select-bordered w-full">
+          <select name="category" class="form-select">
             <%= for {value, label} <- discard_category_options() do %>
               <option value={value} selected={@discard_category == value}>{label}</option>
             <% end %>
           </select>
         </div>
 
-        <div>
-          <label class="label">
-            <span class="label-text font-semibold text-sm">
-              {gettext("Detailed justification")}<span class="text-error ml-1">*</span>
-            </span>
+        <div class="form-field">
+          <label class="form-label">
+            {gettext("Detailed justification")}<span class="req">*</span>
           </label>
           <textarea
             name="reason"
-            class="textarea textarea-bordered w-full"
+            class="form-textarea"
             rows="4"
             placeholder={gettext("Explain why this request is being discarded...")}
             required
           ><%= @discard_reason %></textarea>
         </div>
 
-        <div class="modal-action">
-          <button type="button" phx-click="close_discard_modal" class="btn btn-ghost">
+        <div class="app-modal-foot">
+          <button type="button" phx-click="close_discard_modal" class="det-btn">
             {gettext("Cancel")}
           </button>
-          <button type="submit" class="btn btn-error">
+          <button type="submit" class="det-btn det-btn-danger-solid">
             <.icon name="hero-archive-box" class="size-4" /> {gettext("Discard")}
           </button>
         </div>

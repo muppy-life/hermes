@@ -94,7 +94,7 @@
         <.th label={gettext("Title")} field="title" sort_by={@sort_by} sort_order={@sort_order} />
         <.th
           label={gettext("Requester")}
-          field="requesting_team_id"
+          field="created_by_id"
           sort_by={@sort_by}
           sort_order={@sort_order}
         />
@@ -154,18 +154,20 @@
               <% end %>
             </td>
             <td class="px-[22px] py-[15px] text-[12.5px] text-base-content/70 truncate">
-              {request.requesting_team.name}
+              {if request.created_by, do: List.first(String.split(request.created_by.email, "@"))}
             </td>
             <td class="px-[22px] py-[15px] text-[12.5px] text-base-content/70 truncate">
-              {if request.assigned_to_team,
-                do: request.assigned_to_team.name,
-                else: gettext("Unassigned")}
+              <%= if request.assigned_to_team do %>
+                <span class="dept">{request.assigned_to_team.name}</span>
+              <% else %>
+                <span class="opacity-60">{gettext("Unassigned")}</span>
+              <% end %>
             </td>
             <td class="px-[22px] py-[15px]">
-              <.priority_badge priority={request.priority} size="sm" />
+              <.priority_dot priority={request.priority} />
             </td>
             <td class="px-[22px] py-[15px]">
-              <.status_badge status={request.status} size="sm" />
+              <.status_pill status={request.status} />
             </td>
             <td class="px-[22px] py-[15px] text-[12.5px] text-base-content/70 whitespace-nowrap">
               {Calendar.strftime(request.inserted_at, "%b %d, %Y")}
