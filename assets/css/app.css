@@ -1463,3 +1463,99 @@
   }
 }
 
+
+/* === Boards (team cards) === */
+.dept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.dept-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-base-200);
+  border: 1px solid var(--color-base-300);
+  border-radius: 16px;
+  padding: 22px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s;
+}
+.dept-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  border-color: color-mix(in oklch, var(--color-base-300), var(--color-base-content) 12%);
+}
+.dept-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--color-base-300);
+  color: color-mix(in oklch, var(--color-base-content), transparent 40%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.dept-card-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+  letter-spacing: -0.015em;
+}
+.dept-card-count {
+  font-size: 11.5px;
+  color: color-mix(in oklch, var(--color-base-content), transparent 45%);
+}
+.dept-card-top {
+  flex: 1;
+}
+.dept-card-bottom {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-base-300);
+}
+.dept-card-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.dept-stat {
+  font-size: 22px;
+  font-weight: 700;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.025em;
+}
+.dept-stat-l {
+  font-size: 11px;
+  color: color-mix(in oklch, var(--color-base-content), transparent 45%);
+  margin-left: auto;
+}
+.dept-card-bar {
+  height: 4px;
+  border-radius: 2px;
+  margin-top: 14px;
+  background: var(--color-base-300);
+  overflow: hidden;
+}
+.dept-card-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: #334155;
+}
+.dept-card-metrics {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: color-mix(in oklch, var(--color-base-content), transparent 35%);
+}
+.dept-card-metrics:hover {
+  color: var(--color-primary);
+}
