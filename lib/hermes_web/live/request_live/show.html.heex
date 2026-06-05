@@ -13,7 +13,7 @@ aging = aging_days(@request) %>
     <div class="detail-topbar">
       <button
         type="button"
-        onclick="history.back()"
+        phx-click={JS.dispatch("phx:history-back")}
         class="detail-back"
         aria-label={gettext("Back")}
       >

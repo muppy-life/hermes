@@ -103,7 +103,7 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* Muted text levels from the design system (no daisyUI equivalent).
-   Use via text-[color:var(--text-2)] etc., or the .text-muted-* helpers below. */
+   Use via text-[color:var(--text-2)] etc. */
 [data-theme="light"] {
   --text-2: #64748b;
   --text-3: #94a3b8;
@@ -114,9 +114,6 @@
   --text-3: #86868d;
   --text-4: #52525b;
 }
-.text-muted-2 { color: var(--text-2); }
-.text-muted-3 { color: var(--text-3); }
-.text-muted-4 { color: var(--text-4); }
 
 /* This file is for your main application CSS */
 
@@ -755,14 +752,6 @@
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary), transparent 92%);
 }
-.c-mention {
-  color: var(--color-primary);
-  font-weight: 500;
-  background: var(--color-base-200);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-
 /* === New request modal · 3-step PM flow (form-overlay) === */
 
 #form-overlay {
@@ -1808,21 +1797,6 @@
   color: #b91c1c;
   border-color: #fca5a5;
 }
-.tag-gh {
-  background: var(--color-base-200);
-  color: color-mix(in oklch, var(--color-base-content), transparent 30%);
-  border-color: var(--color-base-300);
-  text-decoration: none;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.tag-gh:hover {
-  background: #1f2937;
-  color: #fff;
-  border-color: #1f2937;
-}
-
 /* === Centered modal (discard, confirm dialogs) === */
 .app-modal {
   position: fixed;

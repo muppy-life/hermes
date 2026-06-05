@@ -4,7 +4,7 @@
     <div class="flex items-center gap-3.5">
       <button
         type="button"
-        onclick="history.back()"
+        phx-click={JS.dispatch("phx:history-back")}
         class="detail-back"
         aria-label={gettext("Back")}
       >
