@@ -16,19 +16,17 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/board.html.heex:23
+#: lib/hermes_web/live/kanban_live/board.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:871
-#: lib/hermes_web/live/kanban_live/board.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "All Priorities"
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:881
-#: lib/hermes_web/live/kanban_live/board.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "All Teams"
 msgstr ""
@@ -43,7 +41,7 @@ msgstr ""
 msgid "Assign To Team"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/board.html.heex:45
+#: lib/hermes_web/live/kanban_live/board.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Assigned to Us"
 msgstr ""
@@ -55,6 +53,7 @@ msgid "Attempting to reconnect"
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:148
+#: lib/hermes_web/live/kanban_live/board.html.heex:9
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:609
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:837
 #: lib/hermes_web/live/request_live/show.html.heex:18
@@ -111,7 +110,6 @@ msgid "Choose a team (optional)"
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:891
-#: lib/hermes_web/live/kanban_live/board.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr ""
@@ -142,7 +140,7 @@ msgstr ""
 msgid "Created By"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/board.html.heex:34
+#: lib/hermes_web/live/kanban_live/board.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Created by Us"
 msgstr ""
@@ -161,7 +159,7 @@ msgstr ""
 #: lib/hermes_web/components/core_components.ex:563
 #: lib/hermes_web/components/core_components.ex:873
 #: lib/hermes_web/live/dashboard_live.html.heex:188
-#: lib/hermes_web/live/kanban_live/board.html.heex:61
+#: lib/hermes_web/live/kanban_live/board.html.heex:77
 #: lib/hermes_web/live/request_live/index.html.heex:65
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:246
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:461
@@ -225,7 +223,7 @@ msgstr ""
 #: lib/hermes_web/components/core_components.ex:562
 #: lib/hermes_web/components/core_components.ex:874
 #: lib/hermes_web/live/dashboard_live.html.heex:185
-#: lib/hermes_web/live/kanban_live/board.html.heex:62
+#: lib/hermes_web/live/kanban_live/board.html.heex:78
 #: lib/hermes_web/live/request_live/index.html.heex:66
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:247
 #: lib/hermes_web/live/request_live/show.html.heex:727
@@ -261,7 +259,7 @@ msgstr ""
 #: lib/hermes_web/components/core_components.ex:560
 #: lib/hermes_web/components/core_components.ex:876
 #: lib/hermes_web/live/dashboard_live.html.heex:179
-#: lib/hermes_web/live/kanban_live/board.html.heex:64
+#: lib/hermes_web/live/kanban_live/board.html.heex:80
 #: lib/hermes_web/live/request_live/index.html.heex:68
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:249
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:278
@@ -285,7 +283,7 @@ msgid "New"
 msgstr ""
 
 #: lib/hermes_web/live/dashboard_live.html.heex:16
-#: lib/hermes_web/live/kanban_live/board.html.heex:98
+#: lib/hermes_web/live/kanban_live/board.html.heex:27
 #: lib/hermes_web/live/request_live/index.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "New Request"
@@ -304,7 +302,7 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/index.html.heex:54
+#: lib/hermes_web/live/kanban_live/index.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "No boards available for your team yet."
 msgstr ""
@@ -322,7 +320,7 @@ msgstr ""
 #: lib/hermes_web/components/core_components.ex:561
 #: lib/hermes_web/components/core_components.ex:875
 #: lib/hermes_web/live/dashboard_live.html.heex:182
-#: lib/hermes_web/live/kanban_live/board.html.heex:63
+#: lib/hermes_web/live/kanban_live/board.html.heex:79
 #: lib/hermes_web/live/request_live/index.html.heex:67
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:248
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:475
@@ -364,6 +362,7 @@ msgstr ""
 msgid "Need requirement"
 msgstr ""
 
+#: lib/hermes_web/live/kanban_live/board.html.heex:76
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:151
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:255
 #: lib/hermes_web/live/request_live/index.html.heex:64
@@ -385,7 +384,7 @@ msgid "Recent Requests"
 msgstr ""
 
 #: lib/hermes_web/live/dashboard_live.ex:36
-#: lib/hermes_web/live/kanban_live/board.ex:157
+#: lib/hermes_web/live/kanban_live/board.ex:226
 #: lib/hermes_web/live/request_live/index.ex:126
 #, elixir-autogen, elixir-format
 msgid "Request created successfully"
@@ -475,7 +474,6 @@ msgstr ""
 
 #: lib/hermes_web/live/dashboard_live.html.heex:237
 #: lib/hermes_web/live/dashboard_live.html.heex:313
-#: lib/hermes_web/live/kanban_live/board.html.heex:212
 #: lib/hermes_web/live/request_live/show.html.heex:628
 #, elixir-autogen, elixir-format
 msgid "Updated"
@@ -768,8 +766,8 @@ msgstr ""
 msgid "JPG, PNG — max 14 MB"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/board.html.heex:94
-#: lib/hermes_web/live/kanban_live/index.html.heex:45
+#: lib/hermes_web/live/kanban_live/board.html.heex:100
+#: lib/hermes_web/live/kanban_live/index.html.heex:48
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -894,6 +892,7 @@ msgstr ""
 
 #: lib/hermes_web/live/dashboard_live.html.heex:113
 #: lib/hermes_web/live/dashboard_live.html.heex:191
+#: lib/hermes_web/live/kanban_live/board.ex:73
 #, elixir-autogen, elixir-format
 msgid "Today"
 msgstr ""
@@ -1820,6 +1819,7 @@ msgstr ""
 msgid "Search by title, requester or ID…"
 msgstr ""
 
+#: lib/hermes_web/live/kanban_live/board.html.heex:87
 #: lib/hermes_web/live/request_live/index.html.heex:75
 #: lib/hermes_web/live/request_live/index.html.heex:102
 #, elixir-autogen, elixir-format
@@ -1852,7 +1852,7 @@ msgstr ""
 msgid "Unlink issue"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/index.html.heex:26
+#: lib/hermes_web/live/kanban_live/index.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "%{count} request"
 msgid_plural "%{count} requests"
@@ -1864,12 +1864,24 @@ msgstr[1] ""
 msgid "Select a team to see its Kanban"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/index.html.heex:32
+#: lib/hermes_web/live/kanban_live/index.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "complete"
 msgstr ""
 
-#: lib/hermes_web/live/kanban_live/index.html.heex:32
+#: lib/hermes_web/live/kanban_live/index.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "open"
 msgstr ""
+
+#: lib/hermes_web/live/kanban_live/board.ex:72
+#, elixir-autogen, elixir-format
+msgid "Overdue"
+msgstr ""
+
+#: lib/hermes_web/live/kanban_live/board.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "%{count} task"
+msgid_plural "%{count} tasks"
+msgstr[0] ""
+msgstr[1] ""

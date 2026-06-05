@@ -1559,3 +1559,214 @@
 .dept-card-metrics:hover {
   color: var(--color-primary);
 }
+
+/* === Kanban board (view-kanban) === */
+.kanban-col {
+  flex: 0 0 280px;
+  background: var(--color-base-200);
+  border: 1px solid var(--color-base-300);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.kanban-col-h {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-base-300);
+}
+.kanban-col-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.kanban-col-name {
+  font-weight: 600;
+  font-size: 12.5px;
+  flex: 1;
+  letter-spacing: -0.005em;
+}
+.kanban-col-count {
+  font-size: 11px;
+  background: var(--color-base-300);
+  color: color-mix(in oklch, var(--color-base-content), transparent 30%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+.kanban-cards-area {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 60px;
+}
+.kanban-cards-area.drag-over {
+  background: color-mix(in oklch, var(--color-success) 12%, transparent);
+}
+
+.k-card {
+  background: var(--color-base-200);
+  border-radius: 12px;
+  border: 1px solid var(--color-base-300);
+  padding: 12px 13px;
+  cursor: grab;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.k-card:hover {
+  border-color: color-mix(in oklch, var(--color-base-300), var(--color-base-content) 18%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+.k-card.discarded {
+  opacity: 0.6;
+}
+.k-card.discarded .k-card-title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.k-card-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.k-card-status {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #94a3b8;
+  flex-shrink: 0;
+  background: transparent;
+}
+.k-card-status.s-pending {
+  border-color: #cbd5e1;
+}
+.k-card-status.s-progress {
+  border-color: #64748b;
+  background: #64748b;
+}
+.k-card-status.s-review {
+  border-color: #94a3b8;
+  background: #94a3b8;
+  opacity: 0.65;
+}
+.k-card-status.s-done {
+  background: #4ade80;
+  border-color: #4ade80;
+}
+.k-card-status.s-blocked {
+  background: #f87171;
+  border-color: #f87171;
+}
+.k-card-ref {
+  font-size: 11px;
+  color: color-mix(in oklch, var(--color-base-content), transparent 45%);
+  font-weight: 500;
+  font-feature-settings: "tnum";
+}
+.k-card-init {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-size: 9.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  letter-spacing: 0.02em;
+}
+.k-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+.k-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.tag-p0 {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.tag-p1 {
+  background: #ffedd5;
+  color: #c2410c;
+  border-color: #fdba74;
+}
+.tag-p2 {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+.tag-team {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-color: var(--color-base-300);
+  font-weight: 500;
+}
+.tag-team::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #60a5fa;
+}
+.tag-date {
+  background: var(--color-base-200);
+  color: color-mix(in oklch, var(--color-base-content), transparent 30%);
+  border-color: var(--color-base-300);
+  font-feature-settings: "tnum";
+  font-weight: 500;
+}
+.tag-date.soon {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+.tag-date.overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.tag-gh {
+  background: var(--color-base-200);
+  color: color-mix(in oklch, var(--color-base-content), transparent 30%);
+  border-color: var(--color-base-300);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tag-gh:hover {
+  background: #1f2937;
+  color: #fff;
+  border-color: #1f2937;
+}

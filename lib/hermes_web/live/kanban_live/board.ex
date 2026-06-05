@@ -6,6 +6,75 @@ defmodule HermesWeb.KanbanLive.Board do
   alias Hermes.Requests
   alias HermesWeb.NavigationHistory
 
+  @doc "Status dot color for a kanban column header."
+  def kanban_dot_color("new"), do: "#94a3b8"
+  def kanban_dot_color("need_requirement"), do: "#94a3b8"
+  def kanban_dot_color("pending"), do: "#94a3b8"
+  def kanban_dot_color("future_planning"), do: "#94a3b8"
+  def kanban_dot_color("in_progress"), do: "#64748b"
+  def kanban_dot_color("review"), do: "#94a3b8"
+  def kanban_dot_color("completed"), do: "#4ade80"
+  def kanban_dot_color("blocked"), do: "#f87171"
+  def kanban_dot_color(_), do: "#94a3b8"
+
+  @doc "Status ring class for the small circle on a kanban card."
+  def kanban_status_class(status) do
+    case status do
+      "in_progress" -> "s-progress"
+      "review" -> "s-review"
+      "completed" -> "s-done"
+      "blocked" -> "s-blocked"
+      _ -> "s-pending"
+    end
+  end
+
+  @doc "Priority tag class + label (P0/P1/P2)."
+  def priority_tag(4), do: {"tag-p0", "P0"}
+  def priority_tag(3), do: {"tag-p0", "P0"}
+  def priority_tag(2), do: {"tag-p1", "P1"}
+  def priority_tag(1), do: {"tag-p2", "P2"}
+  def priority_tag(_), do: {"tag-p2", "P2"}
+
+  @doc "Initials from an email address."
+  def initials(email) when is_binary(email) do
+    email
+    |> String.split("@")
+    |> List.first()
+    |> String.replace(~r/[._-]+/, " ")
+    |> String.split(" ", trim: true)
+    |> Enum.take(2)
+    |> Enum.map_join("", &String.first/1)
+    |> String.upcase()
+  end
+
+  def initials(_), do: "?"
+
+  @doc "Deadline pill class given days remaining (nil if no deadline)."
+  def deadline_class(nil), do: nil
+
+  def deadline_class(date) do
+    days = Date.diff(date, Date.utc_today())
+
+    cond do
+      days < 0 -> "overdue"
+      days == 0 -> "overdue"
+      days <= 7 -> "soon"
+      true -> ""
+    end
+  end
+
+  def deadline_label(nil), do: nil
+
+  def deadline_label(date) do
+    days = Date.diff(date, Date.utc_today())
+
+    cond do
+      days < 0 -> gettext("Overdue")
+      days == 0 -> gettext("Today")
+      true -> Calendar.strftime(date, "%b %d")
+    end
+  end
+
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
     current_user = socket.assigns[:current_user]
