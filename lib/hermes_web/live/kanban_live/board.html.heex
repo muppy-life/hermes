@@ -1,107 +1,34 @@
 <div class="px-6 pt-6">
-  <!-- Compact header in a single row -->
-  <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
-    <!-- Board Title with Count -->
-    <div class="flex items-center gap-2">
-      <h1 class="text-xl font-semibold">{@board.name}</h1>
-      <div class="bg-primary/10 border border-primary/30 rounded-lg px-2 py-1">
-        <span class="text-xs font-semibold text-primary">{@total_count}</span>
+  <%!-- Title row --%>
+  <div class="flex items-end justify-between gap-5 mb-4">
+    <div class="flex items-center gap-3.5">
+      <button
+        type="button"
+        phx-click={JS.dispatch("phx:history-back")}
+        class="detail-back"
+        aria-label={gettext("Back")}
+      >
+        <.icon name="hero-arrow-left" class="size-5" />
+      </button>
+      <div>
+        <h1 class="text-[28px] font-bold text-primary tracking-tight leading-tight">
+          {@board.name}
+        </h1>
+        <p class="text-[13px] text-base-content/50 font-medium mt-1.5">
+          {ngettext("%{count} task", "%{count} tasks", @total_count, count: @total_count)}
+        </p>
       </div>
     </div>
-    
-<!-- Perspective Filter Buttons -->
-    <div class="inline-flex gap-1 bg-base-200 rounded-lg p-1">
-      <button
-        phx-click="set_filter"
-        phx-value-filter="all"
-        class={[
-          "px-2 py-1 text-xs rounded transition-all",
-          (@filter_perspective == :all && "bg-primary text-primary-content") ||
-            "hover:bg-base-300"
-        ]}
-      >
-        {gettext("All")}
-      </button>
-      <button
-        phx-click="set_filter"
-        phx-value-filter="created_by_us"
-        class={[
-          "px-2 py-1 text-xs rounded transition-all",
-          (@filter_perspective == :created_by_us && "bg-primary text-primary-content") ||
-            "hover:bg-base-300"
-        ]}
-      >
-        {gettext("Created by Us")}
-      </button>
-      <button
-        phx-click="set_filter"
-        phx-value-filter="assigned_to_us"
-        class={[
-          "px-2 py-1 text-xs rounded transition-all",
-          (@filter_perspective == :assigned_to_us && "bg-primary text-primary-content") ||
-            "hover:bg-base-300"
-        ]}
-      >
-        {gettext("Assigned to Us")}
-      </button>
-    </div>
-    
-<!-- Inline Filters -->
-    <form phx-change="apply_filters" class="inline-flex gap-1 bg-base-200 rounded-lg p-1">
-      <select
-        class={[
-          "text-xs px-2 py-1 rounded transition-all cursor-pointer outline-none border",
-          HermesWeb.CoreComponents.priority_filter_class(@filter_priority)
-        ]}
-        name="priority"
-      >
-        <option value="all" selected={@filter_priority == "all"}>
-          {gettext("All Priorities")}
-        </option>
-        <option value="4" selected={@filter_priority == "4"}>🔴 {gettext("Critical")}</option>
-        <option value="3" selected={@filter_priority == "3"}>🟠 {gettext("Important")}</option>
-        <option value="2" selected={@filter_priority == "2"}>🟡 {gettext("Normal")}</option>
-        <option value="1" selected={@filter_priority == "1"}>🟢 {gettext("Low")}</option>
-      </select>
-
-      <select
-        class="bg-transparent text-xs px-2 py-1 rounded hover:bg-base-300 transition-all cursor-pointer outline-none"
-        name="team"
-      >
-        <option value="all" selected={@filter_team == "all"}>{gettext("All Teams")}</option>
-        <%= for team <- @teams do %>
-          <option value={team.id} selected={@filter_team == to_string(team.id)}>
-            {team.name}
-          </option>
-        <% end %>
-      </select>
-
-      <%= if @filter_priority != "all" or @filter_team != "all" do %>
-        <button
-          type="button"
-          phx-click="clear_filters"
-          class="px-2 py-1 text-xs rounded hover:bg-base-300 transition-all"
-        >
-          {gettext("Clear")}
-        </button>
-      <% end %>
-    </form>
-    
-<!-- Action Buttons -->
-    <div class="flex items-center gap-2">
-      <.link navigate={~p"/boards/#{@board.id}/metrics"} class="btn btn-sm btn-ghost">
-        <.icon name="hero-chart-bar" class="size-4" />
-        {gettext("Metrics")}
-      </.link>
-      <button type="button" phx-click="show_new_request" class="btn btn-primary btn-sm">
-        <.icon name="hero-plus" class="size-4" />
-        {gettext("New Request")}
-      </button>
-      <.back_button navigate={@return_to} />
-    </div>
+    <button
+      type="button"
+      phx-click="show_new_request"
+      class="btn btn-primary rounded-full gap-1.5 shadow-sm"
+    >
+      <.icon name="hero-plus" class="size-4" />{gettext("New Request")}
+    </button>
   </div>
 
-  <div class="kanban-board mt-6 h-[calc(100vh-12rem)] relative">
+  <div class="kanban-board relative pb-6">
     <!-- Scroll indicator on left edge -->
     <div
       id="scroll-indicator-left"
@@ -150,70 +77,53 @@
 
     <div
       id="kanban-scroll-container"
-      class="flex gap-4 overflow-x-auto pb-4 h-full"
+      class="flex gap-4 overflow-x-auto pb-4 items-start"
       phx-hook="KanbanScroll"
     >
       <%= for column <- @board.columns do %>
-        <% # Add visual separation for New and Completed columns with distinctive backgrounds
-        column_classes =
-          "kanban-column rounded-lg p-4 min-w-[300px] flex-1 flex flex-col h-full " <>
-            case column.status do
-              "new" -> "bg-info/10 border-l-4 border-l-info mr-6"
-              "completed" -> "bg-success/5 border-r-4 border-r-success ml-6"
-              _ -> "bg-base-200"
-            end %>
-        <div class={column_classes} data-column-status={column.status}>
-          <h3 class="font-semibold text-lg mb-4 flex-shrink-0">{column.name}</h3>
+        <div class="kanban-col" data-column-status={column.status}>
+          <div class="kanban-col-h">
+            <span class="kanban-col-dot" style={"background:#{kanban_dot_color(column.status)}"}>
+            </span>
+            <span class="kanban-col-name">{column.name}</span>
+            <span class="kanban-col-count">{length(column.cards)}</span>
+          </div>
           <div
             id={"kanban-column-#{column.id}"}
-            class="kanban-cards space-y-3 overflow-y-auto flex-1 min-h-[100px]"
+            class="kanban-cards kanban-cards-area"
             data-column-id={column.id}
             data-column-status={column.status}
           >
             <%= for card <- column.cards do %>
               <%= if card.request do %>
+                <% req = card.request
+                {prio_class, prio_label} = priority_tag(req.priority)
+                dl_class = deadline_class(req.deadline) %>
                 <div
                   draggable="true"
-                  class="kanban-card bg-base-100 rounded-lg shadow-md border border-base-300 p-4 cursor-move hover:shadow-xl hover:border-primary transition-all"
+                  class={["kanban-card k-card", req.status == "discarded" && "discarded"]}
                   data-card-id={card.id}
-                  data-request-id={card.request.id}
+                  data-request-id={req.id}
+                  phx-click={JS.navigate(~p"/backlog/#{req.id}")}
                 >
-                  <!-- Request Title -->
-                  <.link
-                    navigate={~p"/backlog/#{card.request.id}"}
-                    class="block"
-                    draggable="false"
-                  >
-                    <div class="font-semibold text-base mb-3">{card.request.title}</div>
-                  </.link>
-                  
-<!-- Badges Row -->
-                  <div class="flex items-center gap-2 flex-wrap mb-3">
-                    <%= if card.request.kind do %>
-                      <.kind_badge kind={card.request.kind} size="sm" />
-                    <% end %>
-                    <.priority_badge priority={card.request.priority} size="sm" />
-                    <.status_badge status={card.request.status} size="sm" />
+                  <div class="k-card-top">
+                    <span class={["k-card-status", kanban_status_class(req.status)]}></span>
+                    <span class="k-card-ref">hermes #{req.id}</span>
+                    <div class="k-card-init" title={req.created_by.email}>
+                      {initials(req.created_by.email)}
+                    </div>
                   </div>
-                  
-<!-- Footer with Team Info -->
-                  <div class="pt-3 border-t border-base-300 text-xs space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="opacity-60">
-                        {card.request.requesting_team.name} →
+
+                  <div class="k-card-title">{req.title}</div>
+
+                  <div class="k-card-tags">
+                    <span class={["tag-pill", prio_class]}>{prio_label}</span>
+                    <span class="tag-pill tag-team">{req.requesting_team.name}</span>
+                    <%= if req.deadline do %>
+                      <span class={["tag-pill tag-date", dl_class]}>
+                        <.icon name="hero-calendar" class="size-3" />{deadline_label(req.deadline)}
                       </span>
-                      <%= if card.request.assigned_to_team do %>
-                        <span class="opacity-60">
-                          → {card.request.assigned_to_team.name}
-                        </span>
-                      <% end %>
-                    </div>
-                    <div class="opacity-50 text-[10px]">
-                      {gettext("Updated")}: {Calendar.strftime(
-                        card.request.updated_at,
-                        "%b %d, %Y %H:%M"
-                      )}
-                    </div>
+                    <% end %>
                   </div>
                 </div>
               <% end %>

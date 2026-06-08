@@ -111,16 +111,16 @@ defmodule Hermes.Kanbans do
       },
       %{id: 4, name: Gettext.gettext(HermesWeb.Gettext, "Review"), position: 5, status: "review"},
       %{
-        id: 5,
-        name: Gettext.gettext(HermesWeb.Gettext, "Blocked"),
-        position: 6,
-        status: "blocked"
-      },
-      %{
         id: 6,
         name: Gettext.gettext(HermesWeb.Gettext, "Completed"),
-        position: 7,
+        position: 6,
         status: "completed"
+      },
+      %{
+        id: 5,
+        name: Gettext.gettext(HermesWeb.Gettext, "Blocked"),
+        position: 7,
+        status: "blocked"
       }
     ]
 

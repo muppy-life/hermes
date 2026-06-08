@@ -181,6 +181,58 @@ defmodule HermesWeb.DashboardLive do
     end
   end
 
+  # --- Roadmap task-card helpers (new design) ---
+
+  @doc "Roadmap task card tint class by priority."
+  def rm_prio_class(priority) when priority in [3, 4], do: "prio-alta"
+  def rm_prio_class(2), do: "prio-media"
+  def rm_prio_class(_), do: "prio-baja"
+
+  @doc "Status ring class for a roadmap task dot."
+  def rm_status_class(status) do
+    case status do
+      "in_progress" -> "s-progress"
+      "review" -> "s-review"
+      "completed" -> "s-done"
+      "blocked" -> "s-blocked"
+      _ -> "s-pending"
+    end
+  end
+
+  @doc "Priority tag class + short label (P0/P1/P2)."
+  def rm_priority_tag(priority) when priority in [3, 4], do: {"tag-p0", "P0"}
+  def rm_priority_tag(2), do: {"tag-p1", "P1"}
+  def rm_priority_tag(_), do: {"tag-p2", "P2"}
+
+  @doc "Initials from an email address."
+  def rm_initials(email) when is_binary(email) do
+    email
+    |> String.split("@")
+    |> List.first()
+    |> String.replace(~r/[._-]+/, " ")
+    |> String.split(" ", trim: true)
+    |> Enum.take(2)
+    |> Enum.map_join("", &String.first/1)
+    |> String.upcase()
+  end
+
+  def rm_initials(_), do: "?"
+
+  @doc "Whether a deadline is overdue (past, not today)."
+  def rm_overdue?(date), do: Date.diff(date, Date.utc_today()) < 0
+
+  @doc "Deadline pill class + label."
+  def rm_deadline(date) do
+    days = Date.diff(date, Date.utc_today())
+
+    cond do
+      days < 0 -> {"overdue", gettext("Overdue")}
+      days == 0 -> {"overdue", gettext("Today")}
+      days <= 7 -> {"soon", "D#{date.day}"}
+      true -> {"", "D#{date.day}"}
+    end
+  end
+
   # Status icon component for roadmap cards
   attr :status, :string, required: true
 

@@ -1,39 +1,51 @@
-<.header>
-  {gettext("Kanban Boards")}
-  <:subtitle>{gettext("Manage your team workflows")}</:subtitle>
-</.header>
+<%!-- Greeting header --%>
+<div class="flex items-end justify-between gap-5 mb-5 pt-6">
+  <div>
+    <h1 class="text-[28px] font-bold text-primary tracking-tight leading-tight">
+      {gettext("Boards")}
+    </h1>
+    <p class="text-[13px] text-base-content/50 font-medium mt-1.5">
+      {gettext("Select a team to see its Kanban")}
+    </p>
+  </div>
+</div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+<div class="dept-grid">
   <%= for board <- @boards do %>
-    <% board_id = Map.get(board, :id) %>
-    <div class="bg-base-100 rounded-xl shadow hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-6 border border-base-300">
-      <h3 class="text-xl font-semibold mb-4 text-base-content">{board.name}</h3>
-
-      <%!-- Status Summary --%>
-      <div class="grid grid-cols-3 gap-2 mb-5">
-        <div class="bg-info/10 rounded-lg p-2 text-center">
-          <div class="text-xs text-info font-medium mb-0.5">{gettext("New")}</div>
-          <div class="text-lg font-bold text-info">{board.stats.new}</div>
+    <% board_id = Map.get(board, :id)
+    total = board.stats.total
+    done = board.stats.completed
+    open = total - done
+    pct = if total > 0, do: round(done / total * 100), else: 0 %>
+    <div class="dept-card" phx-click={JS.navigate(~p"/boards/#{board_id}")}>
+      <div class="dept-card-top">
+        <div class="dept-card-icon">
+          <.icon name="hero-view-columns" class="size-5" />
         </div>
-        <div class="bg-warning/10 rounded-lg p-2 text-center">
-          <div class="text-xs text-warning font-medium mb-0.5">{gettext("In Progress")}</div>
-          <div class="text-lg font-bold text-warning">{board.stats.in_progress}</div>
-        </div>
-        <div class="bg-success/10 rounded-lg p-2 text-center">
-          <div class="text-xs text-success font-medium mb-0.5">{gettext("Done")}</div>
-          <div class="text-lg font-bold text-success">{board.stats.completed}</div>
+        <div class="dept-card-name">{board.name}</div>
+        <div class="dept-card-count">
+          {ngettext("%{count} request", "%{count} requests", total, count: total)}
         </div>
       </div>
 
-      <%!-- Action Buttons --%>
-      <div class="flex items-center gap-2">
-        <.link navigate={~p"/boards/#{board_id}"} class="btn btn-primary btn-sm flex-1">
-          <.icon name="hero-queue-list" class="size-4" />
-          {gettext("Board")}
-        </.link>
-        <.link navigate={~p"/boards/#{board_id}/metrics"} class="btn btn-ghost btn-sm flex-1">
-          <.icon name="hero-chart-bar" class="size-4" />
-          {gettext("Metrics")}
+      <div class="dept-card-bottom">
+        <div class="dept-card-stats">
+          <span class="dept-stat">{open}</span>
+          <span class="dept-stat-l">
+            {gettext("open")} · {pct}% {gettext("complete")}
+          </span>
+        </div>
+
+        <div class="dept-card-bar">
+          <div class="dept-card-bar-fill" style={"width:#{pct}%"}></div>
+        </div>
+
+        <.link
+          navigate={~p"/boards/#{board_id}/metrics"}
+          class="dept-card-metrics"
+          onclick="event.stopPropagation()"
+        >
+          <.icon name="hero-chart-bar" class="size-3.5" />{gettext("Metrics")}
         </.link>
       </div>
     </div>
@@ -41,7 +53,8 @@
 </div>
 
 <%= if @boards == [] do %>
-  <div class="text-center py-12">
-    <p class="text-gray-500 text-lg">{gettext("No boards available for your team yet.")}</p>
+  <div class="text-center py-16 text-base-content/40">
+    <.icon name="hero-view-columns" class="size-10 mx-auto mb-3.5 opacity-45" />
+    <p class="text-[13px] font-medium">{gettext("No boards available for your team yet.")}</p>
   </div>
 <% end %>
