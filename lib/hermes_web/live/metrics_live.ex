@@ -62,7 +62,14 @@ defmodule HermesWeb.MetricsLive do
   end
 
   def handle_event("set_priority", %{"priority" => priority}, socket) do
-    priority = if priority == "", do: nil, else: String.to_integer(priority)
+    # priority arrives from the client; parse defensively so a malformed value
+    # can't crash the LiveView process.
+    priority =
+      case Integer.parse(priority) do
+        {int, ""} -> int
+        _ -> nil
+      end
+
     {:noreply, socket |> assign(:priority_filter, priority) |> assign(:open_menu, nil) |> load()}
   end
 
@@ -171,7 +178,16 @@ defmodule HermesWeb.MetricsLive do
   end
 
   defp csv_cell(nil), do: ""
-  defp csv_cell(value), do: ~s|"#{String.replace(to_string(value), "\"", "\"\"")}"|
+
+  defp csv_cell(value) do
+    str = to_string(value)
+
+    # Prefix formula-triggering characters so spreadsheets don't execute a
+    # cell like `=HYPERLINK(...)` as a formula (CSV injection).
+    safe = if String.starts_with?(str, ["=", "+", "-", "@"]), do: "'" <> str, else: str
+
+    ~s|"#{String.replace(safe, "\"", "\"\"")}"|
+  end
 
   # --- Aggregation helpers ---
 
