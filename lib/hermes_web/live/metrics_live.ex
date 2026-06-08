@@ -56,6 +56,11 @@ defmodule HermesWeb.MetricsLive do
     {:noreply, socket |> assign(:period, period) |> assign(:open_menu, nil) |> load()}
   end
 
+  # Ignore unrecognised period values from the client rather than crashing.
+  def handle_event("set_period", _params, socket) do
+    {:noreply, socket}
+  end
+
   def handle_event("set_status", %{"status" => status}, socket) do
     status = if status == "", do: nil, else: status
     {:noreply, socket |> assign(:status_filter, status) |> assign(:open_menu, nil) |> load()}
