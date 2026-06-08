@@ -83,6 +83,9 @@ defmodule HermesWeb.Layouts do
               <.link navigate={~p"/boards"} class={nav_tab_class()} data-path="/boards">
                 <.icon name="hero-view-columns" class="size-3.5" />{gettext("Boards")}
               </.link>
+              <.link navigate={~p"/metrics"} class={nav_tab_class()} data-path="/metrics">
+                <.icon name="hero-chart-bar" class="size-3.5" />{gettext("Metrics")}
+              </.link>
             </div>
           </nav>
         <% else %>
