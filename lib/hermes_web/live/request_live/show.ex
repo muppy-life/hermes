@@ -567,31 +567,39 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   def handle_event("github_create_issue", _params, socket) do
-    case Requests.create_github_issue_for_request(socket.assigns.request) do
-      {:ok, issue} ->
-        {:noreply,
-         socket
-         |> assign(:request, %{socket.assigns.request | github_issue: issue})
-         |> put_flash(:info, "GitHub issue ##{issue.number} created")}
+    if Accounts.is_dev_team?(socket.assigns.current_user) do
+      case Requests.create_github_issue_for_request(socket.assigns.request) do
+        {:ok, issue} ->
+          {:noreply,
+           socket
+           |> assign(:request, %{socket.assigns.request | github_issue: issue})
+           |> put_flash(:info, "GitHub issue ##{issue.number} created")}
 
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, github_error_message(reason))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Only the dev team can create GitHub issues")}
     end
   end
 
   def handle_event("github_link_issue", %{"github_link" => %{"reference" => reference}}, socket) do
-    case Requests.link_github_issue(socket.assigns.request, reference) do
-      {:ok, issue} ->
-        socket =
-          socket
-          |> assign(:request, %{socket.assigns.request | github_issue: issue})
-          |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
-          |> put_flash(:info, "Linked GitHub issue ##{issue.number}")
+    if Accounts.is_dev_team?(socket.assigns.current_user) do
+      case Requests.link_github_issue(socket.assigns.request, reference) do
+        {:ok, issue} ->
+          socket =
+            socket
+            |> assign(:request, %{socket.assigns.request | github_issue: issue})
+            |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
+            |> put_flash(:info, "Linked GitHub issue ##{issue.number}")
 
-        {:noreply, maybe_open_github_subtask_modal(socket)}
+          {:noreply, maybe_open_github_subtask_modal(socket)}
 
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, github_error_message(reason))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Only the dev team can link GitHub issues")}
     end
   end
 
@@ -641,15 +649,19 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   def handle_event("github_unlink", _params, socket) do
-    case Requests.unlink_github_issue(socket.assigns.request) do
-      {:ok, _issue} ->
-        {:noreply,
-         socket
-         |> assign(:request, %{socket.assigns.request | github_issue: nil})
-         |> put_flash(:info, "GitHub issue unlinked")}
+    if Accounts.is_dev_team?(socket.assigns.current_user) do
+      case Requests.unlink_github_issue(socket.assigns.request) do
+        {:ok, _issue} ->
+          {:noreply,
+           socket
+           |> assign(:request, %{socket.assigns.request | github_issue: nil})
+           |> put_flash(:info, "GitHub issue unlinked")}
 
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, github_error_message(reason))}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, github_error_message(reason))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Only the dev team can unlink GitHub issues")}
     end
   end
 
