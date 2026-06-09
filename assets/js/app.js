@@ -28,6 +28,22 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 const Hooks = {
+  // Triggers a client-side file download from a server push_event("download", ...).
+  CsvDownload: {
+    mounted() {
+      this.handleEvent("download", ({filename, content, mime}) => {
+        const blob = new Blob([content], {type: mime || "text/plain"})
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = filename || "download"
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      })
+    }
+  },
   ActiveNav: {
     mounted() {
       this.highlight(false)

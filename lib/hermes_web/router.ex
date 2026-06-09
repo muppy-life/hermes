@@ -51,6 +51,8 @@ defmodule HermesWeb.Router do
       on_mount: [{HermesWeb.Plugs.Auth, :ensure_authenticated}] do
       live "/dashboard", DashboardLive, :index
 
+      live "/metrics", MetricsLive, :index
+
       live "/backlog", RequestLive.Index, :index
       live "/backlog/:id", RequestLive.Show, :show
       live "/backlog/:id/edit", RequestLive.Edit, :edit

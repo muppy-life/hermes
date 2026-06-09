@@ -1,0 +1,337 @@
+<div class="metrics pt-6" id="metrics" phx-hook="CsvDownload">
+  <%!-- SVG gradients used by the mini area charts --%>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="grad-mini-area" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--m-fill)" stop-opacity="0.14" />
+        <stop offset="100%" stop-color="var(--m-fill)" stop-opacity="0" />
+      </linearGradient>
+      <linearGradient id="grad-mini-area-2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--m-accent)" stop-opacity="0.18" />
+        <stop offset="100%" stop-color="var(--m-accent)" stop-opacity="0" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <%!-- Greeting --%>
+  <div class="greeting">
+    <div>
+      <h1>{gettext("Metrics")}</h1>
+      <div class="greeting-sub">{gettext("Operational KPIs for your workspace")}</div>
+    </div>
+  </div>
+
+  <%!-- Toolbar: filter / period / export --%>
+  <div class="m-toolbar">
+    <div class="m-chip-row">
+      <%!-- Filter --%>
+      <div class="m-dd">
+        <button
+          type="button"
+          class={["m-chip", (@status_filter || @priority_filter) && "is-active"]}
+          phx-click="toggle_menu"
+          phx-value-menu="filter"
+        >
+          <.icon name="hero-funnel" class="size-3.5" />{gettext("Filter")}
+        </button>
+        <%= if @open_menu == "filter" do %>
+          <div class="m-dd-menu" phx-click-away="close_menu">
+            <div class="m-dd-h">{gettext("Filter by status")}</div>
+            <%= for s <- status_order() do %>
+              <div
+                class={["m-dd-item", @status_filter == s && "is-active"]}
+                phx-click="set_status"
+                phx-value-status={s}
+              >
+                <span class="dl-dot" style={"background:#{status_color(s)}"}></span>
+                {status_label(s)}
+              </div>
+            <% end %>
+            <div class="m-dd-divider"></div>
+            <div class="m-dd-h">{gettext("Priority")}</div>
+            <%= for {value, label} <- priorities() do %>
+              <div
+                class={["m-dd-item", @priority_filter == value && "is-active"]}
+                phx-click="set_priority"
+                phx-value-priority={value}
+              >
+                {label}
+              </div>
+            <% end %>
+            <div class="m-dd-divider"></div>
+            <div class="m-dd-item" phx-click="clear_filters">
+              <.icon name="hero-x-mark" class="size-3.5" />{gettext("Clear filters")}
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- Period --%>
+      <div class="m-dd">
+        <button type="button" class="m-chip" phx-click="toggle_menu" phx-value-menu="period">
+          <.icon name="hero-calendar" class="size-3.5" />{period_label(@period)}
+          <.icon name="hero-chevron-down" class="size-3" />
+        </button>
+        <%= if @open_menu == "period" do %>
+          <div class="m-dd-menu" phx-click-away="close_menu">
+            <div class="m-dd-h">{gettext("Period")}</div>
+            <%= for {value, label} <- period_options() do %>
+              <div
+                class={["m-dd-item", @period == value && "is-active"]}
+                phx-click="set_period"
+                phx-value-period={value}
+              >
+                {label}
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- Export --%>
+      <button type="button" class="m-chip" phx-click="export_csv">
+        <.icon name="hero-arrow-down-tray" class="size-3.5" />{gettext("Export")}
+      </button>
+    </div>
+  </div>
+
+  <%!-- KPI row --%>
+  <div class="kpi-row">
+    <%!-- Total requests with mini trend --%>
+    <div class="kpi-card">
+      <div class="kpi-card-h">
+        <div class="kpi-card-title">{gettext("Total requests")}</div>
+      </div>
+      <div class="kpi-big">{@total}</div>
+      <div class="kpi-mini-chart">
+        {raw(mini_area(@created_series, 240, 80, "grad-mini-area"))}
+      </div>
+      <div class="kpi-mini-labels">
+        <%= for b <- @buckets do %>
+          <span>{b.short}</span>
+        <% end %>
+      </div>
+    </div>
+
+    <%!-- Hero: completion rate --%>
+    <div class="kpi-hero">
+      <div class="kpi-hero-top">
+        <div class="hero-dot"></div>
+        <div class="hero-badge">{gettext("Health")}</div>
+      </div>
+      <div class="kpi-hero-body">
+        <div class="kpi-hero-t">{gettext("Completion rate")} · {@completion_rate}%</div>
+        <div class="kpi-hero-d">
+          {gettext(
+            "%{done} completed of %{total} requests. Average resolution time: %{days} days.",
+            done: @done,
+            total: @total,
+            days: @avg_cycle
+          )}
+        </div>
+      </div>
+      <div class="kpi-hero-dots"><span class="active"></span><span></span></div>
+    </div>
+
+    <%!-- Average cycle time --%>
+    <div class="kpi-card">
+      <div class="kpi-card-h">
+        <div class="kpi-card-title">{gettext("Average time")}</div>
+      </div>
+      <div class="kpi-big">
+        {@avg_cycle}<span class="kpi-big-unit">{gettext("days")}</span>
+      </div>
+      <div class="kpi-sub">{gettext("Average resolution")}</div>
+      <div class="kpi-mini-chart" style="margin-top:14px">
+        {raw(mini_area(@completed_series, 240, 70, "grad-mini-area-2", "var(--m-accent)"))}
+      </div>
+    </div>
+
+    <%!-- Aging of open requests --%>
+    <div class="kpi-card kpi-list-card">
+      <div class="kpi-card-h">
+        <div class="kpi-card-title">{gettext("Open aging")}</div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-icon aging-ok-bg">
+          <.icon name="hero-check-circle" class="size-4" />
+        </div>
+        <div class="progress-info">
+          <div class="progress-d aging-ok">{@aging.ok}</div>
+          <div class="progress-d progress-d-sub">{gettext("less than 7 days")}</div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-icon aging-warn-bg">
+          <.icon name="hero-clock" class="size-4" />
+        </div>
+        <div class="progress-info">
+          <div class="progress-d aging-warn">{@aging.warn}</div>
+          <div class="progress-d progress-d-sub">{gettext("7 - 30 days")}</div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-icon aging-bad-bg">
+          <.icon name="hero-exclamation-triangle" class="size-4" />
+        </div>
+        <div class="progress-info">
+          <div class="progress-d aging-bad">{@aging.bad}</div>
+          <div class="progress-d progress-d-sub">{gettext("more than 30 days")}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Throughput bar chart + status donut --%>
+  <div class="dual-row-2">
+    <div class="card card-pad">
+      <div class="card-h">
+        <div class="card-h-info">
+          <div class="card-title">{gettext("Throughput · Requests per period")}</div>
+          <div class="card-sub">{gettext("Current period highlighted")}</div>
+        </div>
+      </div>
+      <% max_bucket = Enum.max([1 | @created_series]) %>
+      <div class="big-bar-wrap">
+        <div class="big-bar-chart">
+          <%= for {b, i} <- Enum.with_index(@buckets) do %>
+            <% created = Enum.at(@created_series, i)
+            done = Enum.at(@completed_series, i)
+            height = created / max_bucket * 100 %>
+            <div class={["big-bar-col", b.current && "current"]} style="position:relative">
+              <%= if b.current do %>
+                <div class="bar-tooltip" style="top:-68px;left:50%">
+                  <div class="bar-tooltip-t">{b.full}</div>
+                  <div class="bar-tooltip-row b1">{gettext("%{n} created", n: created)}</div>
+                  <div class="bar-tooltip-row b2">{gettext("%{n} completed", n: done)}</div>
+                </div>
+              <% end %>
+              <div
+                class={["big-bar-bar", b.current && "current"]}
+                style={"height:#{height}%"}
+                title={"#{b.full}: #{created}"}
+              >
+              </div>
+              <div class="big-bar-label">{b.short}</div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-pad">
+      <div class="card-h">
+        <div class="card-h-info">
+          <div class="card-title">{gettext("By status")}</div>
+          <div class="card-sub">{gettext("Distribution")}</div>
+        </div>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut-svg-wrap">
+          <svg viewBox="0 0 160 160" width="160" height="160">
+            {raw(donut_segments(@status_counts, @total))}
+          </svg>
+          <div class="donut-center">
+            <div class="donut-center-v">{@total}</div>
+            <div class="donut-center-l">{gettext("total")}</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <%= for s <- status_order() do %>
+            <% count = Map.get(@status_counts, s, 0) %>
+            <%= if count > 0 do %>
+              <div class="dl-item">
+                <div class="dl-dot" style={"background:#{status_color(s)}"}></div>
+                <div>{status_label(s)}</div>
+                <div class="dl-val">
+                  {count}<span class="dl-pct">{pct(count, @total)}%</span>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Team distribution + top requesters --%>
+  <div class="dual-row-3">
+    <div class="card card-pad">
+      <div class="card-h">
+        <div class="card-h-info">
+          <div class="card-title">{gettext("By team")}</div>
+          <div class="card-sub">{gettext("Distribution")}</div>
+        </div>
+      </div>
+      <%= if @team_counts == [] do %>
+        <div class="metrics-empty">{gettext("No data")}</div>
+      <% else %>
+        <% max_team = @team_counts |> Enum.map(&elem(&1, 1)) |> Enum.max() |> max(1) %>
+        <%= for {name, count} <- @team_counts do %>
+          <div class="dbar">
+            <div class="dbar-h">
+              <span>{name}</span>
+              <span>
+                <strong>{count}</strong><span class="muted">({pct(count, @total)}%)</span>
+              </span>
+            </div>
+            <div class="dbar-track">
+              <div class="dbar-fill" style={"width:#{count / max_team * 100}%"}></div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="card card-pad">
+      <div class="card-h">
+        <div class="card-h-info">
+          <div class="card-title">{gettext("Top requesters")}</div>
+          <div class="card-sub">{gettext("Most active")}</div>
+        </div>
+      </div>
+      <%= if @requester_top == [] do %>
+        <div class="metrics-empty">{gettext("No data")}</div>
+      <% else %>
+        <div class="people-list">
+          <%= for {user, count} <- @requester_top do %>
+            <div class="person-row">
+              <div class="person-avatar">{initials(user.email)}</div>
+              <div class="person-info">
+                <div class="person-name">{display_name(user.email)}</div>
+                <div class="person-sub">{user.email}</div>
+              </div>
+              <div class="person-cnt">{count}</div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Average resolution time by team --%>
+  <div class="card card-pad" style="margin-bottom:14px">
+    <div class="card-h">
+      <div class="card-h-info">
+        <div class="card-title">{gettext("Average resolution time")}</div>
+        <div class="card-sub">{gettext("Days per team")}</div>
+      </div>
+    </div>
+    <%= if @team_time == [] do %>
+      <div class="metrics-empty">{gettext("No completed requests yet")}</div>
+    <% else %>
+      <% max_time = @team_time |> Enum.map(&elem(&1, 1)) |> Enum.max() |> max(1) %>
+      <%= for {name, days} <- @team_time do %>
+        <div class="dbar">
+          <div class="dbar-h">
+            <span>{name}</span>
+            <span><strong>{days}</strong><span class="muted">{gettext("days")}</span></span>
+          </div>
+          <div class="dbar-track">
+            <div class="dbar-fill accent" style={"width:#{days / max_time * 100}%"}></div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>
