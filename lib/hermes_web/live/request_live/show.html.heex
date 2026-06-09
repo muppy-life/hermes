@@ -70,7 +70,7 @@ aging = aging_days(@request) %>
                 </li>
               </ul>
             </div>
-          <% @current_user.role == "dev_team" -> %>
+          <% Accounts.is_dev_team?(@current_user) -> %>
             <%!-- Dev with no issue yet: CTA to create or link --%>
             <div class="dropdown dropdown-end">
               <button tabindex="0" type="button" class="gh-badge gh-cta">
