@@ -1,0 +1,114 @@
+<div class="metrics objectives pt-6" id="objectives">
+  <%!-- Greeting --%>
+  <div class="greeting">
+    <div>
+      <h1>{gettext("Objectives")}</h1>
+      <div class="greeting-sub">{gettext("Quarterly view · %{year}", year: @year)}</div>
+    </div>
+  </div>
+
+  <%!-- Quarter tabs --%>
+  <div class="q-tabs">
+    <%= for q <- quarters() do %>
+      <% state = quarter_state(q, @current_quarter) %>
+      <button
+        type="button"
+        class={["q-tab", q == @active_quarter && "active"]}
+        phx-click="select_quarter"
+        phx-value-quarter={q}
+      >
+        {q}<span class="q-tab-state">· {quarter_state_label(state)}</span>
+      </button>
+    <% end %>
+  </div>
+
+  <%!-- Quarter KPI overview --%>
+  <div class="q-overview">
+    <div class="kpi-card">
+      <div class="kpi-card-h">
+        <div class="kpi-card-title">{gettext("Total %{quarter}", quarter: @active_quarter)}</div>
+      </div>
+      <div class="kpi-big">{@total}</div>
+      <div class="kpi-sub">{gettext("requests")}</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-card-h">
+        <div class="kpi-card-title">{gettext("Completed")}</div>
+      </div>
+      <div class="kpi-big">
+        {@done}<span class="trend-chip">{pct(@done, @total)}%</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-card-h">
+        <div class="kpi-card-title">{gettext("In progress")}</div>
+      </div>
+      <div class="kpi-big">{@in_progress}</div>
+    </div>
+  </div>
+
+  <%!-- Completed list + by-team distribution --%>
+  <div class="q-body">
+    <div>
+      <div class="card-h" style="margin-bottom:14px">
+        <div class="card-h-info">
+          <div class="card-title">
+            {gettext("Completed in %{quarter}", quarter: @active_quarter)}
+          </div>
+          <div class="card-sub">{gettext("%{n} tasks", n: @done)}</div>
+        </div>
+      </div>
+
+      <%= if @completed == [] do %>
+        <div class="empty">
+          <.icon name="hero-face-frown" class="size-7" />
+          <p>{gettext("No completed tasks yet")}</p>
+        </div>
+      <% else %>
+        <%= for r <- @completed do %>
+          <% done_at = Map.get(@completed_at, r.id) || r.inserted_at %>
+          <.link navigate={~p"/backlog/#{r.id}"} class="q-task">
+            <div class="q-task-dot"></div>
+            <div class="q-task-info">
+              <div class="q-task-t">{r.title}</div>
+              <div class="q-task-s">{display_name(r.created_by)} · {short_date(done_at)}</div>
+            </div>
+            <%= if r.requesting_team do %>
+              <span class="dept">{r.requesting_team.name}</span>
+            <% end %>
+          </.link>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div>
+      <div class="card card-pad">
+        <div class="card-h">
+          <div class="card-h-info">
+            <div class="card-title">{gettext("By team")}</div>
+          </div>
+        </div>
+        <%= if @team_counts == [] do %>
+          <div class="metrics-empty">{gettext("No data")}</div>
+        <% else %>
+          <% max_team = @team_counts |> Enum.map(&elem(&1, 1)) |> Enum.max() |> max(1) %>
+          <%= for {name, count} <- @team_counts do %>
+            <div class="dbar">
+              <div class="dbar-h">
+                <span>{name}</span>
+                <span>
+                  <strong>{count}</strong><span class="muted">({pct(count, @done)}%)</span>
+                </span>
+              </div>
+              <div class="dbar-track">
+                <div class="dbar-fill" style={"width:#{count / max_team * 100}%"}></div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

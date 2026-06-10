@@ -53,6 +53,8 @@ defmodule HermesWeb.Router do
 
       live "/metrics", MetricsLive, :index
 
+      live "/objectives", ObjectivesLive, :index
+
       live "/backlog", RequestLive.Index, :index
       live "/backlog/:id", RequestLive.Show, :show
       live "/backlog/:id/edit", RequestLive.Edit, :edit
