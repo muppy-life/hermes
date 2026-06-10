@@ -707,6 +707,25 @@ defmodule Hermes.Requests do
     |> Repo.preload(:user)
   end
 
+  @doc """
+  Completion timestamps for the given request ids, derived from the change log.
+
+  Returns a map of `request_id => inserted_at` for the most recent transition
+  whose status changed to `"completed"`. Requests with no such logged
+  transition (e.g. seeded or completed before status changes were tracked) are
+  absent from the map.
+  """
+  def completed_at_by_request(request_ids) do
+    from(rc in RequestChange,
+      where:
+        rc.request_id in ^request_ids and rc.field == "status" and rc.new_value == "completed",
+      group_by: rc.request_id,
+      select: {rc.request_id, max(rc.inserted_at)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
   defp log_change(request_id, user_id, action, attrs) do
     %RequestChange{}
     |> RequestChange.changeset(
