@@ -80,12 +80,19 @@ defmodule HermesWeb.ObjectivesLive do
   defp quarter_of(nil, _year), do: nil
 
   defp quarter_of(dt, year) do
-    date = DateTime.to_date(dt)
+    date = to_date(dt)
     if date.year == year, do: quarter_of_date(date), else: nil
   end
 
   # Quarter (Q1..Q4) for a plain Date, ignoring the year.
   defp quarter_of_date(date), do: "Q#{div(date.month - 1, 3) + 1}"
+
+  # Coerce to a Date. Request timestamps are :utc_datetime (DateTime) while
+  # RequestChange timestamps are :naive_datetime (NaiveDateTime); both flow
+  # through here so neither raises.
+  defp to_date(%Date{} = date), do: date
+  defp to_date(%DateTime{} = dt), do: DateTime.to_date(dt)
+  defp to_date(%NaiveDateTime{} = dt), do: NaiveDateTime.to_date(dt)
 
   # --- View helpers ---
 
@@ -128,5 +135,5 @@ defmodule HermesWeb.ObjectivesLive do
   @doc "Short date label for a datetime, e.g. \"14 May 2026\"."
   def short_date(nil), do: ""
 
-  def short_date(dt), do: Calendar.strftime(DateTime.to_date(dt), "%d %b %Y")
+  def short_date(dt), do: Calendar.strftime(to_date(dt), "%d %b %Y")
 end
