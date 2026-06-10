@@ -2755,8 +2755,7 @@
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
-.big-bar-col:hover .bar-tooltip,
-.big-bar-col.current .bar-tooltip {
+.big-bar-col:hover .bar-tooltip {
   opacity: 1;
 }
 .bar-tooltip-t {
