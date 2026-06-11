@@ -2755,8 +2755,7 @@
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
-.big-bar-col:hover .bar-tooltip,
-.big-bar-col.current .bar-tooltip {
+.big-bar-col:hover .bar-tooltip {
   opacity: 1;
 }
 .bar-tooltip-t {
@@ -2958,4 +2957,118 @@
 [data-theme="dark"] .metrics .person-cnt {
   color: var(--m-text);
   background: var(--color-base-300);
+}
+
+/* --- Objectives (quarterly view) --- */
+.q-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--m-surface);
+  padding: 4px;
+  border-radius: 999px;
+  width: fit-content;
+  box-shadow: var(--m-shadow-sm);
+}
+.q-tab {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--m-text);
+  opacity: 0.7;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.q-tab:hover {
+  opacity: 1;
+}
+.q-tab.active {
+  background: var(--m-brand);
+  color: var(--m-brand-content);
+  font-weight: 600;
+  opacity: 1;
+}
+.q-tab-state {
+  font-size: 10.5px;
+  color: var(--m-text-3);
+  font-weight: 500;
+}
+.q-tab.active .q-tab-state {
+  color: color-mix(in oklch, var(--m-brand-content), transparent 30%);
+}
+.q-overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.q-overview .kpi-card {
+  min-height: 0;
+}
+.q-body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 18px;
+  align-items: start;
+}
+.q-task {
+  background: var(--m-surface);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: transform 0.25s, box-shadow 0.25s;
+  margin-bottom: 8px;
+  box-shadow: var(--m-shadow-sm);
+  text-decoration: none;
+}
+.q-task:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--m-shadow-md);
+}
+.q-task-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--m-st-done);
+  flex-shrink: 0;
+}
+.q-task-info {
+  flex: 1;
+  min-width: 0;
+}
+.q-task-t {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-text);
+}
+.q-task-s {
+  font-size: 11px;
+  color: var(--m-text-3);
+  margin-top: 2px;
+}
+.objectives .empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--m-text-3);
+}
+.objectives .empty p {
+  margin-top: 10px;
+  font-size: 13px;
+}
+@media (max-width: 900px) {
+  .q-overview {
+    grid-template-columns: 1fr;
+  }
+  .q-body {
+    grid-template-columns: 1fr;
+  }
 }

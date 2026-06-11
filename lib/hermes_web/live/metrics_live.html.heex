@@ -199,13 +199,11 @@
             done = Enum.at(@completed_series, i)
             height = created / max_bucket * 100 %>
             <div class={["big-bar-col", b.current && "current"]} style="position:relative">
-              <%= if b.current do %>
-                <div class="bar-tooltip" style="top:-68px;left:50%">
-                  <div class="bar-tooltip-t">{b.full}</div>
-                  <div class="bar-tooltip-row b1">{gettext("%{n} created", n: created)}</div>
-                  <div class="bar-tooltip-row b2">{gettext("%{n} completed", n: done)}</div>
-                </div>
-              <% end %>
+              <div class="bar-tooltip" style="top:-68px;left:50%">
+                <div class="bar-tooltip-t">{b.full}</div>
+                <div class="bar-tooltip-row b1">{gettext("%{n} created", n: created)}</div>
+                <div class="bar-tooltip-row b2">{gettext("%{n} completed", n: done)}</div>
+              </div>
               <div
                 class={["big-bar-bar", b.current && "current"]}
                 style={"height:#{height}%"}
