@@ -11,6 +11,7 @@ defmodule HermesWeb.KanbanLive.Board do
   def kanban_dot_color("need_requirement"), do: "#94a3b8"
   def kanban_dot_color("pending"), do: "#94a3b8"
   def kanban_dot_color("future_planning"), do: "#94a3b8"
+  def kanban_dot_color("todo_in_sprint"), do: "#94a3b8"
   def kanban_dot_color("in_progress"), do: "#64748b"
   def kanban_dot_color("review"), do: "#94a3b8"
   def kanban_dot_color("completed"), do: "#4ade80"

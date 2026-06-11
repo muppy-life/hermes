@@ -1923,7 +1923,7 @@
 }
 @media (min-width: 1024px) {
   .stats-grid {
-    grid-template-columns: repeat(9, 1fr);
+    grid-template-columns: repeat(10, 1fr);
   }
 }
 .stat-card {
@@ -1982,6 +1982,9 @@
 .stat-teal { background: #f0fdfa; }
 .stat-teal .stat-num { color: #0f766e; }
 .stat-teal .stat-lbl { color: #115e59; }
+.stat-sky { background: #f0f9ff; }
+.stat-sky .stat-num { color: #0369a1; }
+.stat-sky .stat-lbl { color: #075985; }
 
 .roadmap-card {
   background: var(--color-base-200);
@@ -2285,6 +2288,7 @@
   --m-st-need: #64748b;
   --m-st-pending: #cbd5e1;
   --m-st-future: #94a3b8;
+  --m-st-todo: #7dd3fc;
   --m-st-progress: #64748b;
   --m-st-review: #94a3b8;
   --m-st-done: #4ade80;

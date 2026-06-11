@@ -793,6 +793,7 @@ defmodule HermesWeb.RequestLive.Show do
       {"need_requirement", gettext("Need requirement")},
       {"pending", gettext("Pending")},
       {"future_planning", gettext("Future Planning")},
+      {"todo_in_sprint", gettext("Todo in Sprint")},
       {"in_progress", gettext("In progress")},
       {"review", gettext("Review")},
       {"completed", gettext("Completed")},

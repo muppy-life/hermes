@@ -66,6 +66,7 @@ defmodule HermesWeb.DashboardLive do
         need_requirement: Enum.count(requests, &(&1.status == "need_requirement")),
         pending: Enum.count(requests, &(&1.status == "pending")),
         future_planning: Enum.count(requests, &(&1.status == "future_planning")),
+        todo_in_sprint: Enum.count(requests, &(&1.status == "todo_in_sprint")),
         in_progress: Enum.count(requests, &(&1.status == "in_progress")),
         review: Enum.count(requests, &(&1.status == "review")),
         completed: Enum.count(requests, &(&1.status == "completed")),
@@ -89,6 +90,7 @@ defmodule HermesWeb.DashboardLive do
       need_requirement: Enum.count(requests, &(&1.status == "need_requirement")),
       pending: Enum.count(requests, &(&1.status == "pending")),
       future_planning: Enum.count(requests, &(&1.status == "future_planning")),
+      todo_in_sprint: Enum.count(requests, &(&1.status == "todo_in_sprint")),
       in_progress: Enum.count(requests, &(&1.status == "in_progress")),
       review: Enum.count(requests, &(&1.status == "review")),
       completed: Enum.count(requests, &(&1.status == "completed")),
@@ -314,6 +316,27 @@ defmodule HermesWeb.DashboardLive do
           stroke-linejoin="round"
           stroke-width="2"
           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+    """
+  end
+
+  def roadmap_status_icon(%{status: "todo_in_sprint"} = assigns) do
+    ~H"""
+    <span class="text-sky-600" title={gettext("Todo in Sprint")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
         />
       </svg>
     </span>
