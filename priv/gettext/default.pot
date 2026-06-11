@@ -2302,3 +2302,18 @@ msgstr ""
 msgctxt "user role"
 msgid "Admin"
 msgstr ""
+
+#: lib/hermes_web/live/request_live/show.ex:582
+#, elixir-autogen, elixir-format
+msgid "Only the dev team can create GitHub issues"
+msgstr ""
+
+#: lib/hermes_web/live/request_live/show.ex:602
+#, elixir-autogen, elixir-format
+msgid "Only the dev team can link GitHub issues"
+msgstr ""
+
+#: lib/hermes_web/live/request_live/show.ex:664
+#, elixir-autogen, elixir-format
+msgid "Only the dev team can unlink GitHub issues"
+msgstr ""
