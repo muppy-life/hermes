@@ -20,10 +20,19 @@ defmodule Hermes.Requests.GitHubSubtaskImportTest do
       api_url: "https://api.github.com"
     )
 
-    case Process.whereis(InMemory) do
-      nil -> {:ok, _} = InMemory.start_link([])
-      _pid -> InMemory.reset()
+    # A leftover instance from another file is linked to its (now exiting)
+    # test process and can die between whereis/1 and the first call. Kill it
+    # synchronously and start a fresh supervised instance per test.
+    if pid = Process.whereis(InMemory) do
+      ref = Process.monitor(pid)
+      Process.exit(pid, :kill)
+
+      receive do
+        {:DOWN, ^ref, _, _, _} -> :ok
+      end
     end
+
+    start_supervised!(InMemory)
 
     on_exit(fn ->
       restore_env(:github_adapter, original_adapter)
