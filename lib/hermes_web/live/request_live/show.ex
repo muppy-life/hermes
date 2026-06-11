@@ -579,7 +579,7 @@ defmodule HermesWeb.RequestLive.Show do
           {:noreply, put_flash(socket, :error, github_error_message(reason))}
       end
     else
-      {:noreply, put_flash(socket, :error, "Only the dev team can create GitHub issues")}
+      {:noreply, put_flash(socket, :error, gettext("Only the dev team can create GitHub issues"))}
     end
   end
 
@@ -599,7 +599,7 @@ defmodule HermesWeb.RequestLive.Show do
           {:noreply, put_flash(socket, :error, github_error_message(reason))}
       end
     else
-      {:noreply, put_flash(socket, :error, "Only the dev team can link GitHub issues")}
+      {:noreply, put_flash(socket, :error, gettext("Only the dev team can link GitHub issues"))}
     end
   end
 
@@ -661,7 +661,7 @@ defmodule HermesWeb.RequestLive.Show do
           {:noreply, put_flash(socket, :error, github_error_message(reason))}
       end
     else
-      {:noreply, put_flash(socket, :error, "Only the dev team can unlink GitHub issues")}
+      {:noreply, put_flash(socket, :error, gettext("Only the dev team can unlink GitHub issues"))}
     end
   end
 

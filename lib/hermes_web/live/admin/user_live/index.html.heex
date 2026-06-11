@@ -1,192 +1,239 @@
-<.header>
-  User Management
-  <:subtitle>Manage system users and administrators</:subtitle>
-  <:actions>
-    <.button phx-click="open_new_modal">
-      <span class="mr-2">+</span> New User
-    </.button>
-  </:actions>
-</.header>
+<%!-- Greeting header --%>
+<div class="flex items-end justify-between gap-5 mb-5 pt-6">
+  <div>
+    <h1 class="text-[28px] font-bold text-primary tracking-tight leading-tight">
+      {gettext("Administration")}
+    </h1>
+    <p class="text-[13px] text-base-content/50 font-medium mt-1.5">
+      {gettext("Users and integrations")}
+    </p>
+  </div>
+  <button
+    type="button"
+    phx-click="open_new_modal"
+    class="btn btn-primary rounded-full gap-1.5 shadow-sm"
+  >
+    <.icon name="hero-user-plus" class="size-4" />{gettext("Add user")}
+  </button>
+</div>
 
-<div class="mt-8">
-  <div class="overflow-x-auto">
-    <table class="table table-zebra w-full">
-      <thead>
-        <tr>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Team</th>
-          <th>System Admin</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <%= for user <- @users do %>
-          <tr>
-            <td class="font-medium">{user.email}</td>
-            <td>
-              <span class={[
-                "badge",
-                case user.role do
-                  "admin" -> "badge-primary"
-                  "dev_team" -> "badge-secondary"
-                  "product_owner" -> "badge-accent"
-                  _ -> "badge-ghost"
-                end
-              ]}>
-                {Phoenix.Naming.humanize(user.role)}
-              </span>
-            </td>
-            <td>{if user.team, do: user.team.name, else: "-"}</td>
-            <td>
-              <%= if user.is_admin do %>
-                <span class="badge badge-success">Admin</span>
-              <% else %>
-                <span class="badge badge-ghost">-</span>
-              <% end %>
-            </td>
-            <td>
-              <div class="flex gap-2">
-                <button
-                  phx-click="open_edit_modal"
-                  phx-value-id={user.id}
-                  class="btn btn-sm btn-ghost"
-                >
-                  Edit
-                </button>
-                <button
-                  phx-click="open_delete_modal"
-                  phx-value-id={user.id}
-                  class="btn btn-sm btn-ghost text-error"
-                >
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+<%!-- GitHub integration pointer card (configuration lives on its own page) --%>
+<div class="bg-base-200 rounded-2xl shadow-sm border border-base-300 p-[22px] mb-[18px]">
+  <div class="flex items-center gap-3">
+    <div class="shrink-0 w-[42px] h-[42px] rounded-xl bg-base-300 flex items-center justify-center text-base-content/70">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.05-.02-2.06-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.21.09 1.85 1.24 1.85 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.31-.54-1.53.11-3.18 0 0 1.01-.32 3.3 1.23a11.46 11.46 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.65 1.65.24 2.87.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.49 5.92.43.37.81 1.1.81 2.22 0 1.6-.01 2.89-.01 3.29 0 .32.22.7.83.58A12 12 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+      </svg>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="text-[14px] font-semibold text-base-content tracking-tight">
+        {gettext("GitHub Integration")}
+      </div>
+      <div class="text-[11.5px] text-base-content/50 font-medium mt-0.5">
+        {gettext("Status mappings and sync are configured on a dedicated page")}
+      </div>
+    </div>
+    <.link navigate={~p"/admin/github"} class="det-btn">
+      {gettext("Open settings")} <.icon name="hero-arrow-right" class="size-3.5" />
+    </.link>
   </div>
 </div>
 
-<!-- Form Modal (Create/Edit) -->
-<%= if @show_form_modal do %>
-  <div class="modal modal-open">
-    <div class="modal-box max-w-2xl">
-      <h3 class="font-bold text-lg mb-4">
-        {if @form_mode == :new, do: "Create New User", else: "Edit User"}
-      </h3>
+<%!-- Users table card --%>
+<div class="bg-base-200 rounded-2xl overflow-hidden shadow-sm border border-base-300">
+  <div class="px-[22px] py-4 border-b border-base-300 flex items-center gap-2 text-[13px] font-semibold text-base-content">
+    <.icon name="hero-users" class="size-4 text-base-content/40" />
+    {gettext("Users")}
+    <span class="ml-auto text-base-content/50 font-medium text-[11.5px]">
+      {ngettext("%{count} member", "%{count} members", length(@users), count: length(@users))}
+    </span>
+  </div>
+  <table class="w-full border-collapse">
+    <thead>
+      <tr>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+          {gettext("Email")}
+        </th>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+          {gettext("Team")}
+        </th>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+          {gettext("Role")}
+        </th>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+          {gettext("System admin")}
+        </th>
+        <th class="px-[22px] py-3.5 border-b border-base-300"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= for user <- @users do %>
+        <tr class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors">
+          <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content">
+            {user.email}
+          </td>
+          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
+            <%= if user.team do %>
+              <span class="dept">{user.team.name}</span>
+            <% else %>
+              <span class="opacity-60">{gettext("Unassigned")}</span>
+            <% end %>
+          </td>
+          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
+            {role_label(user.role)}
+          </td>
+          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap">
+            <%= if user.is_admin do %>
+              <span class="inline-block w-[7px] h-[7px] rounded-full bg-success mr-1.5 align-middle">
+              </span>
+              {pgettext("user role", "Admin")}
+            <% else %>
+              <span class="inline-block w-[7px] h-[7px] rounded-full bg-base-content/30 mr-1.5 align-middle">
+              </span>
+              {gettext("Member")}
+            <% end %>
+          </td>
+          <td class="px-[22px] py-4 text-right whitespace-nowrap">
+            <%= if user.id == @current_user.id do %>
+              <span class="inline-flex items-center text-[10px] font-semibold px-2.5 py-1 rounded-full bg-base-300 text-base-content/60 mr-2">
+                {gettext("You")}
+              </span>
+            <% end %>
+            <button
+              type="button"
+              phx-click="open_edit_modal"
+              phx-value-id={user.id}
+              class="det-btn"
+            >
+              {gettext("Edit")}
+            </button>
+            <%= if user.id != @current_user.id do %>
+              <button
+                type="button"
+                phx-click="open_delete_modal"
+                phx-value-id={user.id}
+                class="det-btn det-btn-danger"
+              >
+                <.icon name="hero-trash" class="size-3.5" />
+              </button>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
 
-      <.form
-        for={@form}
-        id="user-form"
-        phx-change="validate"
-        phx-submit="save"
-      >
+<%!-- Form modal (create / edit) --%>
+<%= if @show_form_modal do %>
+  <div class="app-modal">
+    <div class="app-modal-box" phx-click-away="close_form_modal">
+      <div class="app-modal-title">
+        {if @form_mode == :new, do: gettext("Add user"), else: gettext("Edit user")}
+      </div>
+      <div class="app-modal-sub">
+        {if @form_mode == :new,
+          do: gettext("Grant access to Hermes"),
+          else: gettext("Update the user details below.")}
+      </div>
+
+      <.form for={@form} id="user-form" phx-change="validate" phx-submit="save">
         <div class="space-y-4">
-          <.input
-            field={@form[:email]}
-            type="email"
-            label="Email"
-            required
-          />
+          <.input field={@form[:email]} type="email" label={gettext("Email")} required />
 
           <%= if @form_mode == :new do %>
-            <.input
-              field={@form[:password]}
-              type="password"
-              label="Password"
-              required
-            />
+            <.input field={@form[:password]} type="password" label={gettext("Password")} required />
           <% else %>
             <.input
               field={@form[:password]}
               type="password"
-              label="Password (leave blank to keep current)"
+              label={gettext("Password (leave blank to keep current)")}
             />
           <% end %>
 
           <.input
-            field={@form[:role]}
-            type="select"
-            label="Role"
-            prompt="Choose a role"
-            options={[
-              {"Team Member", "team_member"},
-              {"Developer", "dev_team"},
-              {"Product Owner", "product_owner"},
-              {"Admin (Role)", "admin"}
-            ]}
-            required
-          />
-
-          <.input
             field={@form[:team_id]}
             type="select"
-            label="Team"
-            prompt="Choose a team"
+            label={gettext("Team")}
+            prompt={gettext("Choose a team")}
             options={Enum.map(@teams, &{&1.name, &1.id})}
             required
           />
 
-          <div class="form-control">
-            <label class="label cursor-pointer justify-start gap-4">
-              <input
-                type="checkbox"
-                name="user[is_admin]"
-                class="checkbox checkbox-primary"
-                checked={@form[:is_admin].value == true || @form[:is_admin].value == "true"}
-                value="true"
-              />
-              <div>
-                <span class="label-text font-medium">System Administrator</span>
-                <p class="text-sm text-gray-500 mt-1">
-                  System administrators have access to all admin panels and can manage users
-                </p>
-              </div>
-            </label>
-          </div>
+          <.input
+            field={@form[:role]}
+            type="select"
+            label={gettext("Role")}
+            prompt={gettext("Choose a role")}
+            options={[
+              {gettext("Team Member"), "team_member"},
+              {gettext("Developer"), "dev_team"},
+              {gettext("Product Owner"), "product_owner"},
+              {gettext("Admin (Role)"), "admin"}
+            ]}
+            required
+          />
+
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="user[is_admin]"
+              class="checkbox checkbox-primary checkbox-sm mt-0.5"
+              checked={@form[:is_admin].value == true || @form[:is_admin].value == "true"}
+              value="true"
+            />
+            <span>
+              <span class="block text-[12.5px] font-medium text-base-content">
+                {gettext("System Administrator")}
+              </span>
+              <span class="block text-[11.5px] text-base-content/50 mt-0.5">
+                {gettext(
+                  "System administrators have access to all admin panels and can manage users"
+                )}
+              </span>
+            </span>
+          </label>
         </div>
 
-        <div class="modal-action">
-          <button
-            type="button"
-            phx-click="close_form_modal"
-            class="btn btn-ghost"
-          >
-            Cancel
+        <div class="app-modal-foot">
+          <button type="button" phx-click="close_form_modal" class="det-btn">
+            {gettext("Cancel")}
           </button>
-          <.button type="submit" phx-disable-with="Saving...">
-            {if @form_mode == :new, do: "Create User", else: "Save Changes"}
-          </.button>
+          <button
+            type="submit"
+            class="det-btn det-btn-primary-solid"
+            phx-disable-with={gettext("Saving...")}
+          >
+            {if @form_mode == :new, do: gettext("Create User"), else: gettext("Save Changes")}
+          </button>
         </div>
       </.form>
     </div>
   </div>
 <% end %>
 
-<!-- Delete Confirmation Modal -->
+<%!-- Delete confirmation modal --%>
 <%= if @show_delete_modal do %>
-  <div class="modal modal-open">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg">Confirm Deletion</h3>
-      <p class="py-4">
-        Are you sure you want to delete the user <strong><%= @selected_user.email %></strong>?
-        This action cannot be undone.
-      </p>
-      <div class="modal-action">
-        <button
-          phx-click="close_delete_modal"
-          class="btn btn-ghost"
-        >
-          Cancel
+  <div class="app-modal">
+    <div class="app-modal-box max-w-sm" phx-click-away="close_delete_modal">
+      <div class="app-modal-title">{gettext("Confirm Deletion")}</div>
+      <div class="app-modal-sub">
+        {gettext(
+          "Are you sure you want to delete the user %{email}? This action cannot be undone.",
+          email: @selected_user.email
+        )}
+      </div>
+      <div class="app-modal-foot">
+        <button type="button" phx-click="close_delete_modal" class="det-btn">
+          {gettext("Cancel")}
         </button>
-        <button
-          phx-click="confirm_delete"
-          class="btn btn-error"
-        >
-          Delete User
+        <button type="button" phx-click="confirm_delete" class="det-btn det-btn-danger-solid">
+          {gettext("Delete User")}
         </button>
       </div>
     </div>

@@ -8,7 +8,7 @@ defmodule HermesWeb.Admin.UserLive.Index do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "User Management")
+     |> assign(:page_title, gettext("Administration"))
      |> assign(:users, list_users())
      |> assign(:teams, Accounts.list_teams())
      |> assign(:show_form_modal, false)
@@ -72,6 +72,17 @@ defmodule HermesWeb.Admin.UserLive.Index do
   def handle_event("confirm_delete", _params, socket) do
     user = socket.assigns.selected_user
 
+    if user.id == socket.assigns.current_user.id do
+      {:noreply,
+       socket
+       |> assign(:show_delete_modal, false)
+       |> put_flash(:error, gettext("You cannot delete your own account"))}
+    else
+      do_delete_user(socket, user)
+    end
+  end
+
+  defp do_delete_user(socket, user) do
     case Accounts.delete_user(user) do
       {:ok, _} ->
         {:noreply,
@@ -137,4 +148,10 @@ defmodule HermesWeb.Admin.UserLive.Index do
   defp list_users do
     Accounts.list_users()
   end
+
+  defp role_label("admin"), do: pgettext("user role", "Admin")
+  defp role_label("dev_team"), do: gettext("Developer")
+  defp role_label("product_owner"), do: gettext("Product Owner")
+  defp role_label("team_member"), do: gettext("Team Member")
+  defp role_label(role), do: Phoenix.Naming.humanize(role)
 end
