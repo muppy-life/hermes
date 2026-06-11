@@ -87,6 +87,7 @@ defmodule Hermes.Requests.Request do
       "need_requirement",
       "pending",
       "future_planning",
+      "todo_in_sprint",
       "in_progress",
       "review",
       "completed",

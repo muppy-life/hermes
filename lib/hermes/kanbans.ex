@@ -104,22 +104,28 @@ defmodule Hermes.Kanbans do
         status: "future_planning"
       },
       %{
+        id: 9,
+        name: Gettext.gettext(HermesWeb.Gettext, "Todo in Sprint"),
+        position: 4,
+        status: "todo_in_sprint"
+      },
+      %{
         id: 3,
         name: Gettext.gettext(HermesWeb.Gettext, "In Progress"),
-        position: 4,
+        position: 5,
         status: "in_progress"
       },
-      %{id: 4, name: Gettext.gettext(HermesWeb.Gettext, "Review"), position: 5, status: "review"},
+      %{id: 4, name: Gettext.gettext(HermesWeb.Gettext, "Review"), position: 6, status: "review"},
       %{
         id: 6,
         name: Gettext.gettext(HermesWeb.Gettext, "Completed"),
-        position: 6,
+        position: 7,
         status: "completed"
       },
       %{
         id: 5,
         name: Gettext.gettext(HermesWeb.Gettext, "Blocked"),
-        position: 7,
+        position: 8,
         status: "blocked"
       }
     ]

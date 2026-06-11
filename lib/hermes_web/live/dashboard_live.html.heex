@@ -67,6 +67,10 @@ user_name =
       <div class="stat-num">{@stats.future_planning}</div>
       <div class="stat-lbl">{gettext("Future Planning")}</div>
     </.link>
+    <.link navigate={~p"/backlog?status=todo_in_sprint"} class="stat-card stat-sky">
+      <div class="stat-num">{@stats.todo_in_sprint}</div>
+      <div class="stat-lbl">{gettext("Todo in Sprint")}</div>
+    </.link>
     <.link navigate={~p"/backlog?status=in_progress"} class="stat-card stat-blue">
       <div class="stat-num">{@stats.in_progress}</div>
       <div class="stat-lbl">{gettext("In Progress")}</div>
