@@ -131,7 +131,7 @@ defmodule HermesWeb.Layouts do
       </header>
 
       <main class="fixed top-[72px] bottom-[30px] left-0 right-0 overflow-auto bg-base-100">
-        <div class="mx-8 py-8">
+        <div class="mx-8 py-8 min-h-full">
           {render_slot(@inner_block)}
         </div>
       </main>
