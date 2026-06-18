@@ -93,9 +93,36 @@ user_name =
   <div class="roadmap-card">
     <div class="roadmap-h">
       <div>
-        <div class="roadmap-title">{gettext("Roadmap")}</div>
+        <div class="roadmap-title">
+          {gettext("Roadmap")}
+          <span class="rm-help" tabindex="0">
+            <.icon name="hero-question-mark-circle" class="size-4" />
+            <div class="rm-legend">
+              <div class="rm-legend-title">{gettext("Status")}</div>
+              <div class="rm-legend-grid">
+                <div :for={status <- rm_statuses()} class="rm-legend-item">
+                  <.roadmap_status_icon status={status} />
+                  <span>{rm_status_label(status)}</span>
+                </div>
+              </div>
+              <%= if @roadmap.boards != [] do %>
+                <div class="rm-legend-title">{gettext("Boards")}</div>
+                <div class="rm-legend-grid rm-legend-grid-1">
+                  <div :for={board <- @roadmap.boards} class="rm-legend-item">
+                    <span
+                      class="rm-legend-swatch"
+                      style={"background: #{rm_board_swatch(board)};"}
+                    >
+                    </span>
+                    <span>{board}</span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </span>
+        </div>
         <div class="roadmap-sub">
-          {gettext("%{count} deliveries in the next 7 months", count: roadmap_total)}
+          {gettext("%{count} deliveries in this window", count: roadmap_total)}
         </div>
       </div>
       <.link
@@ -125,51 +152,96 @@ user_name =
               ""
           end %>
         <div class={["rm-col", col_class]}>
-          <div>
-            <div class="rm-col-h">{month.short_label}</div>
-            <div class="rm-col-y">{month.year}</div>
+          <div class="rm-col-head">
+            <span class="rm-col-h">{month.short_label}</span>
+            <span class="rm-col-y">{month.year}</span>
           </div>
           <%= if month_requests != [] do %>
             <div class="rm-col-count">{length(month_requests)}</div>
           <% end %>
-          <%= if month.is_current do %>
-            <div class="rm-today-line"></div>
-            <div class="rm-today">
-              <div class="rm-today-lbl">{gettext("Today")}</div>
-            </div>
-          <% end %>
 
-          <div class="rm-tasks">
-            <%= if month_requests == [] do %>
-              <div class="rm-empty">{gettext("No deadlines")}</div>
-            <% else %>
-              <%= for req <- month_requests do %>
-                <% {prio_tag_class, prio_tag_label} = rm_priority_tag(req.priority)
-                {dl_class, dl_label} = rm_deadline(req.deadline)
-                overdue = rm_overdue?(req.deadline) %>
-                <div
-                  class={["rm-task", rm_prio_class(req.priority), overdue && "overdue"]}
-                  phx-click={JS.navigate(~p"/backlog/#{req.id}")}
-                  title={req.title}
-                >
-                  <div class="rm-task-top">
-                    <span class={["rm-task-status-dot", rm_status_class(req.status)]}></span>
-                    <span class="rm-task-ref">#{req.id}</span>
-                    <div class="rm-task-avatar" title={req.created_by && req.created_by.email}>
-                      {req.created_by && rm_initials(req.created_by.email)}
+          <%= if month_requests == [] do %>
+            <div class="rm-empty">{gettext("No deadlines")}</div>
+          <% else %>
+            <div class="rm-weeks">
+              <%= for wk <- 1..4 do %>
+                <% week_requests =
+                  Enum.filter(month_requests, &(week_of_month(&1.deadline) == wk))
+
+                is_today_week =
+                  month.is_current and wk == week_of_month(@roadmap.today) %>
+                <div class="rm-week">
+                  <div class={["rm-week-h", is_today_week && "is-today"]}>
+                    {gettext("W%{n}", n: wk)}
+                  </div>
+                  <%= for req <- week_requests do %>
+                    <% {prio_tag_class, prio_tag_label} = rm_priority_tag(req.priority)
+                    {dl_class, dl_label} = rm_deadline(req.deadline)
+                    overdue = rm_overdue?(req.deadline) %>
+                    <div
+                      class={["rm-task rm-task-compact", overdue && "overdue"]}
+                      style={rm_board_style(rm_board_label(req))}
+                      phx-click={JS.navigate(~p"/backlog/#{req.id}")}
+                      title={req.title}
+                    >
+                      <div class="rm-task-line">
+                        <span title={
+                          gettext("Status: %{label}", label: rm_status_label(req.status))
+                        }>
+                          <.roadmap_status_icon status={req.status} />
+                        </span>
+                        <span class="rm-task-ref">#{req.id}</span>
+                        <span
+                          class={["tag-pill tag-date", dl_class]}
+                          title={rm_deadline_title(req.deadline)}
+                        >
+                          {dl_label}
+                        </span>
+                        <span
+                          class={["tag-pill", prio_tag_class]}
+                          title={rm_priority_title(req.priority)}
+                        >
+                          {prio_tag_label}
+                        </span>
+                      </div>
+                      <div class="rm-task-expand">
+                        <div class="rm-task-title">{req.title}</div>
+                        <div class="rm-task-top">
+                          <div
+                            class="rm-task-avatar"
+                            title={req.created_by && req.created_by.email}
+                          >
+                            {req.created_by && rm_initials(req.created_by.email)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="rm-task-title">{req.title}</div>
-                  <div class="rm-task-tags">
-                    <span class={["tag-pill", prio_tag_class]}>{prio_tag_label}</span>
-                    <span class={["tag-pill tag-date", dl_class]}>{dl_label}</span>
-                  </div>
+                  <% end %>
                 </div>
               <% end %>
-            <% end %>
-          </div>
+            </div>
+          <% end %>
         </div>
       <% end %>
+    </div>
+
+    <div class="roadmap-actions">
+      <button
+        type="button"
+        phx-click="roadmap_prev"
+        class="rm-nav"
+        aria-label={gettext("Previous month")}
+      >
+        <.icon name="hero-chevron-left" class="size-4" />
+      </button>
+      <button
+        type="button"
+        phx-click="roadmap_next"
+        class="rm-nav"
+        aria-label={gettext("Next month")}
+      >
+        <.icon name="hero-chevron-right" class="size-4" />
+      </button>
     </div>
   </div>
 

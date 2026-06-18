@@ -14,13 +14,31 @@ defmodule HermesWeb.DashboardLive do
      |> assign(:recent_requests, get_recent_requests(current_user))
      |> assign(:boards, get_boards(current_user))
      |> assign(:stats, get_stats(current_user))
-     |> assign(:roadmap, get_roadmap_data(current_user))
+     |> assign(:roadmap_offset, 0)
+     |> assign(:roadmap, get_roadmap_data(current_user, 0))
      |> assign(:show_new_request, false)}
   end
 
   @impl true
   def handle_event("show_new_request", _params, socket) do
     {:noreply, assign(socket, :show_new_request, true)}
+  end
+
+  def handle_event("roadmap_prev", _params, socket) do
+    {:noreply, shift_roadmap(socket, -1)}
+  end
+
+  def handle_event("roadmap_next", _params, socket) do
+    {:noreply, shift_roadmap(socket, 1)}
+  end
+
+  defp shift_roadmap(socket, delta) do
+    offset = socket.assigns.roadmap_offset + delta
+    user = socket.assigns[:current_user]
+
+    socket
+    |> assign(:roadmap_offset, offset)
+    |> assign(:roadmap, get_roadmap_data(user, offset))
   end
 
   @impl true
@@ -35,7 +53,8 @@ defmodule HermesWeb.DashboardLive do
      socket
      |> put_flash(:info, gettext("Request created successfully"))
      |> assign(:recent_requests, get_recent_requests(current_user))
-     |> assign(:stats, get_stats(current_user))}
+     |> assign(:stats, get_stats(current_user))
+     |> assign(:roadmap, get_roadmap_data(current_user, socket.assigns.roadmap_offset))}
   end
 
   def handle_info({:new_request_flash, kind, msg}, socket) do
@@ -98,47 +117,53 @@ defmodule HermesWeb.DashboardLive do
     }
   end
 
-  defp get_roadmap_data(user) do
+  # Number of months visible in the roadmap window (current + 2 ahead by default).
+  @roadmap_window 3
+
+  defp get_roadmap_data(user, offset) do
     today = Date.utc_today()
 
-    # Calculate date range: previous month to 6 months ahead
-    start_date = today |> Date.beginning_of_month() |> Date.add(-1) |> Date.beginning_of_month()
-    end_date = today |> Date.shift(month: 6) |> Date.end_of_month()
+    # Visible window: current month shifted by `offset`, spanning @roadmap_window months.
+    window_start = today |> Date.beginning_of_month() |> Date.shift(month: offset)
+    window_end = window_start |> Date.shift(month: @roadmap_window - 1) |> Date.end_of_month()
 
-    # Get all requests with deadlines in range
+    # Get all team requests with deadlines inside the visible window.
     requests = Requests.list_requests_by_team(user.team_id)
 
     requests_with_deadlines =
       requests
       |> Enum.filter(fn r ->
         r.deadline != nil and
-          Date.compare(r.deadline, start_date) != :lt and
-          Date.compare(r.deadline, end_date) != :gt and
+          Date.compare(r.deadline, window_start) != :lt and
+          Date.compare(r.deadline, window_end) != :gt and
           r.status != "completed" and r.status != "discarded"
       end)
       |> Enum.sort_by(& &1.deadline, Date)
 
-    # Generate months for the roadmap (8 months: -1, current, +6)
-    months = generate_months(today, -1, 6)
+    months = generate_months(today, window_start, @roadmap_window)
 
-    # Group requests by month
     requests_by_month =
       Enum.group_by(requests_with_deadlines, fn r ->
         {r.deadline.year, r.deadline.month}
       end)
 
+    boards =
+      requests_with_deadlines
+      |> Enum.map(&rm_board_label/1)
+      |> Enum.uniq()
+      |> Enum.sort()
+
     %{
       months: months,
       requests_by_month: requests_by_month,
+      boards: boards,
       today: today
     }
   end
 
-  defp generate_months(today, months_before, months_after) do
-    start_month = Date.beginning_of_month(today) |> Date.shift(month: months_before)
-
-    Enum.map(0..(months_before * -1 + months_after), fn offset ->
-      date = Date.shift(start_month, month: offset)
+  defp generate_months(today, window_start, count) do
+    Enum.map(0..(count - 1), fn idx ->
+      date = Date.shift(window_start, month: idx)
 
       %{
         year: date.year,
@@ -148,28 +173,6 @@ defmodule HermesWeb.DashboardLive do
         is_current: date.year == today.year and date.month == today.month
       }
     end)
-  end
-
-  # Helper function to calculate today marker position as percentage
-  def calculate_today_position(months, today) do
-    month_index =
-      Enum.find_index(months, fn m ->
-        m.year == today.year and m.month == today.month
-      end)
-
-    case month_index do
-      nil ->
-        nil
-
-      idx ->
-        # Calculate position within the month (0-1)
-        days_in_month = Date.days_in_month(today)
-        day_position = (today.day - 1) / days_in_month
-
-        # Each month takes 12.5% (100/8), position within that column
-        month_width = 100 / 8
-        idx * month_width + day_position * month_width
-    end
   end
 
   # Helper function to get background class based on priority
@@ -184,22 +187,6 @@ defmodule HermesWeb.DashboardLive do
   end
 
   # --- Roadmap task-card helpers (new design) ---
-
-  @doc "Roadmap task card tint class by priority."
-  def rm_prio_class(priority) when priority in [3, 4], do: "prio-alta"
-  def rm_prio_class(2), do: "prio-media"
-  def rm_prio_class(_), do: "prio-baja"
-
-  @doc "Status ring class for a roadmap task dot."
-  def rm_status_class(status) do
-    case status do
-      "in_progress" -> "s-progress"
-      "review" -> "s-review"
-      "completed" -> "s-done"
-      "blocked" -> "s-blocked"
-      _ -> "s-pending"
-    end
-  end
 
   @doc "Priority tag class + short label (P0/P1/P2)."
   def rm_priority_tag(priority) when priority in [3, 4], do: {"tag-p0", "P0"}
@@ -222,6 +209,82 @@ defmodule HermesWeb.DashboardLive do
 
   @doc "Whether a deadline is overdue (past, not today)."
   def rm_overdue?(date), do: Date.diff(date, Date.utc_today()) < 0
+
+  @doc "Week-of-month bucket (1..4) for a date, used to spread roadmap cards across week columns."
+  def week_of_month(%Date{day: day}), do: min(div(day - 1, 7) + 1, 4)
+
+  @doc "Statuses that can appear on the roadmap (completed/discarded are filtered out)."
+  def rm_statuses do
+    ~w(new need_requirement pending future_planning todo_in_sprint in_progress review blocked)
+  end
+
+  @doc "Board label for a request — the team pair that owns the kanban board."
+  def rm_board_label(req) do
+    requesting = req.requesting_team && req.requesting_team.name
+    assigned = req.assigned_to_team && req.assigned_to_team.name
+
+    cond do
+      requesting && assigned -> "#{requesting} ↔ #{assigned}"
+      requesting -> requesting
+      assigned -> assigned
+      true -> gettext("Unassigned")
+    end
+  end
+
+  @doc "Deterministic hue (0..359) for a board label, used to tint its cards consistently."
+  def rm_board_hue(label), do: rem(:erlang.phash2(label), 360)
+
+  @doc "Inline border/background style tinting a card by its board."
+  def rm_board_style(label) do
+    hue = rm_board_hue(label)
+    "border-color: hsl(#{hue} 50% 62%); background: hsl(#{hue} 60% 97%);"
+  end
+
+  @doc "Swatch color for a board legend entry."
+  def rm_board_swatch(label), do: "hsl(#{rm_board_hue(label)} 50% 62%)"
+
+  @doc "Human-readable status label for roadmap tooltips."
+  def rm_status_label(status) do
+    case status do
+      "new" -> gettext("New")
+      "need_requirement" -> gettext("Need requirement")
+      "pending" -> gettext("Pending")
+      "future_planning" -> gettext("Future Planning")
+      "todo_in_sprint" -> gettext("Todo in Sprint")
+      "in_progress" -> gettext("In Progress")
+      "review" -> gettext("Review")
+      "completed" -> gettext("Completed")
+      "blocked" -> gettext("Blocked")
+      other -> other
+    end
+  end
+
+  @doc "Priority tooltip text for roadmap pills."
+  def rm_priority_title(priority) do
+    label =
+      case priority do
+        1 -> gettext("Low")
+        2 -> gettext("Normal")
+        3 -> gettext("Important")
+        4 -> gettext("Critical")
+        _ -> gettext("Unknown")
+      end
+
+    gettext("Priority: %{label}", label: label)
+  end
+
+  @doc "Deadline tooltip text for roadmap pills."
+  def rm_deadline_title(date) do
+    days = Date.diff(date, Date.utc_today())
+    formatted = Calendar.strftime(date, "%d %b %Y")
+
+    cond do
+      days < 0 -> gettext("Deadline %{date} · overdue", date: formatted)
+      days == 0 -> gettext("Deadline %{date} · due today", date: formatted)
+      days <= 7 -> gettext("Deadline %{date} · due soon", date: formatted)
+      true -> gettext("Deadline %{date}", date: formatted)
+    end
+  end
 
   @doc "Deadline pill class + label."
   def rm_deadline(date) do
