@@ -53,7 +53,8 @@ defmodule HermesWeb.DashboardLive do
      socket
      |> put_flash(:info, gettext("Request created successfully"))
      |> assign(:recent_requests, get_recent_requests(current_user))
-     |> assign(:stats, get_stats(current_user))}
+     |> assign(:stats, get_stats(current_user))
+     |> assign(:roadmap, get_roadmap_data(current_user, socket.assigns.roadmap_offset))}
   end
 
   def handle_info({:new_request_flash, kind, msg}, socket) do
@@ -186,22 +187,6 @@ defmodule HermesWeb.DashboardLive do
   end
 
   # --- Roadmap task-card helpers (new design) ---
-
-  @doc "Roadmap task card tint class by priority."
-  def rm_prio_class(priority) when priority in [3, 4], do: "prio-alta"
-  def rm_prio_class(2), do: "prio-media"
-  def rm_prio_class(_), do: "prio-baja"
-
-  @doc "Status ring class for a roadmap task dot."
-  def rm_status_class(status) do
-    case status do
-      "in_progress" -> "s-progress"
-      "review" -> "s-review"
-      "completed" -> "s-done"
-      "blocked" -> "s-blocked"
-      _ -> "s-pending"
-    end
-  end
 
   @doc "Priority tag class + short label (P0/P1/P2)."
   def rm_priority_tag(priority) when priority in [3, 4], do: {"tag-p0", "P0"}

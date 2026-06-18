@@ -2170,9 +2170,8 @@
   transform: translateY(-1px);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-.rm-task.prio-alta { background: #f9fafb; border-color: #e5e7eb; }
-.rm-task.prio-media { background: #f9fafb; border-color: #e5e7eb; }
-.rm-task.prio-baja { background: #f9fafb; border-color: #e5e7eb; }
+/* Neutral fallback; board colour is applied via an inline style that overrides this. */
+.rm-task { background: #f9fafb; border-color: #e5e7eb; }
 .rm-task.overdue { background: #f3f4f6; border-color: #d1d5db; border-left: 3px solid #9ca3af; }
 .rm-task-top { display: flex; align-items: center; gap: 6px; }
 .rm-task-status-dot {
