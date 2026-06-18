@@ -182,37 +182,36 @@ user_name =
                       class={["rm-task rm-task-compact", overdue && "overdue"]}
                       style={rm_board_style(rm_board_label(req))}
                       phx-click={JS.navigate(~p"/backlog/#{req.id}")}
-                      title={req.title}
                     >
                       <div class="rm-task-line">
-                        <span title={
+                        <.tip text={
                           gettext("Status: %{label}", label: rm_status_label(req.status))
                         }>
                           <.roadmap_status_icon status={req.status} />
-                        </span>
+                        </.tip>
                         <span class="rm-task-ref">#{req.id}</span>
-                        <span
-                          class={["tag-pill tag-date", dl_class]}
-                          title={rm_deadline_title(req.deadline)}
-                        >
-                          {dl_label}
-                        </span>
-                        <span
-                          class={["tag-pill", prio_tag_class]}
-                          title={rm_priority_title(req.priority)}
-                        >
-                          {prio_tag_label}
-                        </span>
+                        <.tip text={rm_deadline_title(req.deadline)} class="rm-task-date">
+                          <.icon
+                            :if={overdue}
+                            name="hero-exclamation-triangle"
+                            class="size-3.5 text-red-600"
+                          />
+                          <span :if={!overdue} class={["tag-pill tag-date", dl_class]}>
+                            {dl_label}
+                          </span>
+                        </.tip>
+                        <.tip text={rm_priority_title(req.priority)}>
+                          <span class={["tag-pill", prio_tag_class]}>{prio_tag_label}</span>
+                        </.tip>
                       </div>
                       <div class="rm-task-expand">
                         <div class="rm-task-title">{req.title}</div>
                         <div class="rm-task-top">
-                          <div
-                            class="rm-task-avatar"
-                            title={req.created_by && req.created_by.email}
-                          >
-                            {req.created_by && rm_initials(req.created_by.email)}
-                          </div>
+                          <.tip :if={req.created_by} text={req.created_by.email}>
+                            <div class="rm-task-avatar">
+                              {rm_initials(req.created_by.email)}
+                            </div>
+                          </.tip>
                         </div>
                       </div>
                     </div>

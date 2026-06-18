@@ -298,6 +298,20 @@ defmodule HermesWeb.DashboardLive do
     end
   end
 
+  @doc "Instant, CSS-driven tooltip wrapper (no native title delay)."
+  attr :text, :string, required: true
+  attr :class, :string, default: nil
+  slot :inner_block, required: true
+
+  def tip(assigns) do
+    ~H"""
+    <span class={["tip", @class]}>
+      {render_slot(@inner_block)}
+      <span class="tip-bubble" role="tooltip">{@text}</span>
+    </span>
+    """
+  end
+
   # Status icon component for roadmap cards
   attr :status, :string, required: true
 
