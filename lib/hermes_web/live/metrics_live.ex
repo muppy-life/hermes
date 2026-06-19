@@ -402,6 +402,10 @@ defmodule HermesWeb.MetricsLive do
     }
   end
 
+  # Any unexpected index falls back to the first slide so a stale assign can't
+  # crash the render.
+  def hero_slide(_index, assigns), do: hero_slide(0, assigns)
+
   @doc "Percentage of `value` over `total`, rounded, 0 when total is 0."
   def pct(_value, 0), do: 0
   def pct(value, total), do: round(value / total * 100)
