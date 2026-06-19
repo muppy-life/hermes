@@ -3,30 +3,78 @@
   <div class="greeting">
     <div>
       <h1>{gettext("Objectives")}</h1>
-      <div class="greeting-sub">{gettext("Quarterly view · %{year}", year: @year)}</div>
+      <div class="greeting-sub">{gettext("%{period} view", period: period_label(@period))}</div>
+    </div>
+
+    <%!-- Period granularity toggle --%>
+    <div class="q-period-toggle" role="group">
+      <%= for p <- periods() do %>
+        <button
+          type="button"
+          class={["q-period-btn", p == @period && "active"]}
+          phx-click="select_period"
+          phx-value-period={p}
+        >
+          {period_label(p)}
+        </button>
+      <% end %>
     </div>
   </div>
 
-  <%!-- Quarter tabs --%>
-  <div class="q-tabs">
-    <%= for q <- quarters() do %>
-      <% state = quarter_state(q, @current_quarter) %>
-      <button
-        type="button"
-        class={["q-tab", q == @active_quarter && "active"]}
-        phx-click="select_quarter"
-        phx-value-quarter={q}
-      >
-        {q}<span class="q-tab-state">· {quarter_state_label(state)}</span>
-      </button>
-    <% end %>
-  </div>
+  <%!-- Period selector: month dropdown (month & week modes) + week tabs --%>
+  <%= cond do %>
+    <% @period == :month -> %>
+      <form class="q-select-wrap" phx-change="select_bucket">
+        <select class="q-select" name="key">
+          <%= for b <- @buckets do %>
+            <option value={b.key} selected={b.key == @active_key}>
+              {b.label} · {bucket_state_label(b.state)}
+            </option>
+          <% end %>
+        </select>
+      </form>
+    <% @period == :week -> %>
+      <form class="q-select-wrap" phx-change="select_week_month">
+        <select class="q-select" name="key">
+          <%= for m <- @month_options do %>
+            <option value={m.key} selected={m.key == @week_month_key}>
+              {m.label} · {bucket_state_label(m.state)}
+            </option>
+          <% end %>
+        </select>
+      </form>
+      <div class="q-tabs">
+        <%= for b <- @buckets do %>
+          <button
+            type="button"
+            class={["q-tab", b.key == @active_key && "active"]}
+            phx-click="select_bucket"
+            phx-value-key={b.key}
+          >
+            {b.label}<span class="q-tab-state">· {bucket_state_label(b.state)}</span>
+          </button>
+        <% end %>
+      </div>
+    <% true -> %>
+      <div class="q-tabs">
+        <%= for b <- @buckets do %>
+          <button
+            type="button"
+            class={["q-tab", b.key == @active_key && "active"]}
+            phx-click="select_bucket"
+            phx-value-key={b.key}
+          >
+            {b.label}<span class="q-tab-state">· {bucket_state_label(b.state)}</span>
+          </button>
+        <% end %>
+      </div>
+  <% end %>
 
-  <%!-- Quarter KPI overview --%>
+  <%!-- Period KPI overview --%>
   <div class="q-overview">
     <div class="kpi-card">
       <div class="kpi-card-h">
-        <div class="kpi-card-title">{gettext("Total %{quarter}", quarter: @active_quarter)}</div>
+        <div class="kpi-card-title">{gettext("Total %{period}", period: @active.label)}</div>
       </div>
       <div class="kpi-big">{@total}</div>
       <div class="kpi-sub">{gettext("requests")}</div>
@@ -47,6 +95,14 @@
       </div>
       <div class="kpi-big">{@in_progress}</div>
     </div>
+
+    <div class="kpi-card">
+      <div class="kpi-card-h">
+        <div class="kpi-card-title">{gettext("Avg. completion time")}</div>
+      </div>
+      <div class="kpi-big">{avg_completion_label(@avg_completion_hours)}</div>
+      <div class="kpi-sub">{gettext("creation to done")}</div>
+    </div>
   </div>
 
   <%!-- Completed list + by-team distribution --%>
@@ -55,7 +111,7 @@
       <div class="card-h" style="margin-bottom:14px">
         <div class="card-h-info">
           <div class="card-title">
-            {gettext("Completed in %{quarter}", quarter: @active_quarter)}
+            {gettext("Completed in %{period}", period: @active.label)}
           </div>
           <div class="card-sub">{gettext("%{n} tasks", n: @done)}</div>
         </div>

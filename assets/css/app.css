@@ -3150,14 +3150,83 @@
 }
 
 /* --- Objectives (quarterly view) --- */
+.q-period-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--m-surface);
+  padding: 4px;
+  border-radius: 999px;
+  box-shadow: var(--m-shadow-sm);
+  flex-shrink: 0;
+}
+.q-period-btn {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--m-text);
+  opacity: 0.7;
+  transition: all 0.15s;
+}
+.q-period-btn:hover {
+  opacity: 1;
+}
+.q-period-btn.active {
+  background: var(--m-brand);
+  color: var(--m-brand-content);
+  font-weight: 600;
+  opacity: 1;
+}
+.q-select-wrap {
+  margin-bottom: 20px;
+  width: fit-content;
+}
+.q-select {
+  appearance: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  height: 42px;
+  background-color: var(--m-surface);
+  border: none;
+  border-radius: 18px;
+  padding: 0 40px 0 18px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 42px;
+  color: color-mix(in oklch, var(--m-text), transparent 30%);
+  transition: color 0.15s;
+  cursor: pointer;
+  box-shadow: var(--m-shadow-sm);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23888'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+}
+.q-select:hover {
+  color: var(--m-text);
+}
+.q-select:focus {
+  color: var(--m-text);
+  outline: 2px solid var(--m-brand);
+  outline-offset: 1px;
+}
+.q-select option {
+  color: var(--m-text);
+  font-weight: 500;
+}
 .q-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 20px;
   background: var(--m-surface);
   padding: 4px;
-  border-radius: 999px;
+  border-radius: 18px;
   width: fit-content;
+  max-width: 100%;
   box-shadow: var(--m-shadow-sm);
 }
 .q-tab {
@@ -3194,7 +3263,7 @@
 }
 .q-overview {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin-bottom: 20px;
 }
