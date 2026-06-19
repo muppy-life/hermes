@@ -24,25 +24,37 @@
   <%!-- Period selector: month dropdown (month & week modes) + week tabs --%>
   <%= cond do %>
     <% @period == :month -> %>
-      <form class="q-select-wrap" phx-change="select_bucket">
-        <select class="q-select" name="key">
+      <.form
+        :let={f}
+        for={to_form(%{"key" => @active_key})}
+        id="objectives-month-form"
+        class="q-select-wrap"
+        phx-change="select_bucket"
+      >
+        <select class="q-select" id="objectives-month-select" name={f[:key].name}>
           <%= for b <- @buckets do %>
             <option value={b.key} selected={b.key == @active_key}>
               {b.label} · {bucket_state_label(b.state)}
             </option>
           <% end %>
         </select>
-      </form>
+      </.form>
     <% @period == :week -> %>
-      <form class="q-select-wrap" phx-change="select_week_month">
-        <select class="q-select" name="key">
+      <.form
+        :let={f}
+        for={to_form(%{"key" => @week_month_key})}
+        id="objectives-week-month-form"
+        class="q-select-wrap"
+        phx-change="select_week_month"
+      >
+        <select class="q-select" id="objectives-week-month-select" name={f[:key].name}>
           <%= for m <- @month_options do %>
             <option value={m.key} selected={m.key == @week_month_key}>
               {m.label} · {bucket_state_label(m.state)}
             </option>
           <% end %>
         </select>
-      </form>
+      </.form>
       <div class="q-tabs">
         <%= for b <- @buckets do %>
           <button

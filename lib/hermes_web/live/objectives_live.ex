@@ -111,22 +111,25 @@ defmodule HermesWeb.ObjectivesLive do
     |> assign(:avg_completion_hours, avg_completion_hours(completed, completed_at))
   end
 
-  # Mean hours from creation to completion across the completed tasks, or nil
-  # when there are none. Completion time comes from the status change log,
-  # falling back to creation time (yielding 0 for those requests).
-  defp avg_completion_hours([], _completed_at), do: nil
-
+  # Mean hours from creation to completion, over only the requests with a
+  # logged completion transition. Requests without one are excluded entirely
+  # (rather than counted as 0) so a partially-logged dataset doesn't deflate
+  # the average. Returns nil when no completed request has a logged time.
   defp avg_completion_hours(completed, completed_at) do
     durations =
-      Enum.map(completed, fn r ->
-        done_at = Map.get(completed_at, r.id) || r.inserted_at
-        # Clamp at 0: seeded/back-dated change-log rows can predate the
-        # request's own inserted_at, which would otherwise skew the mean
-        # negative.
+      completed
+      |> Enum.filter(&Map.has_key?(completed_at, &1.id))
+      |> Enum.map(fn r ->
+        done_at = Map.fetch!(completed_at, r.id)
+        # Clamp at 0: back-dated change-log rows can predate the request's own
+        # inserted_at, which would otherwise skew the mean negative.
         max(DateTime.diff(to_datetime(done_at), to_datetime(r.inserted_at), :hour), 0)
       end)
 
-    Enum.sum(durations) / length(durations)
+    case durations do
+      [] -> nil
+      _ -> Enum.sum(durations) / length(durations)
+    end
   end
 
   # Completion counts per team, sorted descending. Drives the "By team" bars.
