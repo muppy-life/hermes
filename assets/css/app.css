@@ -2461,7 +2461,12 @@
   --m-fill: #334155;
   --m-fill-content: #ffffff;
   --m-fill-soft: #e2e8f0;
-  --m-bar-soft: color-mix(in oklch, #334155, transparent 78%);
+  --m-bar-soft: #e2e8f0;
+  --m-bar-soft-hover: #cbd5e1;
+  /* Highlighted throughput bar — green with a soft glow (design --success). */
+  --m-bar-current: #4ade80;
+  --m-bar-current-hover: #22c55e;
+  --m-bar-current-glow: 0 8px 20px rgba(74, 222, 128, 0.32);
   --m-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --m-shadow-md: 0 10px 28px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   --m-tooltip-bg: #334155;
@@ -2493,6 +2498,7 @@
   --m-fill: #64748b;
   --m-fill-soft: #3f3f46;
   --m-bar-soft: #3f3f46;
+  --m-bar-soft-hover: #52525b;
   /* Hero — slate gradient, exactly as body.dark .kpi-hero in the design. */
   --m-hero-bg: linear-gradient(135deg, #27272a 0%, #3f3f46 50%, #52525b 100%);
   --m-hero-content: #fafafa;
@@ -2803,15 +2809,25 @@
 .kpi-hero-dots {
   display: flex;
   gap: 4px;
+  /* Bottom-align so a hovered dot grows upward only, leaving its neighbours
+     resting on the same baseline instead of looking centred. */
+  align-items: flex-end;
 }
 .kpi-hero-dots span {
   width: 18px;
   height: 3px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.kpi-hero-dots span:hover {
+  background: rgba(255, 255, 255, 0.5);
+  height: 6px;
 }
 .kpi-hero-dots span.active {
   background: #fff;
+  width: 24px;
 }
 
 /* --- Aging list card --- */
@@ -2919,10 +2935,14 @@
   cursor: pointer;
 }
 .big-bar-bar:hover {
-  filter: brightness(1.05);
+  background: var(--m-bar-soft-hover);
 }
 .big-bar-bar.current {
-  background: var(--m-fill);
+  background: var(--m-bar-current);
+  box-shadow: var(--m-bar-current-glow);
+}
+.big-bar-bar.current:hover {
+  background: var(--m-bar-current-hover);
 }
 .big-bar-label {
   font-size: 11px;

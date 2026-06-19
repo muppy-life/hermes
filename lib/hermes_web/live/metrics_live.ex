@@ -41,6 +41,7 @@ defmodule HermesWeb.MetricsLive do
      |> assign(:status_filter, nil)
      |> assign(:priority_filter, nil)
      |> assign(:open_menu, nil)
+     |> assign(:hero_slide, 0)
      |> load()}
   end
 
@@ -52,6 +53,13 @@ defmodule HermesWeb.MetricsLive do
 
   def handle_event("close_menu", _params, socket) do
     {:noreply, assign(socket, :open_menu, nil)}
+  end
+
+  def handle_event("set_hero_slide", %{"slide" => slide}, socket) do
+    case Integer.parse(slide) do
+      {index, ""} when index in 0..1 -> {:noreply, assign(socket, :hero_slide, index)}
+      _ -> {:noreply, socket}
+    end
   end
 
   def handle_event("set_period", %{"period" => period}, socket) when period in @periods do
@@ -360,6 +368,38 @@ defmodule HermesWeb.MetricsLive do
   @doc "CSS `var(...)` reference for a status colour, theme-aware."
   def status_color(status) do
     "var(#{Map.get(@status_var, status, "--m-st-pending")})"
+  end
+
+  @doc """
+  Content for the clickable completion-rate hero. Two slides the user can
+  toggle between via the dots: completion rate and average cycle time.
+  Returns `%{badge, title, desc}` for the active `slide` index.
+  """
+  def hero_slide(0, assigns) do
+    %{
+      badge: gettext("Health"),
+      title: gettext("Completion rate · %{rate}%", rate: assigns.completion_rate),
+      desc:
+        gettext(
+          "%{done} completed of %{total} requests. Average resolution time: %{days} days.",
+          done: assigns.done,
+          total: assigns.total,
+          days: assigns.avg_cycle
+        )
+    }
+  end
+
+  def hero_slide(1, assigns) do
+    %{
+      badge: gettext("Cycle"),
+      title: gettext("Average cycle · %{days} days", days: assigns.avg_cycle),
+      desc:
+        gettext(
+          "Average closing time across %{done} completed tasks. %{open} still open in pipeline.",
+          done: assigns.done,
+          open: assigns.total - assigns.done
+        )
+    }
   end
 
   @doc "Percentage of `value` over `total`, rounded, 0 when total is 0."
