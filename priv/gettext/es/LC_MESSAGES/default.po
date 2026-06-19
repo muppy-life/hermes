@@ -2320,3 +2320,23 @@ msgstr "Solo el equipo de desarrollo puede vincular issues de GitHub"
 #, elixir-autogen, elixir-format
 msgid "Only the dev team can unlink GitHub issues"
 msgstr "Solo el equipo de desarrollo puede desvincular issues de GitHub"
+
+#: lib/hermes_web/live/metrics_live.ex:398
+#, elixir-autogen, elixir-format
+msgid "Average closing time across %{done} completed tasks. %{open} still open in pipeline."
+msgstr "Tiempo medio de cierre de %{done} tareas completadas. %{open} aún abiertas en el pipeline."
+
+#: lib/hermes_web/live/metrics_live.ex:395
+#, elixir-autogen, elixir-format
+msgid "Average cycle · %{days} days"
+msgstr "Ciclo medio · %{days} días"
+
+#: lib/hermes_web/live/metrics_live.ex:381
+#, elixir-autogen, elixir-format
+msgid "Completion rate · %{rate}%"
+msgstr "Tasa de completado · %{rate}%"
+
+#: lib/hermes_web/live/metrics_live.ex:394
+#, elixir-autogen, elixir-format
+msgid "Cycle"
+msgstr "Ciclo"
