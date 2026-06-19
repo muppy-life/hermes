@@ -2813,21 +2813,34 @@
      resting on the same baseline instead of looking centred. */
   align-items: flex-end;
 }
+/* Each dot is a tall, transparent hit area (easy to click); the visible bar is
+   drawn by ::before, bottom-anchored, so hovering anywhere in the area grows
+   the bar upward. */
 .kpi-hero-dots span {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   width: 18px;
+  height: 20px;
+  cursor: pointer;
+}
+.kpi-hero-dots span::before {
+  content: "";
+  width: 100%;
   height: 3px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.25);
-  cursor: pointer;
   transition: all 0.25s ease;
 }
-.kpi-hero-dots span:hover {
+.kpi-hero-dots span:hover::before {
   background: rgba(255, 255, 255, 0.5);
-  height: 6px;
+  height: 8px;
 }
 .kpi-hero-dots span.active {
-  background: #fff;
   width: 24px;
+}
+.kpi-hero-dots span.active::before {
+  background: #fff;
 }
 
 /* --- Aging list card --- */
