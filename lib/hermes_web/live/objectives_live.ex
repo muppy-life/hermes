@@ -50,7 +50,7 @@ defmodule HermesWeb.ObjectivesLive do
        socket
        |> assign(:week_month_key, key)
        |> assign(:buckets, buckets)
-       |> assign(:active_key, Period.current_key(buckets))
+       |> assign(:active_key, Period.default_week_key(buckets))
        |> load()}
     else
       {:noreply, socket}

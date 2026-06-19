@@ -57,6 +57,18 @@ defmodule HermesWeb.ObjectivesLive.Period do
   end
 
   @doc """
+  Default week to select for a month's week buckets: the current week if the
+  month contains it, otherwise the month's first week.
+  """
+  @spec default_week_key([bucket]) :: String.t() | nil
+  def default_week_key(buckets) do
+    case Enum.find(buckets, &(&1.state == :current)) do
+      nil -> buckets |> List.first() |> then(&(&1 && &1.key))
+      bucket -> bucket.key
+    end
+  end
+
+  @doc """
   Whether `datetime` falls within the active bucket's inclusive date range.
   Accepts Date/DateTime/NaiveDateTime; nil and a nil bucket are never in range.
   """
