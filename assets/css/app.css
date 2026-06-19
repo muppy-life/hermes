@@ -2686,6 +2686,18 @@
   transform: translateY(-2px);
   box-shadow: var(--m-shadow-md);
 }
+/* Every card on the metrics page shares the same lift-on-hover as the KPI
+   cards (the lower-row panels and the hero, which only define `.card`/`.kpi-hero`
+   on their own — `.card` is reused elsewhere, so the hover is scoped here). */
+.metrics .card,
+.metrics .kpi-hero {
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.metrics .card:hover,
+.metrics .kpi-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--m-shadow-md);
+}
 .kpi-card-h {
   display: flex;
   align-items: center;
