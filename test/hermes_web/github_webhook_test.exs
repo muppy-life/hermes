@@ -139,6 +139,114 @@ defmodule HermesWeb.GitHubWebhookTest do
       reloaded = Repo.get!(Hermes.Requests.Request, request.id)
       assert reloaded.status == "completed"
     end
+
+    test "logs a tracked change when an issue is closed", %{conn: conn, request: request} do
+      conn = post_issue_event(conn, "closed", "closed")
+
+      assert conn.status == 204
+
+      link = Repo.get_by!(GitHubIssue, request_id: request.id)
+      assert link.state == "closed"
+
+      change =
+        Requests.list_request_changes(request.id)
+        |> Enum.find(&(&1.field == "github_issue_state"))
+
+      assert change
+      assert change.user_id == nil
+      assert change.new_value == "closed"
+      assert change.changes["source"] == "github_webhook"
+    end
+
+    test "does not log when an issue event leaves the state unchanged", %{
+      conn: conn,
+      request: request
+    } do
+      before = Requests.list_request_changes(request.id) |> length()
+
+      # Link starts with state nil; an "edited" event with nil state is a no-op.
+      conn = post_issue_event(conn, "edited", nil)
+      assert conn.status == 204
+
+      after_count = Requests.list_request_changes(request.id) |> length()
+      assert after_count == before
+    end
+
+    test "syncs the End date field into the request deadline and logs it", %{
+      conn: conn,
+      request: request
+    } do
+      conn = post_date_field_event(conn, "End date", "2026-12-31")
+      assert conn.status == 204
+
+      reloaded = Repo.get!(Hermes.Requests.Request, request.id)
+      assert reloaded.deadline == ~D[2026-12-31]
+
+      change =
+        Requests.list_request_changes(request.id)
+        |> Enum.find(&(&1.field == "deadline"))
+
+      assert change
+      assert change.new_value == "2026-12-31"
+      assert change.changes["event_type"] == "projects_v2_item"
+    end
+
+    test "clears the deadline when the End date is removed", %{conn: conn, request: request} do
+      {:ok, _} =
+        request
+        |> Hermes.Requests.Request.changeset(%{deadline: ~D[2026-01-01]})
+        |> Repo.update()
+
+      conn = post_date_field_event(conn, "End date", nil)
+      assert conn.status == 204
+
+      reloaded = Repo.get!(Hermes.Requests.Request, request.id)
+      assert reloaded.deadline == nil
+    end
+
+    test "ignores date fields that are not the End date", %{conn: conn, request: request} do
+      conn = post_date_field_event(conn, "Start date", "2026-12-31")
+      assert conn.status == 204
+
+      reloaded = Repo.get!(Hermes.Requests.Request, request.id)
+      assert reloaded.deadline == nil
+    end
+  end
+
+  defp post_issue_event(conn, action, state) do
+    payload = %{
+      "action" => action,
+      "issue" => %{"number" => 1, "state" => state},
+      "repository" => %{"name" => "main", "owner" => %{"login" => "acme"}}
+    }
+
+    post_webhook(conn, "issues", payload)
+  end
+
+  defp post_date_field_event(conn, field_name, to) do
+    payload = %{
+      "action" => "edited",
+      "projects_v2_item" => %{"id" => "PVTI_1"},
+      "changes" => %{
+        "field_value" => %{
+          "field_type" => "date",
+          "field_name" => field_name,
+          "to" => to
+        }
+      }
+    }
+
+    post_webhook(conn, "projects_v2_item", payload)
+  end
+
+  defp post_webhook(conn, event, payload) do
+    body = Jason.encode!(payload)
+
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> put_req_header("x-github-event", event)
+    |> put_req_header("x-hub-signature-256", "sha256=" <> hmac(body))
+    |> post("/api/github/webhook", body)
   end
 
   defp hmac(body) do

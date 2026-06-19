@@ -1337,7 +1337,9 @@ defmodule Hermes.Requests do
 
   @doc """
   Handles an `issues` webhook event payload. Updates the linked
-  `github_issues.state` so the request view reflects the GitHub state.
+  `github_issues.state` so the request view reflects the GitHub state, and
+  records the transition in the request's change history when the state
+  actually changed (so issue open/close is a tracked event).
 
   Accepts the issue map directly (with `repository_url`, `number`, `state`).
   """
@@ -1349,6 +1351,8 @@ defmodule Hermes.Requests do
         :ok
 
       %GitHubIssue{} = link ->
+        old_state = link.state
+
         link
         |> GitHubIssue.changeset(%{
           state: state,
@@ -1357,13 +1361,41 @@ defmodule Hermes.Requests do
         })
         |> Repo.update()
         |> case do
-          {:ok, _} -> :ok
-          {:error, changeset} -> {:error, changeset.errors}
+          {:ok, _} ->
+            maybe_log_issue_state_change(link.request_id, old_state, state)
+            :ok
+
+          {:error, changeset} ->
+            {:error, changeset.errors}
         end
     end
   end
 
   def handle_issue_event(_), do: :ok
+
+  # Records the GitHub issue open/close transition in the request history.
+  # No-op when the state is unchanged (e.g. an `edited` event that didn't
+  # touch the issue state). A failed log must not fail the webhook.
+  defp maybe_log_issue_state_change(_request_id, state, state), do: :ok
+
+  defp maybe_log_issue_state_change(request_id, old_state, new_state) do
+    case log_change(request_id, nil, "updated", %{
+           field: "github_issue_state",
+           old_value: old_state,
+           new_value: new_state,
+           changes: %{"source" => "github_webhook", "event_type" => "issues"}
+         }) do
+      {:ok, _} ->
+        :ok
+
+      {:error, changeset} ->
+        Logger.warning(
+          "GitHub webhook could not log issue state change for request #{request_id}: #{inspect(changeset.errors)}"
+        )
+
+        :ok
+    end
+  end
 
   defp parse_repo_from_issue(%{"repository_url" => url}) when is_binary(url) do
     case Regex.run(~r{repos/([^/]+)/([^/]+)$}, url) do
@@ -1392,33 +1424,53 @@ defmodule Hermes.Requests do
     end
   end
 
-  defp apply_project_item_change(link, payload) do
-    option_id = extract_status_option_id(payload)
-    option_name = extract_status_option_name(payload)
+  # The `projects_v2_item` webhook fires once per single field change. Dispatch
+  # on the changed field's type/name so each tracked param has its own path.
+  # This is the single extension point for syncing more project fields later.
+  @deadline_field_name "End date"
 
+  defp apply_project_item_change(link, payload) do
     cond do
-      is_nil(option_id) ->
-        :ok
+      extract_field_type(payload) == "date" and
+          extract_field_name(payload) == @deadline_field_name ->
+        apply_deadline_from_webhook(link.request_id, extract_field_value(payload))
+
+      not is_nil(extract_status_option_id(payload)) ->
+        apply_status_change(link, payload)
 
       true ->
-        mapping = Repo.get_by(GitHubStatusMapping, github_option_id: option_id)
-
-        case mapping do
-          %GitHubStatusMapping{hermes_status: hermes_status} ->
-            with :ok <- update_link_from_webhook(link, option_id, option_name),
-                 :ok <- apply_status_to_request(link.request_id, hermes_status) do
-              :ok
-            end
-
-          nil ->
-            Logger.warning(
-              "GitHub webhook status mapping missing option_id=#{option_id} name=#{inspect(option_name)}"
-            )
-
-            update_link_from_webhook(link, option_id, option_name)
-        end
+        :ok
     end
   end
+
+  defp apply_status_change(link, payload) do
+    option_id = extract_status_option_id(payload)
+    option_name = extract_status_option_name(payload)
+    mapping = Repo.get_by(GitHubStatusMapping, github_option_id: option_id)
+
+    case mapping do
+      %GitHubStatusMapping{hermes_status: hermes_status} ->
+        with :ok <- update_link_from_webhook(link, option_id, option_name) do
+          apply_status_to_request(link.request_id, hermes_status)
+        end
+
+      nil ->
+        Logger.warning(
+          "GitHub webhook status mapping missing option_id=#{option_id} name=#{inspect(option_name)}"
+        )
+
+        update_link_from_webhook(link, option_id, option_name)
+    end
+  end
+
+  defp extract_field_type(%{"changes" => %{"field_value" => %{"field_type" => type}}}), do: type
+  defp extract_field_type(_), do: nil
+
+  defp extract_field_name(%{"changes" => %{"field_value" => %{"field_name" => name}}}), do: name
+  defp extract_field_name(_), do: nil
+
+  defp extract_field_value(%{"changes" => %{"field_value" => %{"to" => to}}}), do: to
+  defp extract_field_value(_), do: nil
 
   defp extract_status_option_id(%{"changes" => %{"field_value" => %{"to" => %{"id" => id}}}}),
     do: id
@@ -1480,6 +1532,65 @@ defmodule Hermes.Requests do
         end
     end
   end
+
+  # Syncs the GitHub project "End date" field into `Request.deadline`. This is
+  # webhook-IN only: `:deadline` is intentionally NOT in `content_fields_changed?/1`,
+  # so updating it here never enqueues an outbound sync — no feedback loop.
+  defp apply_deadline_from_webhook(request_id, raw_value) do
+    deadline = parse_webhook_date(raw_value)
+
+    case Repo.get(Request, request_id) do
+      nil ->
+        Logger.warning(
+          "GitHub webhook: request #{request_id} not found, skipping deadline update"
+        )
+
+        :ok
+
+      %Request{deadline: ^deadline} ->
+        :ok
+
+      request ->
+        request
+        |> Request.changeset(%{deadline: deadline})
+        |> Repo.update()
+        |> case do
+          {:ok, _} ->
+            log_change(request_id, nil, "updated", %{
+              field: "deadline",
+              old_value: to_string(request.deadline),
+              new_value: to_string(deadline),
+              changes: %{"source" => "github_webhook", "event_type" => "projects_v2_item"}
+            })
+
+            :ok
+
+          {:error, changeset} ->
+            Logger.warning(
+              "GitHub webhook could not update request #{request_id} deadline: #{inspect(changeset.errors)}"
+            )
+
+            {:error, changeset.errors}
+        end
+    end
+  end
+
+  # GitHub does not publish the exact `to` shape for date fields, so parse
+  # defensively: a bare ISO8601 string, a wrapping map, or nil/empty (cleared).
+  defp parse_webhook_date(nil), do: nil
+  defp parse_webhook_date(""), do: nil
+
+  defp parse_webhook_date(value) when is_binary(value) do
+    # Accept full ISO8601 dates and datetime strings ("2026-12-31T00:00:00Z").
+    case Date.from_iso8601(String.slice(value, 0, 10)) do
+      {:ok, date} -> date
+      _ -> nil
+    end
+  end
+
+  defp parse_webhook_date(%{"date" => date}), do: parse_webhook_date(date)
+  defp parse_webhook_date(%{"value" => value}), do: parse_webhook_date(value)
+  defp parse_webhook_date(_), do: nil
 
   defp trigger_comment_notification(comment) do
     %{comment_id: comment.id}
