@@ -1375,22 +1375,28 @@ defmodule Hermes.Requests do
 
   # Records the GitHub issue open/close transition in the request history.
   # No-op when the state is unchanged (e.g. an `edited` event that didn't
-  # touch the issue state). A failed log must not fail the webhook.
+  # touch the issue state).
   defp maybe_log_issue_state_change(_request_id, state, state), do: :ok
 
   defp maybe_log_issue_state_change(request_id, old_state, new_state) do
-    case log_change(request_id, nil, "updated", %{
-           field: "github_issue_state",
-           old_value: old_state,
-           new_value: new_state,
-           changes: %{"source" => "github_webhook", "event_type" => "issues"}
-         }) do
+    log_webhook_change(request_id, %{
+      field: "github_issue_state",
+      old_value: old_state,
+      new_value: new_state,
+      changes: %{"source" => "github_webhook", "event_type" => "issues"}
+    })
+  end
+
+  # Logs a webhook-originated change (user_id: nil) to the request history.
+  # A failed log must not fail the webhook, so it warns and returns :ok.
+  defp log_webhook_change(request_id, attrs) do
+    case log_change(request_id, nil, "updated", attrs) do
       {:ok, _} ->
         :ok
 
       {:error, changeset} ->
         Logger.warning(
-          "GitHub webhook could not log issue state change for request #{request_id}: #{inspect(changeset.errors)}"
+          "GitHub webhook could not log change for request #{request_id}: #{inspect(changeset.errors)}"
         )
 
         :ok
@@ -1450,8 +1456,9 @@ defmodule Hermes.Requests do
 
     case mapping do
       %GitHubStatusMapping{hermes_status: hermes_status} ->
-        with :ok <- update_link_from_webhook(link, option_id, option_name) do
-          apply_status_to_request(link.request_id, hermes_status)
+        case update_link_from_webhook(link, option_id, option_name) do
+          :ok -> apply_status_to_request(link.request_id, hermes_status)
+          error -> error
         end
 
       nil ->
@@ -1556,7 +1563,7 @@ defmodule Hermes.Requests do
         |> Repo.update()
         |> case do
           {:ok, _} ->
-            log_change(request_id, nil, "updated", %{
+            log_webhook_change(request_id, %{
               field: "deadline",
               old_value: to_string(request.deadline),
               new_value: to_string(deadline),
