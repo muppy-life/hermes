@@ -2454,6 +2454,9 @@
   --m-border: var(--color-base-300);
   --m-text: var(--color-base-content);
   --m-text-3: color-mix(in oklch, var(--color-base-content), transparent 50%);
+  /* Selected date-range chip: slate-on-white in light, white-on-dark in dark. */
+  --m-chip-bg: #334155;
+  --m-chip-content: #ffffff;
   --m-brand: var(--color-primary);
   --m-brand-content: var(--color-primary-content);
   /* Chart fill — the design's --grad-bar (#334155), fixed across themes so
@@ -2494,6 +2497,9 @@
 }
 [data-theme="dark"] .metrics {
   --m-tooltip-bg: #18181b;
+  /* Selected chip flips to white bg with dark text in dark mode. */
+  --m-chip-bg: #ffffff;
+  --m-chip-content: #18181b;
   /* Slate fill reads slightly lighter on the dark surfaces. */
   --m-fill: #64748b;
   --m-fill-soft: #3f3f46;
@@ -3205,14 +3211,199 @@
 }
 
 /* --- Objectives (quarterly view) --- */
+/* --- Date-range picker --- */
+.dr-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+.dr-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-bg, var(--m-surface));
+  color: var(--m-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.dr-trigger:hover {
+  box-shadow: var(--m-shadow-sm);
+}
+.dr-trigger.active {
+  border-color: var(--m-brand);
+}
+.dr-trigger .hero-calendar-days {
+  color: var(--m-text-3);
+}
+.dr-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  min-width: 620px;
+  background: var(--m-surface);
+  border: 1px solid var(--m-border);
+  border-radius: 16px;
+  box-shadow: var(--m-shadow-md);
+  overflow: hidden;
+}
+.dr-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-right: 1px solid var(--m-border);
+  min-width: 168px;
+}
+.dr-rail-right {
+  border-right: none;
+  border-left: 1px solid var(--m-border);
+  min-width: 116px;
+}
+.dr-preset {
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--m-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dr-preset:hover {
+  background: color-mix(in oklch, var(--m-text), transparent 92%);
+}
+.dr-preset.active {
+  background: color-mix(in oklch, var(--m-text), transparent 88%);
+  font-weight: 600;
+}
+.dr-cal {
+  flex: 1;
+  padding: 16px 18px;
+}
+.dr-cal-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.dr-cal-q {
+  margin-bottom: 16px;
+}
+.dr-year {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--m-text);
+}
+.dr-quarter {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-text);
+}
+.dr-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--m-text-3);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.dr-nav:hover {
+  background: color-mix(in oklch, var(--m-text), transparent 92%);
+  color: var(--m-text);
+}
+.dr-months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.dr-month {
+  padding: 12px 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--m-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dr-month:hover {
+  background: color-mix(in oklch, var(--m-text), transparent 92%);
+}
+.dr-month.in-range {
+  /* Every selected month gets the same solid chip: white bg in dark, slate in
+     light (see --m-chip-*). Endpoints and in-between months look identical. */
+  background: var(--m-chip-bg);
+  color: var(--m-chip-content);
+  font-weight: 600;
+}
+/* Quarter week grid: ~13 weeks in a 3-column (≈4-row) grid. */
+.dr-weeks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.dr-wcell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 9px 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--m-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dr-wcell:hover {
+  background: color-mix(in oklch, var(--m-text), transparent 92%);
+}
+.dr-wcell.in-range {
+  background: var(--m-chip-bg);
+  color: var(--m-chip-content);
+}
+.dr-wcell-w {
+  font-size: 13px;
+  font-weight: 600;
+}
+.dr-wcell-d {
+  font-size: 10.5px;
+  color: var(--m-text-3);
+}
+.dr-wcell.in-range .dr-wcell-d {
+  color: color-mix(in oklch, var(--m-chip-content), transparent 25%);
+}
+.dr-hint {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--m-text-3);
+}
 .q-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 20px;
   background: var(--m-surface);
   padding: 4px;
-  border-radius: 999px;
+  border-radius: 18px;
   width: fit-content;
+  max-width: 100%;
   box-shadow: var(--m-shadow-sm);
 }
 .q-tab {
@@ -3249,7 +3440,7 @@
 }
 .q-overview {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin-bottom: 20px;
 }
