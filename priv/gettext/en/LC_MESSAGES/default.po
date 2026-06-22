@@ -46,7 +46,8 @@ msgstr "Back"
 
 #: lib/hermes_web/components/core_components.ex:669
 #: lib/hermes_web/components/core_components.ex:890
-#: lib/hermes_web/live/dashboard_live.ex:417
+#: lib/hermes_web/live/dashboard_live.ex:254
+#: lib/hermes_web/live/dashboard_live.ex:491
 #: lib/hermes_web/live/dashboard_live.html.heex:88
 #: lib/hermes_web/live/request_live/index.html.heex:57
 #: lib/hermes_web/live/request_live/show.ex:800
@@ -56,6 +57,7 @@ msgid "Blocked"
 msgstr "Blocked"
 
 #: lib/hermes_web/components/layouts.ex:84
+#: lib/hermes_web/live/dashboard_live.html.heex:109
 #: lib/hermes_web/live/kanban_live/index.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Boards"
@@ -107,9 +109,10 @@ msgstr "Comments"
 
 #: lib/hermes_web/components/core_components.ex:668
 #: lib/hermes_web/components/core_components.ex:887
-#: lib/hermes_web/live/dashboard_live.ex:396
+#: lib/hermes_web/live/dashboard_live.ex:253
+#: lib/hermes_web/live/dashboard_live.ex:470
 #: lib/hermes_web/live/dashboard_live.html.heex:84
-#: lib/hermes_web/live/objectives_live.html.heex:37
+#: lib/hermes_web/live/objectives_live.html.heex:181
 #: lib/hermes_web/live/request_live/index.html.heex:55
 #: lib/hermes_web/live/request_live/show.ex:799
 #: lib/hermes_web/live/request_live/show.html.heex:747
@@ -140,7 +143,8 @@ msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:563
 #: lib/hermes_web/components/core_components.ex:903
-#: lib/hermes_web/live/metrics_live.ex:338
+#: lib/hermes_web/live/dashboard_live.ex:266
+#: lib/hermes_web/live/metrics_live.ex:346
 #: lib/hermes_web/live/request_live/index.html.heex:68
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:246
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:461
@@ -204,7 +208,8 @@ msgstr "History"
 
 #: lib/hermes_web/components/core_components.ex:562
 #: lib/hermes_web/components/core_components.ex:904
-#: lib/hermes_web/live/metrics_live.ex:339
+#: lib/hermes_web/live/dashboard_live.ex:265
+#: lib/hermes_web/live/metrics_live.ex:347
 #: lib/hermes_web/live/request_live/index.html.heex:69
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:247
 #: lib/hermes_web/live/request_live/show.html.heex:730
@@ -219,7 +224,8 @@ msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:667
 #: lib/hermes_web/components/core_components.ex:881
-#: lib/hermes_web/live/dashboard_live.ex:348
+#: lib/hermes_web/live/dashboard_live.ex:251
+#: lib/hermes_web/live/dashboard_live.ex:422
 #: lib/hermes_web/live/dashboard_live.html.heex:76
 #: lib/hermes_web/live/request_live/index.html.heex:51
 #: lib/hermes_web/live/request_live/show.html.heex:745
@@ -240,7 +246,8 @@ msgstr ""
 # Priority levels
 #: lib/hermes_web/components/core_components.ex:560
 #: lib/hermes_web/components/core_components.ex:906
-#: lib/hermes_web/live/metrics_live.ex:341
+#: lib/hermes_web/live/dashboard_live.ex:263
+#: lib/hermes_web/live/metrics_live.ex:349
 #: lib/hermes_web/live/request_live/index.html.heex:71
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:249
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:278
@@ -254,7 +261,8 @@ msgstr "Low"
 # Status values
 #: lib/hermes_web/components/core_components.ex:670
 #: lib/hermes_web/components/core_components.ex:858
-#: lib/hermes_web/live/dashboard_live.ex:243
+#: lib/hermes_web/live/dashboard_live.ex:246
+#: lib/hermes_web/live/dashboard_live.ex:317
 #: lib/hermes_web/live/dashboard_live.html.heex:56
 #: lib/hermes_web/live/notification_live/index.html.heex:44
 #: lib/hermes_web/live/request_live/index.html.heex:39
@@ -290,19 +298,20 @@ msgstr ""
 msgid "No boards available for your team yet."
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:267
+#: lib/hermes_web/live/dashboard_live.html.heex:338
 #, elixir-autogen, elixir-format
 msgid "No boards available."
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:228
+#: lib/hermes_web/live/dashboard_live.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "No requests yet."
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:561
 #: lib/hermes_web/components/core_components.ex:905
-#: lib/hermes_web/live/metrics_live.ex:340
+#: lib/hermes_web/live/dashboard_live.ex:264
+#: lib/hermes_web/live/metrics_live.ex:348
 #: lib/hermes_web/live/request_live/index.html.heex:70
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:248
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:475
@@ -313,7 +322,8 @@ msgstr "Normal"
 
 #: lib/hermes_web/components/core_components.ex:664
 #: lib/hermes_web/components/core_components.ex:866
-#: lib/hermes_web/live/dashboard_live.ex:285
+#: lib/hermes_web/live/dashboard_live.ex:248
+#: lib/hermes_web/live/dashboard_live.ex:359
 #: lib/hermes_web/live/dashboard_live.html.heex:64
 #: lib/hermes_web/live/request_live/index.html.heex:43
 #: lib/hermes_web/live/request_live/show.ex:794
@@ -324,7 +334,8 @@ msgstr "Pending"
 
 #: lib/hermes_web/components/core_components.ex:665
 #: lib/hermes_web/components/core_components.ex:872
-#: lib/hermes_web/live/dashboard_live.ex:306
+#: lib/hermes_web/live/dashboard_live.ex:249
+#: lib/hermes_web/live/dashboard_live.ex:380
 #: lib/hermes_web/live/dashboard_live.html.heex:68
 #: lib/hermes_web/live/request_live/index.html.heex:45
 #: lib/hermes_web/live/request_live/show.ex:795
@@ -335,7 +346,8 @@ msgstr "Future Planning"
 
 #: lib/hermes_web/components/core_components.ex:663
 #: lib/hermes_web/components/core_components.ex:863
-#: lib/hermes_web/live/dashboard_live.ex:264
+#: lib/hermes_web/live/dashboard_live.ex:247
+#: lib/hermes_web/live/dashboard_live.ex:338
 #: lib/hermes_web/live/dashboard_live.html.heex:60
 #: lib/hermes_web/live/request_live/index.html.heex:41
 #: lib/hermes_web/live/request_live/show.ex:793
@@ -344,7 +356,7 @@ msgstr "Future Planning"
 msgid "Need requirement"
 msgstr "Need requirement"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:202
+#: lib/hermes_web/live/dashboard_live.html.heex:273
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:151
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:255
 #: lib/hermes_web/live/metrics_live.html.heex:51
@@ -361,12 +373,12 @@ msgstr "Priority"
 msgid "Problem with current app or service"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:181
+#: lib/hermes_web/live/dashboard_live.html.heex:252
 #, elixir-autogen, elixir-format
 msgid "Recent Requests"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.ex:36
+#: lib/hermes_web/live/dashboard_live.ex:54
 #: lib/hermes_web/live/kanban_live/board.ex:227
 #: lib/hermes_web/live/request_live/index.ex:126
 #, elixir-autogen, elixir-format
@@ -380,7 +392,8 @@ msgstr "Requesting Team"
 
 #: lib/hermes_web/components/core_components.ex:671
 #: lib/hermes_web/components/core_components.ex:884
-#: lib/hermes_web/live/dashboard_live.ex:369
+#: lib/hermes_web/live/dashboard_live.ex:252
+#: lib/hermes_web/live/dashboard_live.ex:443
 #: lib/hermes_web/live/dashboard_live.html.heex:80
 #: lib/hermes_web/live/request_live/index.html.heex:53
 #: lib/hermes_web/live/request_live/show.ex:798
@@ -411,7 +424,8 @@ msgstr ""
 msgid "Statistics"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:205
+#: lib/hermes_web/live/dashboard_live.html.heex:101
+#: lib/hermes_web/live/dashboard_live.html.heex:276
 #: lib/hermes_web/live/request_live/index.html.heex:38
 #: lib/hermes_web/live/request_live/index.html.heex:111
 #: lib/hermes_web/live/request_live/show.html.heex:563
@@ -432,7 +446,7 @@ msgid "System"
 msgstr ""
 
 # Request fields
-#: lib/hermes_web/live/dashboard_live.html.heex:199
+#: lib/hermes_web/live/dashboard_live.html.heex:270
 #: lib/hermes_web/live/request_live/index.html.heex:97
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:396
 #: lib/hermes_web/live/request_live/show.html.heex:701
@@ -456,6 +470,7 @@ msgid "Type"
 msgstr ""
 
 #: lib/hermes_web/live/admin/user_live/index.html.heex:84
+#: lib/hermes_web/live/dashboard_live.ex:230
 #: lib/hermes_web/live/request_live/index.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
@@ -466,8 +481,8 @@ msgstr ""
 msgid "Updated"
 msgstr "Updated At"
 
-#: lib/hermes_web/live/dashboard_live.html.heex:188
-#: lib/hermes_web/live/dashboard_live.html.heex:242
+#: lib/hermes_web/live/dashboard_live.html.heex:259
+#: lib/hermes_web/live/dashboard_live.html.heex:313
 #, elixir-autogen, elixir-format
 msgid "View all"
 msgstr ""
@@ -487,7 +502,7 @@ msgstr ""
 msgid "What form should the solution take?"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:235
+#: lib/hermes_web/live/dashboard_live.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "Your Boards"
 msgstr ""
@@ -581,8 +596,9 @@ msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:564
 #: lib/hermes_web/components/core_components.ex:739
-#: lib/hermes_web/live/metrics_live.ex:392
-#: lib/hermes_web/live/objectives_live.ex:133
+#: lib/hermes_web/live/dashboard_live.ex:267
+#: lib/hermes_web/live/metrics_live.ex:436
+#: lib/hermes_web/live/objectives_live.ex:360
 #: lib/hermes_web/live/request_live/show.ex:814
 #: lib/hermes_web/live/request_live/show.ex:826
 #: lib/hermes_web/live/request_live/show.html.heex:160
@@ -730,7 +746,7 @@ msgstr ""
 
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:183
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:284
-#: lib/hermes_web/live/metrics_live.html.heex:319
+#: lib/hermes_web/live/metrics_live.html.heex:326
 #, elixir-autogen, elixir-format
 msgid "No completed requests yet"
 msgstr ""
@@ -747,7 +763,7 @@ msgstr ""
 msgid "No data available"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:144
+#: lib/hermes_web/live/dashboard_live.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "No deadlines"
 msgstr ""
@@ -810,7 +826,7 @@ msgstr ""
 msgid "Requests Created"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:96
+#: lib/hermes_web/live/dashboard_live.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Roadmap"
 msgstr ""
@@ -841,8 +857,7 @@ msgstr ""
 msgid "Time to Complete"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.ex:232
-#: lib/hermes_web/live/dashboard_live.html.heex:138
+#: lib/hermes_web/live/dashboard_live.ex:292
 #: lib/hermes_web/live/kanban_live/board.ex:74
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -1286,7 +1301,7 @@ msgstr ""
 msgid "Improves product / UX"
 msgstr ""
 
-#: lib/hermes_web/live/objectives_live.html.heex:46
+#: lib/hermes_web/live/objectives_live.html.heex:190
 #: lib/hermes_web/live/request_live/show.ex:797
 #, elixir-autogen, elixir-format
 msgid "In progress"
@@ -1747,7 +1762,7 @@ msgstr ""
 msgid "All requests in the workspace"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:196
+#: lib/hermes_web/live/dashboard_live.html.heex:267
 #: lib/hermes_web/live/request_live/index.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "ID"
@@ -1807,7 +1822,7 @@ msgstr ""
 msgid "Unlink issue"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:256
+#: lib/hermes_web/live/dashboard_live.html.heex:327
 #: lib/hermes_web/live/kanban_live/index.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "%{count} request"
@@ -1832,7 +1847,7 @@ msgstr ""
 msgid "open"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.ex:231
+#: lib/hermes_web/live/dashboard_live.ex:291
 #: lib/hermes_web/live/kanban_live/board.ex:73
 #, elixir-autogen, elixir-format
 msgid "Overdue"
@@ -1845,22 +1860,17 @@ msgid_plural "%{count} tasks"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:98
-#, elixir-autogen, elixir-format
-msgid "%{count} deliveries in the next 7 months"
-msgstr ""
-
 #: lib/hermes_web/live/dashboard_live.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "%{open} open · %{rate}% complete"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:236
+#: lib/hermes_web/live/dashboard_live.html.heex:307
 #, elixir-autogen, elixir-format
 msgid "Access the kanban by team"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:105
+#: lib/hermes_web/live/dashboard_live.html.heex:132
 #, elixir-autogen, elixir-format, fuzzy
 msgid "View backlog"
 msgstr ""
@@ -1870,7 +1880,7 @@ msgstr ""
 msgid "Welcome back"
 msgstr ""
 
-#: lib/hermes_web/live/dashboard_live.html.heex:182
+#: lib/hermes_web/live/dashboard_live.html.heex:253
 #, elixir-autogen, elixir-format
 msgid "Top 5 most updated"
 msgstr ""
@@ -1885,69 +1895,64 @@ msgstr ""
 msgid "Update the request details below."
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:125
+#: lib/hermes_web/live/metrics_live.ex:383
 #, elixir-autogen, elixir-format
 msgid "%{done} completed of %{total} requests. Average resolution time: %{days} days."
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:205
+#: lib/hermes_web/live/metrics_live.html.heex:212
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{n} completed"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:204
+#: lib/hermes_web/live/metrics_live.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "%{n} created"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:170
+#: lib/hermes_web/live/metrics_live.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "7 - 30 days"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:144
+#: lib/hermes_web/live/metrics_live.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "Average resolution"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:314
+#: lib/hermes_web/live/metrics_live.html.heex:321
 #, elixir-autogen, elixir-format
 msgid "Average resolution time"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:139
+#: lib/hermes_web/live/metrics_live.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Average time"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:223
+#: lib/hermes_web/live/metrics_live.html.heex:230
 #, elixir-autogen, elixir-format
 msgid "By status"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:260
-#: lib/hermes_web/live/objectives_live.html.heex:90
+#: lib/hermes_web/live/metrics_live.html.heex:267
+#: lib/hermes_web/live/objectives_live.html.heex:242
 #, elixir-autogen, elixir-format
 msgid "By team"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:123
-#, elixir-autogen, elixir-format
-msgid "Completion rate"
-msgstr ""
-
-#: lib/hermes_web/live/metrics_live.html.heex:315
+#: lib/hermes_web/live/metrics_live.html.heex:322
 #, elixir-autogen, elixir-format
 msgid "Days per team"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:224
-#: lib/hermes_web/live/metrics_live.html.heex:261
+#: lib/hermes_web/live/metrics_live.html.heex:231
+#: lib/hermes_web/live/metrics_live.html.heex:268
 #, elixir-autogen, elixir-format
 msgid "Distribution"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:120
+#: lib/hermes_web/live/metrics_live.ex:380
 #, elixir-autogen, elixir-format
 msgid "Health"
 msgstr ""
@@ -1962,19 +1967,19 @@ msgstr "Import"
 msgid "Import GitHub sub-issues"
 msgstr "Import GitHub sub-issues"
 
-#: lib/hermes_web/live/metrics_live.html.heex:288
+#: lib/hermes_web/live/metrics_live.html.heex:295
 #, elixir-autogen, elixir-format
 msgid "Most active"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:265
-#: lib/hermes_web/live/metrics_live.html.heex:292
-#: lib/hermes_web/live/objectives_live.html.heex:94
+#: lib/hermes_web/live/metrics_live.html.heex:272
+#: lib/hermes_web/live/metrics_live.html.heex:299
+#: lib/hermes_web/live/objectives_live.html.heex:246
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No data"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:153
+#: lib/hermes_web/live/metrics_live.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Open aging"
 msgstr ""
@@ -1989,7 +1994,7 @@ msgstr ""
 msgid "Select which GitHub sub-issues to create as subtasks of this request."
 msgstr "Select which GitHub sub-issues to create as subtasks of this request."
 
-#: lib/hermes_web/live/metrics_live.html.heex:287
+#: lib/hermes_web/live/metrics_live.html.heex:294
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Top requesters"
 msgstr ""
@@ -1999,23 +2004,23 @@ msgstr ""
 msgid "Total requests"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:142
-#: lib/hermes_web/live/metrics_live.html.heex:326
+#: lib/hermes_web/live/metrics_live.html.heex:149
+#: lib/hermes_web/live/metrics_live.html.heex:333
 #, elixir-autogen, elixir-format
 msgid "days"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:161
+#: lib/hermes_web/live/metrics_live.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "less than 7 days"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:179
+#: lib/hermes_web/live/metrics_live.html.heex:186
 #, elixir-autogen, elixir-format
 msgid "more than 30 days"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:234
+#: lib/hermes_web/live/metrics_live.html.heex:241
 #, elixir-autogen, elixir-format, fuzzy
 msgid "total"
 msgstr ""
@@ -2025,7 +2030,7 @@ msgstr ""
 msgid "Clear filters"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:191
+#: lib/hermes_web/live/metrics_live.html.heex:198
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Current period highlighted"
 msgstr ""
@@ -2045,8 +2050,8 @@ msgstr ""
 msgid "Filter by status"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.ex:349
 #: lib/hermes_web/live/metrics_live.ex:357
+#: lib/hermes_web/live/metrics_live.ex:365
 #, elixir-autogen, elixir-format
 msgid "Monthly"
 msgstr ""
@@ -2056,34 +2061,35 @@ msgstr ""
 msgid "Period"
 msgstr "Priority"
 
-#: lib/hermes_web/live/metrics_live.ex:350
+#: lib/hermes_web/live/metrics_live.ex:358
 #, elixir-autogen, elixir-format
 msgid "Quarterly"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.html.heex:190
+#: lib/hermes_web/live/metrics_live.html.heex:197
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput · Requests per period"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.ex:248
+#: lib/hermes_web/live/metrics_live.ex:256
 #, elixir-autogen, elixir-format
 msgid "Week of %{date}"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.ex:348
+#: lib/hermes_web/live/metrics_live.ex:356
 #, elixir-autogen, elixir-format
 msgid "Weekly"
 msgstr ""
 
-#: lib/hermes_web/live/metrics_live.ex:351
+#: lib/hermes_web/live/metrics_live.ex:359
 #, elixir-autogen, elixir-format
 msgid "Yearly"
 msgstr ""
 
 #: lib/hermes_web/components/core_components.ex:666
 #: lib/hermes_web/components/core_components.ex:878
-#: lib/hermes_web/live/dashboard_live.ex:327
+#: lib/hermes_web/live/dashboard_live.ex:250
+#: lib/hermes_web/live/dashboard_live.ex:401
 #: lib/hermes_web/live/dashboard_live.html.heex:72
 #: lib/hermes_web/live/request_live/index.html.heex:48
 #: lib/hermes_web/live/request_live/show.ex:796
@@ -2099,7 +2105,7 @@ msgid_plural "%{count} members"
 msgstr[0] "%{count} member"
 msgstr[1] "%{count} members"
 
-#: lib/hermes_web/live/objectives_live.html.heex:60
+#: lib/hermes_web/live/objectives_live.html.heex:212
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{n} tasks"
 msgstr ""
@@ -2130,11 +2136,6 @@ msgstr "Are you sure you want to delete the user %{email}? This action cannot be
 #, elixir-autogen, elixir-format
 msgid "Choose a role"
 msgstr "Choose a role"
-
-#: lib/hermes_web/live/objectives_live.html.heex:58
-#, elixir-autogen, elixir-format
-msgid "Completed in %{quarter}"
-msgstr ""
 
 #: lib/hermes_web/live/admin/user_live/index.html.heex:224
 #, elixir-autogen, elixir-format
@@ -2183,13 +2184,13 @@ msgstr "Grant access to Hermes"
 msgid "Member"
 msgstr "Member"
 
-#: lib/hermes_web/live/objectives_live.html.heex:67
+#: lib/hermes_web/live/objectives_live.html.heex:219
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No completed tasks yet"
 msgstr ""
 
 #: lib/hermes_web/components/layouts.ex:90
-#: lib/hermes_web/live/objectives_live.ex:15
+#: lib/hermes_web/live/objectives_live.ex:16
 #: lib/hermes_web/live/objectives_live.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Objectives"
@@ -2210,11 +2211,6 @@ msgstr "Password (leave blank to keep current)"
 #, elixir-autogen, elixir-format
 msgid "Product Owner"
 msgstr "Product Owner"
-
-#: lib/hermes_web/live/objectives_live.html.heex:6
-#, elixir-autogen, elixir-format
-msgid "Quarterly view · %{year}"
-msgstr ""
 
 #: lib/hermes_web/live/admin/user_live/index.html.heex:66
 #: lib/hermes_web/live/admin/user_live/index.html.heex:171
@@ -2248,11 +2244,6 @@ msgstr "System administrators have access to all admin panels and can manage use
 msgid "Team Member"
 msgstr "Team Member"
 
-#: lib/hermes_web/live/objectives_live.html.heex:29
-#, elixir-autogen, elixir-format
-msgid "Total %{quarter}"
-msgstr ""
-
 #: lib/hermes_web/live/admin/user_live/index.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Update the user details below."
@@ -2278,22 +2269,22 @@ msgstr "You"
 msgid "You cannot delete your own account"
 msgstr "You cannot delete your own account"
 
-#: lib/hermes_web/live/objectives_live.ex:114
+#: lib/hermes_web/live/objectives_live.ex:331
 #, elixir-autogen, elixir-format, fuzzy
 msgid "closed"
 msgstr ""
 
-#: lib/hermes_web/live/objectives_live.ex:115
+#: lib/hermes_web/live/objectives_live.ex:332
 #, elixir-autogen, elixir-format
 msgid "current"
 msgstr ""
 
-#: lib/hermes_web/live/objectives_live.html.heex:32
+#: lib/hermes_web/live/objectives_live.html.heex:176
 #, elixir-autogen, elixir-format, fuzzy
 msgid "requests"
 msgstr ""
 
-#: lib/hermes_web/live/objectives_live.ex:116
+#: lib/hermes_web/live/objectives_live.ex:333
 #, elixir-autogen, elixir-format
 msgid "upcoming"
 msgstr ""
@@ -2320,7 +2311,7 @@ msgstr "Only the dev team can link GitHub issues"
 msgid "Only the dev team can unlink GitHub issues"
 msgstr "Only the dev team can unlink GitHub issues"
 
-#: lib/hermes_web/live/metrics_live.ex:398
+#: lib/hermes_web/live/metrics_live.ex:397
 #, elixir-autogen, elixir-format
 msgid "Average closing time across %{done} completed tasks. %{open} still open in pipeline."
 msgstr ""
@@ -2338,4 +2329,155 @@ msgstr ""
 #: lib/hermes_web/live/metrics_live.ex:394
 #, elixir-autogen, elixir-format
 msgid "Cycle"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.html.heex:125
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{count} deliveries in this window"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.ex:346
+#, elixir-autogen, elixir-format
+msgid "%{n}d"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:197
+#, elixir-autogen, elixir-format
+msgid "Avg. completion time"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Click a month to start the range, click another to close it."
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "Click a week to start the range, click another to close it."
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:210
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Completed in %{period}"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.ex:282
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Deadline %{date}"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.ex:281
+#, elixir-autogen, elixir-format
+msgid "Deadline %{date} · due soon"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.ex:280
+#, elixir-autogen, elixir-format
+msgid "Deadline %{date} · due today"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.ex:279
+#, elixir-autogen, elixir-format
+msgid "Deadline %{date} · overdue"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.ex:327
+#, elixir-autogen, elixir-format
+msgid "Last 12 months"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.ex:326
+#, elixir-autogen, elixir-format
+msgid "Last 3 months"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.ex:325
+#, elixir-autogen, elixir-format
+msgid "Last month"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.ex:329
+#, elixir-autogen, elixir-format
+msgid "Last year"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:140
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Month"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.html.heex:240
+#, elixir-autogen, elixir-format
+msgid "Next month"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "Next quarter"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:64
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Next year"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.html.heex:232
+#, elixir-autogen, elixir-format
+msgid "Previous month"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:96
+#, elixir-autogen, elixir-format
+msgid "Previous quarter"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "Previous year"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.ex:270
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Priority: %{label}"
+msgstr "Priority"
+
+#: lib/hermes_web/live/objectives_live.html.heex:43
+#: lib/hermes_web/live/objectives_live.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Q%{n}"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.html.heex:188
+#, elixir-autogen, elixir-format
+msgid "Status: %{label}"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.ex:324
+#, elixir-autogen, elixir-format
+msgid "This month"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.ex:328
+#, elixir-autogen, elixir-format
+msgid "This year"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:173
+#, elixir-autogen, elixir-format
+msgid "Total %{period}"
+msgstr ""
+
+#: lib/hermes_web/live/dashboard_live.html.heex:175
+#, elixir-autogen, elixir-format
+msgid "W%{n}"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:148
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Week"
+msgstr ""
+
+#: lib/hermes_web/live/objectives_live.html.heex:200
+#, elixir-autogen, elixir-format
+msgid "creation to done"
 msgstr ""
