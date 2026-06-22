@@ -70,7 +70,7 @@
         <%= for r <- @completed do %>
           <% done_at = Map.get(@completed_at, r.id) || r.inserted_at %>
           <.link navigate={~p"/backlog/#{r.id}"} class="q-task">
-            <div class="q-task-dot"></div>
+            <div class="q-task-dot" style={"background:#{team_color(r)}"}></div>
             <div class="q-task-info">
               <div class="q-task-t">{r.title}</div>
               <div class="q-task-s">{display_name(r.created_by)} · {short_date(done_at)}</div>

@@ -113,24 +113,31 @@
       </div>
     </div>
 
-    <%!-- Hero: completion rate --%>
+    <%!-- Hero: completion rate / average cycle (clickable slides) --%>
+    <% slide = hero_slide(@hero_slide, assigns) %>
     <div class="kpi-hero">
       <div class="kpi-hero-top">
         <div class="hero-dot"></div>
-        <div class="hero-badge">{gettext("Health")}</div>
+        <div class="hero-badge">{slide.badge}</div>
       </div>
       <div class="kpi-hero-body">
-        <div class="kpi-hero-t">{gettext("Completion rate")} · {@completion_rate}%</div>
-        <div class="kpi-hero-d">
-          {gettext(
-            "%{done} completed of %{total} requests. Average resolution time: %{days} days.",
-            done: @done,
-            total: @total,
-            days: @avg_cycle
-          )}
-        </div>
+        <div class="kpi-hero-t">{slide.title}</div>
+        <div class="kpi-hero-d">{slide.desc}</div>
       </div>
-      <div class="kpi-hero-dots"><span class="active"></span><span></span></div>
+      <div class="kpi-hero-dots">
+        <span
+          class={@hero_slide == 0 && "active"}
+          phx-click="set_hero_slide"
+          phx-value-slide="0"
+        >
+        </span>
+        <span
+          class={@hero_slide == 1 && "active"}
+          phx-click="set_hero_slide"
+          phx-value-slide="1"
+        >
+        </span>
+      </div>
     </div>
 
     <%!-- Average cycle time --%>

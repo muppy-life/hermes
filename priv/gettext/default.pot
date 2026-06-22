@@ -2317,3 +2317,23 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Only the dev team can unlink GitHub issues"
 msgstr ""
+
+#: lib/hermes_web/live/metrics_live.ex:398
+#, elixir-autogen, elixir-format
+msgid "Average closing time across %{done} completed tasks. %{open} still open in pipeline."
+msgstr ""
+
+#: lib/hermes_web/live/metrics_live.ex:395
+#, elixir-autogen, elixir-format
+msgid "Average cycle · %{days} days"
+msgstr ""
+
+#: lib/hermes_web/live/metrics_live.ex:381
+#, elixir-autogen, elixir-format
+msgid "Completion rate · %{rate}%"
+msgstr ""
+
+#: lib/hermes_web/live/metrics_live.ex:394
+#, elixir-autogen, elixir-format
+msgid "Cycle"
+msgstr ""

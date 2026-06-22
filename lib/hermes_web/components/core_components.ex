@@ -931,4 +931,22 @@ defmodule HermesWeb.CoreComponents do
     </div>
     """
   end
+
+  @doc """
+  Deterministic hue (0..359) for a label, so the same label always maps to the
+  same color across the app (team dots, roadmap board tints, legends).
+  """
+  def team_hue(label), do: rem(:erlang.phash2(label), 360)
+
+  @doc """
+  Swatch color (CSS `hsl(...)`) for a label, derived from `team_hue/1`.
+
+  Accepts a raw label, a team struct, or any request-like struct carrying a
+  `:requesting_team`. Returns a neutral grey when there is no team to color by.
+  """
+  def team_color(nil), do: "var(--m-text-3)"
+  def team_color(%{requesting_team: team}), do: team_color(team)
+  def team_color(%{name: name}), do: team_color(name)
+  def team_color(label) when is_binary(label), do: "hsl(#{team_hue(label)} 50% 62%)"
+  def team_color(_), do: "var(--m-text-3)"
 end

@@ -231,17 +231,14 @@ defmodule HermesWeb.DashboardLive do
     end
   end
 
-  @doc "Deterministic hue (0..359) for a board label, used to tint its cards consistently."
-  def rm_board_hue(label), do: rem(:erlang.phash2(label), 360)
-
   @doc "Inline border/background style tinting a card by its board."
   def rm_board_style(label) do
-    hue = rm_board_hue(label)
+    hue = team_hue(label)
     "border-color: hsl(#{hue} 50% 62%); background: hsl(#{hue} 60% 97%);"
   end
 
   @doc "Swatch color for a board legend entry."
-  def rm_board_swatch(label), do: "hsl(#{rm_board_hue(label)} 50% 62%)"
+  def rm_board_swatch(label), do: team_color(label)
 
   @doc "Human-readable status label for roadmap tooltips."
   def rm_status_label(status) do
