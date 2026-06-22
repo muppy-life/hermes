@@ -2625,6 +2625,11 @@
   box-shadow: var(--m-shadow-sm);
   border: 1px solid var(--m-border);
   overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--m-shadow-md);
 }
 .card-pad {
   padding: 22px 24px;
@@ -2757,6 +2762,11 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.kpi-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--m-shadow-md);
 }
 .kpi-hero-top {
   display: flex;
