@@ -1,22 +1,20 @@
 defmodule HermesWeb.ObjectivesLive.Period do
   @moduledoc """
-  Time-frame buckets for the Objectives page.
+  Date-range selection for the Objectives page.
 
-  A *bucket* is one selectable slot of a granularity (one quarter, month or
-  week) with an inclusive date range and a lifecycle `state` relative to today
-  (`:closed` past, `:current`, `:upcoming` future). The active bucket's range
-  is what requests are filtered against — see `in_range?/2`.
+  The page is driven by a single **active range** — `%{first, last, label}` with
+  inclusive `Date` bounds — produced either by a named preset, a quarter, or a
+  custom month range chosen from the picker. `in_range?/2` filters requests
+  against it.
 
-  Quarters cover Q1..Q4 of the current year. Months use a rolling window
-  centred on today. Weeks are scoped to a selected month: the ISO weeks
-  overlapping that month, with the month itself picked from the same rolling
-  month window.
+  When the active range is exactly one calendar month, `week_buckets/2` yields
+  the ISO weeks overlapping it so the page can offer a week drill-down.
   """
 
-  # Rolling window for the month dropdown: how many months to show before and
-  # after the current one (also drives the week-mode month picker).
-  @months_back 3
-  @months_fwd 3
+  # Presets shown in the picker's left rail, in display order.
+  @presets ~w(this_month last_month last_3_months last_12_months this_year last_year)a
+
+  @type range :: %{first: Date.t(), last: Date.t(), label: String.t()}
 
   @type bucket :: %{
           key: String.t(),
@@ -26,54 +24,231 @@ defmodule HermesWeb.ObjectivesLive.Period do
           state: :closed | :current | :upcoming
         }
 
+  @doc "Ordered preset identifiers for the picker rail."
+  @spec presets() :: [atom]
+  def presets, do: @presets
+
+  @doc "The default active range when the page loads (the current quarter)."
+  @spec default_range(Date.t()) :: range
+  def default_range(today), do: quarter_range(current_quarter(today), today.year)
+
+  @doc "The quarter (1..4) containing `date`."
+  @spec current_quarter(Date.t()) :: 1..4
+  def current_quarter(date), do: div(date.month - 1, 3) + 1
+
   @doc """
-  Ordered buckets for `period`, relative to `today`.
-
-  Week buckets are scoped to a month: pass the selected month key (e.g.
-  `"month:2026:6"`), and the ISO weeks overlapping that month are returned.
-  With no month key the week buckets cover the month containing `today`.
+  The `{year, quarter}` holding the most days of `range`. Ties (and short
+  ranges) fall to the earliest quarter. Lets the picker open on the quarter a
+  range mostly lives in, ignoring a few spillover days at either edge.
   """
-  @spec buckets(:quarter | :month | :week, Date.t(), String.t() | nil) :: [bucket]
-  def buckets(period, today, month_key \\ nil)
-  def buckets(:quarter, today, _month_key), do: quarter_buckets(today)
-  def buckets(:month, today, _month_key), do: month_buckets(today)
-  def buckets(:week, today, month_key), do: week_buckets_for_month(month_key, today)
-
-  @doc "Month dropdown options (the month buckets), used by month and week modes."
-  @spec month_options(Date.t()) :: [bucket]
-  def month_options(today), do: month_buckets(today)
-
-  @doc "Key of the month bucket containing today."
-  @spec current_month_key(Date.t()) :: String.t()
-  def current_month_key(today), do: "month:#{today.year}:#{today.month}"
-
-  @doc "Key of the bucket containing today, falling back to the last bucket."
-  @spec current_key([bucket]) :: String.t() | nil
-  def current_key(buckets) do
-    case Enum.find(buckets, &(&1.state == :current)) do
-      nil -> buckets |> List.last() |> then(&(&1 && &1.key))
-      bucket -> bucket.key
-    end
+  @spec dominant_quarter(range) :: {integer, 1..4}
+  def dominant_quarter(%{first: first, last: last}) do
+    Date.range(first, last)
+    |> Enum.frequencies_by(&{&1.year, current_quarter(&1)})
+    |> Enum.max_by(fn {{year, q}, count} -> {count, -year, -q} end)
+    |> elem(0)
   end
 
   @doc """
-  Default week to select for a month's week buckets: the current week if the
-  month contains it, otherwise the month's first week.
+  Inclusive date range for a named preset, relative to `today`.
+
+  - `:this_month` / `:last_month` — a single calendar month
+  - `:last_3_months` / `:last_12_months` — rolling windows ending this month
+  - `:this_year` / `:last_year` — a full calendar year
   """
-  @spec default_week_key([bucket]) :: String.t() | nil
-  def default_week_key(buckets) do
-    case Enum.find(buckets, &(&1.state == :current)) do
-      nil -> buckets |> List.first() |> then(&(&1 && &1.key))
-      bucket -> bucket.key
-    end
+  @spec preset_range(atom, Date.t()) :: range
+  def preset_range(:this_month, today) do
+    first = first_of_month(today)
+    %{first: first, last: Date.end_of_month(first), label: preset_label(:this_month)}
+  end
+
+  def preset_range(:last_month, today) do
+    first = add_months(first_of_month(today), -1)
+    %{first: first, last: Date.end_of_month(first), label: preset_label(:last_month)}
+  end
+
+  def preset_range(:last_3_months, today) do
+    first = add_months(first_of_month(today), -2)
+    %{first: first, last: Date.end_of_month(today), label: preset_label(:last_3_months)}
+  end
+
+  def preset_range(:last_12_months, today) do
+    first = add_months(first_of_month(today), -11)
+    %{first: first, last: Date.end_of_month(today), label: preset_label(:last_12_months)}
+  end
+
+  def preset_range(:this_year, today) do
+    %{
+      first: Date.new!(today.year, 1, 1),
+      last: Date.new!(today.year, 12, 31),
+      label: preset_label(:this_year)
+    }
+  end
+
+  def preset_range(:last_year, today) do
+    %{
+      first: Date.new!(today.year - 1, 1, 1),
+      last: Date.new!(today.year - 1, 12, 31),
+      label: preset_label(:last_year)
+    }
+  end
+
+  @doc "Inclusive range for quarter `q` (1..4) of `year`."
+  @spec quarter_range(1..4, integer) :: range
+  def quarter_range(q, year) when q in 1..4 do
+    %{
+      first: Date.new!(year, (q - 1) * 3 + 1, 1),
+      last: Date.end_of_month(Date.new!(year, q * 3, 1)),
+      label: "Q#{q} #{year}"
+    }
   end
 
   @doc """
-  Whether `datetime` falls within the active bucket's inclusive date range.
-  Accepts Date/DateTime/NaiveDateTime; nil and a nil bucket are never in range.
+  Custom month range within `year`, spanning months `m1`..`m2` inclusive
+  (order-independent). A single month yields e.g. `"May 2026"`, a span
+  `"Mar – Jun 2026"`.
   """
-  @spec in_range?(Date.t() | DateTime.t() | NaiveDateTime.t() | nil, bucket | nil) :: boolean
-  def in_range?(nil, _bucket), do: false
+  @spec month_range(integer, 1..12, 1..12) :: range
+  def month_range(year, m1, m2) do
+    {lo, hi} = {min(m1, m2), max(m1, m2)}
+    first = Date.new!(year, lo, 1)
+    last = Date.end_of_month(Date.new!(year, hi, 1))
+
+    label =
+      if lo == hi do
+        Calendar.strftime(first, "%b %Y")
+      else
+        "#{Calendar.strftime(first, "%b")} – #{Calendar.strftime(last, "%b %Y")}"
+      end
+
+    %{first: first, last: last, label: label}
+  end
+
+  @doc """
+  Expand `range` to whole ISO weeks: `first` moves back to the Monday of its
+  week and `last` forward to the Sunday of its week. The label is preserved.
+  Used so month/quarter presets cover full weeks while in week mode.
+  """
+  @spec snap_to_weeks(range) :: range
+  def snap_to_weeks(%{first: first, last: last} = range) do
+    %{range | first: beginning_of_week(first), last: Date.add(beginning_of_week(last), 6)}
+  end
+
+  @doc """
+  Convert `range` to a whole-week range, relabelled to read as weeks (e.g.
+  `"W14 – W27 2026"`). Used when switching the picker to week segmentation.
+  """
+  @spec to_week_range(range) :: range
+  def to_week_range(range) do
+    %{first: first, last: last} = snap_to_weeks(range)
+    week_range(Date.to_iso8601(first), Date.to_iso8601(Date.add(last, -6)))
+  end
+
+  @doc """
+  Convert `range` to a whole-month range covering the months it *mostly* spans,
+  relabelled to read as months (e.g. `"Apr – Jun 2026"`). A month is included
+  only when the range covers the majority of its days, so the few edge days a
+  week-aligned range borrows from the adjacent months don't widen the result.
+  Falls back to every touched month if none reach a majority.
+  """
+  @spec to_month_range(range) :: range
+  def to_month_range(%{first: first, last: last} = range) do
+    months =
+      Date.range(first, last)
+      |> Enum.frequencies_by(&{&1.year, &1.month})
+      |> Enum.filter(fn {{y, m}, days} -> days * 2 > Date.days_in_month(Date.new!(y, m, 1)) end)
+      |> Enum.map(&elem(&1, 0))
+
+    case months do
+      [] -> to_month_range_touching(range)
+      _ -> month_span_range(Enum.min(months), Enum.max(months))
+    end
+  end
+
+  # Every month the range touches (used when no single month has a majority).
+  defp to_month_range_touching(%{first: first, last: last}) do
+    month_span_range({first.year, first.month}, {last.year, last.month})
+  end
+
+  defp month_span_range({y1, m1}, {y2, m2}) do
+    m_first = Date.new!(y1, m1, 1)
+    m_last = Date.end_of_month(Date.new!(y2, m2, 1))
+
+    label =
+      if y1 == y2 do
+        month_range(y1, m1, m2).label
+      else
+        "#{month_year(m_first)} – #{month_year(m_last)}"
+      end
+
+    %{first: m_first, last: m_last, label: label}
+  end
+
+  defp month_year(date), do: Calendar.strftime(date, "%b %Y")
+
+  @doc """
+  The 12 month cells of `year` for the full-year 4×3 grid. Each cell carries the
+  month number (1..12), short label, and whether it falls inside the in-progress
+  selection `sel` (a `{m1, m2 | nil}` month tuple, or nil).
+  """
+  @spec month_grid(integer, {1..12, 1..12 | nil} | nil) :: [map]
+  def month_grid(year, sel) do
+    for m <- 1..12 do
+      date = Date.new!(year, m, 1)
+
+      %{
+        month: m,
+        label: Calendar.strftime(date, "%b"),
+        selected: month_selected?(m, sel)
+      }
+    end
+  end
+
+  defp month_selected?(_m, nil), do: false
+  defp month_selected?(m, {m1, nil}), do: m == m1
+
+  defp month_selected?(m, {m1, m2}) do
+    {lo, hi} = {min(m1, m2), max(m1, m2)}
+    m >= lo and m <= hi
+  end
+
+  @doc "Whether `range` covers exactly one calendar month (enables week drill-down)."
+  @spec single_month?(range) :: boolean
+  def single_month?(%{first: first, last: last}) do
+    first.day == 1 and last == Date.end_of_month(first) and
+      first.year == last.year and first.month == last.month
+  end
+
+  @doc """
+  The active range projected onto `year`'s months as `{m1, m2}` for grid
+  highlighting, or nil when the range doesn't overlap `year`. Ranges that span
+  into other years are clamped to Jan/Dec of `year`.
+  """
+  @spec range_months_in_year(range | nil, integer) :: {1..12, 1..12} | nil
+  def range_months_in_year(nil, _year), do: nil
+
+  def range_months_in_year(%{first: first, last: last}, year) do
+    if first.year > year or last.year < year do
+      nil
+    else
+      {if(first.year == year, do: first.month, else: 1),
+       if(last.year == year, do: last.month, else: 12)}
+    end
+  end
+
+  defp preset_label(:this_month), do: "This month"
+  defp preset_label(:last_month), do: "Last month"
+  defp preset_label(:last_3_months), do: "Last 3 months"
+  defp preset_label(:last_12_months), do: "Last 12 months"
+  defp preset_label(:this_year), do: "This year"
+  defp preset_label(:last_year), do: "Last year"
+
+  @doc """
+  Whether `datetime` falls within the inclusive range's bounds. Accepts
+  Date/DateTime/NaiveDateTime; nil and a nil range are never in range.
+  """
+  @spec in_range?(Date.t() | DateTime.t() | NaiveDateTime.t() | nil, range | nil) :: boolean
+  def in_range?(nil, _range), do: false
   def in_range?(_dt, nil), do: false
 
   def in_range?(dt, %{first: first, last: last}) do
@@ -81,45 +256,110 @@ defmodule HermesWeb.ObjectivesLive.Period do
     Date.compare(date, first) != :lt and Date.compare(date, last) != :gt
   end
 
-  # --- Quarter ---
+  # --- Weeks (drill-down for a single-month range) ---
 
-  defp quarter_buckets(today) do
-    current = quarter_index(today)
+  @doc """
+  ISO week buckets overlapping `range`, valid only when the range is a single
+  calendar month (see `single_month?/1`). Returns `[]` otherwise.
+  """
+  @spec week_buckets(range, Date.t()) :: [bucket]
+  def week_buckets(range, today) do
+    if single_month?(range), do: week_buckets_for_month(range.first, today), else: []
+  end
 
-    for q <- 1..4 do
-      first = Date.new!(today.year, (q - 1) * 3 + 1, 1)
-      last = Date.end_of_month(Date.new!(today.year, q * 3, 1))
+  @doc "Key of the bucket containing today, else the first bucket (or nil)."
+  @spec current_key([bucket]) :: String.t() | nil
+  def current_key(buckets) do
+    case Enum.find(buckets, &(&1.state == :current)) do
+      nil -> buckets |> List.first() |> then(&(&1 && &1.key))
+      bucket -> bucket.key
+    end
+  end
+
+  # --- Quarter-scoped week grid (picker centre, week mode) ---
+
+  @doc """
+  ISO week cells (Mon-start) overlapping quarter `q` of `year`, for the picker's
+  4×3 week grid. Each cell is keyed by its Monday's ISO date string and carries
+  the ISO week number, inclusive `first`/`last`, a short range label, and whether
+  its Monday falls inside the in-progress selection `sel` — a `{key1, key2 | nil}`
+  tuple of Monday ISO strings, or nil.
+  """
+  @spec quarter_week_cells(integer, 1..4, {String.t(), String.t() | nil} | nil) :: [map]
+  def quarter_week_cells(year, q, sel) do
+    q_first = Date.new!(year, (q - 1) * 3 + 1, 1)
+    q_last = Date.end_of_month(Date.new!(year, q * 3, 1))
+    first_week = beginning_of_week(q_first)
+    count = Integer.floor_div(Date.diff(q_last, first_week), 7) + 1
+
+    for offset <- 0..(count - 1) do
+      first = Date.add(first_week, offset * 7)
+      last = Date.add(first, 6)
+      key = Date.to_iso8601(first)
+      {_y, week} = :calendar.iso_week_number({first.year, first.month, first.day})
 
       %{
-        key: "quarter:#{today.year}:Q#{q}",
-        label: "Q#{q}",
+        key: key,
+        week: week,
         first: first,
         last: last,
-        state: state_for(q, current)
+        label: "W#{week}",
+        sublabel: week_range_label(first, last),
+        selected: week_key_selected?(first, sel)
       }
     end
   end
 
-  defp quarter_index(date), do: div(date.month - 1, 3) + 1
+  defp week_key_selected?(_monday, nil), do: false
+  defp week_key_selected?(monday, {k1, nil}), do: Date.to_iso8601(monday) == k1
 
-  # --- Month ---
+  defp week_key_selected?(monday, {k1, k2}) do
+    {lo, hi} = sorted_dates(k1, k2)
+    Date.compare(monday, lo) != :lt and Date.compare(monday, hi) != :gt
+  end
 
-  defp month_buckets(today) do
-    start = first_of_month(today) |> add_months(-@months_back)
-    current = first_of_month(today)
+  defp sorted_dates(k1, k2) do
+    d1 = Date.from_iso8601!(k1)
+    d2 = Date.from_iso8601!(k2)
+    if Date.compare(d1, d2) == :gt, do: {d2, d1}, else: {d1, d2}
+  end
 
-    for offset <- 0..(@months_back + @months_fwd) do
-      first = add_months(start, offset)
-      last = Date.end_of_month(first)
+  @doc """
+  The active range projected onto a `{first_monday_key, last_monday_key}` pair
+  for week-grid highlighting, or nil when the range isn't week-aligned. Lets a
+  committed week range light up when the picker reopens.
+  """
+  @spec range_week_keys(range | nil) :: {String.t(), String.t()} | nil
+  def range_week_keys(nil), do: nil
 
-      %{
-        key: "month:#{first.year}:#{first.month}",
-        label: Calendar.strftime(first, "%b %Y"),
-        first: first,
-        last: last,
-        state: date_state(first, current)
-      }
+  def range_week_keys(%{first: first, last: last}) do
+    if Date.day_of_week(first) == 1 and Date.day_of_week(last) == 7 do
+      # `last` is a Sunday; its week's key is the Monday six days earlier.
+      {Date.to_iso8601(first), Date.to_iso8601(Date.add(last, -6))}
+    else
+      nil
     end
+  end
+
+  @doc """
+  Active range spanning the weeks whose Mondays are `key1`..`key2` (inclusive,
+  order-independent ISO date strings): the first Monday to the last Sunday.
+  """
+  @spec week_range(String.t(), String.t()) :: range
+  def week_range(key1, key2) do
+    {lo, hi} = sorted_dates(key1, key2)
+    last = Date.add(hi, 6)
+    {_y1, w1} = :calendar.iso_week_number({lo.year, lo.month, lo.day})
+    {_y2, w2} = :calendar.iso_week_number({hi.year, hi.month, hi.day})
+
+    label =
+      if lo == hi do
+        "W#{w1} #{lo.year}"
+      else
+        "W#{w1} – W#{w2} #{hi.year}"
+      end
+
+    %{first: lo, last: last, label: label}
   end
 
   defp first_of_month(date), do: %{date | day: 1}
@@ -139,11 +379,10 @@ defmodule HermesWeb.ObjectivesLive.Period do
 
   # --- Week ---
 
-  # ISO weeks (Mon-start) that overlap the month named by `month_key`. State is
-  # relative to the week containing `today`. Each week is shown whole, even
-  # where it spills past the month's edges.
-  defp week_buckets_for_month(month_key, today) do
-    month_first = month_first_from_key(month_key, today)
+  # ISO weeks (Mon-start) that overlap the calendar month of `month_first`.
+  # State is relative to the week containing `today`. Each week is shown whole,
+  # even where it spills past the month's edges.
+  defp week_buckets_for_month(month_first, today) do
     month_last = Date.end_of_month(month_first)
     current_week = beginning_of_week(today)
 
@@ -165,26 +404,6 @@ defmodule HermesWeb.ObjectivesLive.Period do
     end
   end
 
-  # Resolve a "month:YYYY:M" key to its first-of-month date, falling back to the
-  # month containing `today` for nil/garbage.
-  defp month_first_from_key("month:" <> rest, today) do
-    case String.split(rest, ":") do
-      [y, m] ->
-        with {year, ""} <- Integer.parse(y),
-             {month, ""} <- Integer.parse(m),
-             {:ok, date} <- Date.new(year, month, 1) do
-          date
-        else
-          _ -> first_of_month(today)
-        end
-
-      _ ->
-        first_of_month(today)
-    end
-  end
-
-  defp month_first_from_key(_key, today), do: first_of_month(today)
-
   # "15–21 Jun" or, across a month edge, "29 Jun – 5 Jul".
   defp week_range_label(first, last) do
     if first.month == last.month do
@@ -200,14 +419,6 @@ defmodule HermesWeb.ObjectivesLive.Period do
   defp beginning_of_week(date), do: Date.add(date, -(Date.day_of_week(date) - 1))
 
   # --- Shared ---
-
-  defp state_for(value, current) do
-    cond do
-      value < current -> :closed
-      value == current -> :current
-      true -> :upcoming
-    end
-  end
 
   defp date_state(first, current) do
     case Date.compare(first, current) do

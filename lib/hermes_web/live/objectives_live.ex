@@ -3,77 +3,239 @@ defmodule HermesWeb.ObjectivesLive do
 
   alias HermesWeb.ObjectivesLive.Period
 
-  @periods ~w(quarter month week)a
-
   # Statuses counted as "in progress" in the period overview KPI.
   @in_progress_statuses ~w(in_progress review)
 
   @impl true
   def mount(_params, _session, socket) do
     today = Date.utc_today()
-    period = :quarter
-    week_month_key = Period.current_month_key(today)
-    buckets = Period.buckets(period, today, week_month_key)
+    range = Period.default_range(today)
 
     {:ok,
      socket
      |> assign(:page_title, gettext("Objectives"))
      |> assign(:today, today)
-     |> assign(:period, period)
-     |> assign(:week_month_key, week_month_key)
-     |> assign(:month_options, Period.month_options(today))
-     |> assign(:buckets, buckets)
-     |> assign(:active_key, Period.current_key(buckets))
+     |> assign(:range, range)
+     |> assign(:picker_open?, false)
+     |> assign(:cal_year, today.year)
+     |> assign(:cal_quarter, Period.current_quarter(today))
+     # Right-pane segmentation: :month or :week grid.
+     |> assign(:cal_mode, :month)
+     # In-progress month selection: nil | {m1, nil} | {m1, m2} (absolute months).
+     |> assign(:sel, nil)
+     # In-progress week selection: nil | {key1, nil} | {key1, key2} (Monday ISO).
+     |> assign(:week_sel, nil)
+     |> set_week_buckets()
      |> load()}
   end
 
   @impl true
-  def handle_event("select_period", %{"period" => period}, socket)
-      when period in ~w(quarter month week) do
-    period = String.to_existing_atom(period)
-    buckets = Period.buckets(period, socket.assigns.today, socket.assigns.week_month_key)
+  def handle_event("toggle_picker", _params, socket) do
+    opening? = !socket.assigns.picker_open?
 
-    {:noreply,
-     socket
-     |> assign(:period, period)
-     |> assign(:buckets, buckets)
-     |> assign(:active_key, Period.current_key(buckets))
-     |> load()}
+    socket =
+      socket
+      |> assign(:picker_open?, opening?)
+      |> assign(:sel, nil)
+      |> assign(:week_sel, nil)
+
+    # On open, jump the calendar to the quarter holding most of the range. A
+    # range snapped to whole weeks can spill a few days past either quarter
+    # edge; the majority quarter ignores that small overlap on both sides.
+    socket =
+      if opening? do
+        {year, quarter} = Period.dominant_quarter(socket.assigns.range)
+
+        socket
+        |> assign(:cal_year, year)
+        |> assign(:cal_quarter, quarter)
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
-  # Week mode: pick the month whose ISO weeks are listed.
-  def handle_event("select_week_month", %{"key" => key}, socket) do
-    if Enum.any?(socket.assigns.month_options, &(&1.key == key)) do
-      buckets = Period.buckets(:week, socket.assigns.today, key)
+  def handle_event("close_picker", _params, socket) do
+    {:noreply,
+     socket |> assign(:picker_open?, false) |> assign(:sel, nil) |> assign(:week_sel, nil)}
+  end
 
-      {:noreply,
-       socket
-       |> assign(:week_month_key, key)
-       |> assign(:buckets, buckets)
-       |> assign(:active_key, Period.default_week_key(buckets))
-       |> load()}
+  def handle_event("set_cal_mode", %{"mode" => mode}, socket) when mode in ~w(month week) do
+    mode = String.to_existing_atom(mode)
+
+    # Switching segmentation re-aligns the active range to the new granularity
+    # (whole months ↔ whole ISO weeks) and applies it immediately. Any
+    # half-finished pick in the other mode is dropped.
+    range =
+      case mode do
+        :week -> Period.to_week_range(socket.assigns.range)
+        :month -> Period.to_month_range(socket.assigns.range)
+      end
+
+    socket =
+      socket
+      |> assign(:cal_mode, mode)
+      |> assign(:range, range)
+      |> assign(:sel, nil)
+      |> assign(:week_sel, nil)
+      |> set_week_buckets()
+
+    {:noreply, load(socket)}
+  end
+
+  def handle_event("select_preset", %{"preset" => preset}, socket) do
+    preset = String.to_existing_atom(preset)
+
+    if preset in Period.presets() do
+      range = Period.preset_range(preset, socket.assigns.today)
+      apply_range(socket, maybe_snap(range, socket))
     else
       {:noreply, socket}
     end
   end
 
-  def handle_event("select_bucket", %{"key" => key}, socket) do
-    if Enum.any?(socket.assigns.buckets, &(&1.key == key)) do
-      {:noreply, socket |> assign(:active_key, key) |> load()}
-    else
-      # Ignore unrecognised bucket keys from the client rather than crashing.
-      {:noreply, socket}
+  def handle_event("select_quarter", %{"q" => q}, socket) do
+    case Integer.parse(q) do
+      {q, ""} when q in 1..4 ->
+        range = Period.quarter_range(q, socket.assigns.cal_year)
+        apply_range(socket, maybe_snap(range, socket))
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("cal_prev_year", _params, socket) do
+    {:noreply, assign(socket, :cal_year, socket.assigns.cal_year - 1)}
+  end
+
+  def handle_event("cal_next_year", _params, socket) do
+    {:noreply, assign(socket, :cal_year, socket.assigns.cal_year + 1)}
+  end
+
+  # Quarter steppers wrap Q4→Q1 (and Q1→Q4), rolling the year accordingly.
+  def handle_event("cal_prev_quarter", _params, socket) do
+    {:noreply, step_quarter(socket, -1)}
+  end
+
+  def handle_event("cal_next_quarter", _params, socket) do
+    {:noreply, step_quarter(socket, +1)}
+  end
+
+  # First click starts a month range; second click closes it and applies.
+  def handle_event("pick_month", %{"month" => month}, socket) do
+    case Integer.parse(month) do
+      {m, ""} when m in 1..12 -> pick_month(socket, m)
+      _ -> {:noreply, socket}
+    end
+  end
+
+  # First click starts a week range; second click closes it and applies. The
+  # value is the week's Monday as an ISO date string.
+  def handle_event("pick_week", %{"key" => key}, socket) do
+    case Date.from_iso8601(key) do
+      {:ok, _date} -> pick_week(socket, key)
+      _ -> {:noreply, socket}
+    end
+  end
+
+  # Week drill-down tabs (shown only for a single-month range). Narrows the
+  # active range to the chosen week while keeping the week strip in place.
+  def handle_event("select_week", %{"key" => key}, socket) do
+    case Enum.find(socket.assigns.week_buckets, &(&1.key == key)) do
+      nil ->
+        {:noreply, socket}
+
+      bucket ->
+        socket =
+          socket
+          |> assign(:range, Map.take(bucket, [:first, :last, :label]))
+          |> assign(:active_week_key, key)
+
+        {:noreply, load(socket)}
     end
   end
 
   # Ignore unrecognised events rather than crashing.
-  def handle_event("select_period", _params, socket), do: {:noreply, socket}
-  def handle_event("select_week_month", _params, socket), do: {:noreply, socket}
-  def handle_event("select_bucket", _params, socket), do: {:noreply, socket}
+  def handle_event("set_cal_mode", _params, socket), do: {:noreply, socket}
+  def handle_event("select_preset", _params, socket), do: {:noreply, socket}
+  def handle_event("select_quarter", _params, socket), do: {:noreply, socket}
+  def handle_event("pick_month", _params, socket), do: {:noreply, socket}
+  def handle_event("pick_week", _params, socket), do: {:noreply, socket}
+  def handle_event("select_week", _params, socket), do: {:noreply, socket}
+
+  # In week mode, expand a month/quarter preset range to whole ISO weeks so the
+  # left rail segments by week data too. Month mode keeps the exact range.
+  defp maybe_snap(range, %{assigns: %{cal_mode: :week}}), do: Period.snap_to_weeks(range)
+  defp maybe_snap(range, _socket), do: range
+
+  defp step_quarter(socket, delta) do
+    q = socket.assigns.cal_quarter + delta
+
+    {year, quarter} =
+      cond do
+        q < 1 -> {socket.assigns.cal_year - 1, 4}
+        q > 4 -> {socket.assigns.cal_year + 1, 1}
+        true -> {socket.assigns.cal_year, q}
+      end
+
+    socket
+    |> assign(:cal_year, year)
+    |> assign(:cal_quarter, quarter)
+  end
+
+  defp pick_month(socket, m) do
+    case socket.assigns.sel do
+      nil ->
+        # Start a range; nothing applied yet.
+        {:noreply, assign(socket, :sel, {m, nil})}
+
+      {m1, _} ->
+        range = Period.month_range(socket.assigns.cal_year, m1, m)
+        apply_range(socket, range)
+    end
+  end
+
+  defp pick_week(socket, key) do
+    case socket.assigns.week_sel do
+      nil ->
+        # Start a week range; nothing applied yet.
+        {:noreply, assign(socket, :week_sel, {key, nil})}
+
+      {key1, _} ->
+        range = Period.week_range(key1, key)
+        apply_range(socket, range)
+    end
+  end
+
+  # Apply a new active range, rebuild the week drill-down, recompute, and close
+  # the picker.
+  defp apply_range(socket, range) do
+    socket =
+      socket
+      |> assign(:range, range)
+      |> assign(:picker_open?, false)
+      |> assign(:sel, nil)
+      |> assign(:week_sel, nil)
+      |> set_week_buckets()
+
+    {:noreply, load(socket)}
+  end
+
+  # Recompute the ISO-week drill-down for the active range (empty unless it is
+  # a single calendar month), defaulting the active week to the current one.
+  defp set_week_buckets(socket) do
+    weeks = Period.week_buckets(socket.assigns.range, socket.assigns.today)
+
+    socket
+    |> assign(:week_buckets, weeks)
+    |> assign(:active_week_key, Period.current_key(weeks))
+  end
 
   defp load(socket) do
     user = socket.assigns.current_user
-    active = Enum.find(socket.assigns.buckets, &(&1.key == socket.assigns.active_key))
+    active = socket.assigns.range
 
     requests =
       Hermes.Requests.list_requests_by_team(user.team_id)
@@ -154,12 +316,15 @@ defmodule HermesWeb.ObjectivesLive do
 
   # --- View helpers ---
 
-  @doc "Selectable period granularities."
-  def periods, do: @periods
+  @doc "Preset identifiers for the picker rail."
+  def presets, do: Period.presets()
 
-  def period_label(:quarter), do: gettext("Quarter")
-  def period_label(:month), do: gettext("Month")
-  def period_label(:week), do: gettext("Week")
+  def preset_label(:this_month), do: gettext("This month")
+  def preset_label(:last_month), do: gettext("Last month")
+  def preset_label(:last_3_months), do: gettext("Last 3 months")
+  def preset_label(:last_12_months), do: gettext("Last 12 months")
+  def preset_label(:this_year), do: gettext("This year")
+  def preset_label(:last_year), do: gettext("Last year")
 
   def bucket_state_label(:closed), do: gettext("closed")
   def bucket_state_label(:current), do: gettext("current")

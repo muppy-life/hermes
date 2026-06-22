@@ -3,84 +3,168 @@
   <div class="greeting">
     <div>
       <h1>{gettext("Objectives")}</h1>
-      <div class="greeting-sub">{gettext("%{period} view", period: period_label(@period))}</div>
+      <div class="greeting-sub">{@range.label}</div>
     </div>
 
-    <%!-- Period granularity toggle --%>
-    <div class="q-period-toggle" role="group">
-      <%= for p <- periods() do %>
-        <button
-          type="button"
-          class={["q-period-btn", p == @period && "active"]}
-          phx-click="select_period"
-          phx-value-period={p}
-        >
-          {period_label(p)}
-        </button>
-      <% end %>
+    <%!-- Date-range picker --%>
+    <div class="dr-picker" id="objectives-range-picker" phx-click-away="close_picker">
+      <button
+        type="button"
+        id="objectives-range-trigger"
+        class={["dr-trigger", @picker_open? && "active"]}
+        phx-click="toggle_picker"
+        aria-haspopup="true"
+        aria-expanded={@picker_open?}
+      >
+        <.icon name="hero-calendar-days" class="size-4" />
+        <span>{@range.label}</span>
+      </button>
+
+      <div :if={@picker_open?} class="dr-pop" role="dialog">
+        <%!-- Left rail: presets + quarters --%>
+        <div class="dr-rail">
+          <%= for p <- presets() do %>
+            <button
+              type="button"
+              class={["dr-preset", @range.label == preset_label(p) && "active"]}
+              phx-click="select_preset"
+              phx-value-preset={p}
+            >
+              {preset_label(p)}
+            </button>
+          <% end %>
+          <%= for q <- 1..4 do %>
+            <button
+              type="button"
+              class={["dr-preset", @range.label == "Q#{q} #{@cal_year}" && "active"]}
+              phx-click="select_quarter"
+              phx-value-q={q}
+            >
+              {gettext("Q%{n}", n: q)}
+            </button>
+          <% end %>
+        </div>
+
+        <%!-- Centre: year + quarter steppers and the quarter grid --%>
+        <div class="dr-cal">
+          <div class="dr-cal-h">
+            <button
+              type="button"
+              class="dr-nav"
+              phx-click="cal_prev_year"
+              aria-label={gettext("Previous year")}
+            >
+              <.icon name="hero-chevron-left" class="size-4" />
+            </button>
+            <div class="dr-year">{@cal_year}</div>
+            <button
+              type="button"
+              class="dr-nav"
+              phx-click="cal_next_year"
+              aria-label={gettext("Next year")}
+            >
+              <.icon name="hero-chevron-right" class="size-4" />
+            </button>
+          </div>
+
+          <%= if @cal_mode == :month do %>
+            <%!-- Month mode: full-year 4×3 grid, no quarter stepper. --%>
+            <div class="dr-months">
+              <% grid_sel = @sel || Period.range_months_in_year(@range, @cal_year) %>
+              <%= for cell <- Period.month_grid(@cal_year, grid_sel) do %>
+                <button
+                  type="button"
+                  class={["dr-month", cell.selected && "in-range"]}
+                  phx-click="pick_month"
+                  phx-value-month={cell.month}
+                >
+                  {cell.label}
+                </button>
+              <% end %>
+            </div>
+
+            <div class="dr-hint">
+              {gettext("Click a month to start the range, click another to close it.")}
+            </div>
+          <% else %>
+            <%!-- Week mode: quarter stepper scopes the week grid. --%>
+            <div class="dr-cal-h dr-cal-q">
+              <button
+                type="button"
+                class="dr-nav"
+                phx-click="cal_prev_quarter"
+                aria-label={gettext("Previous quarter")}
+              >
+                <.icon name="hero-chevron-left" class="size-4" />
+              </button>
+              <div class="dr-quarter">{gettext("Q%{n}", n: @cal_quarter)}</div>
+              <button
+                type="button"
+                class="dr-nav"
+                phx-click="cal_next_quarter"
+                aria-label={gettext("Next quarter")}
+              >
+                <.icon name="hero-chevron-right" class="size-4" />
+              </button>
+            </div>
+
+            <div class="dr-weeks-grid">
+              <% week_sel = @week_sel || Period.range_week_keys(@range) %>
+              <%= for cell <- Period.quarter_week_cells(@cal_year, @cal_quarter, week_sel) do %>
+                <button
+                  type="button"
+                  class={["dr-wcell", cell.selected && "in-range"]}
+                  phx-click="pick_week"
+                  phx-value-key={cell.key}
+                >
+                  <span class="dr-wcell-w">{cell.label}</span>
+                  <span class="dr-wcell-d">{cell.sublabel}</span>
+                </button>
+              <% end %>
+            </div>
+
+            <div class="dr-hint">
+              {gettext("Click a week to start the range, click another to close it.")}
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- Right rail: data segmentation --%>
+        <div class="dr-rail dr-rail-right">
+          <button
+            type="button"
+            class={["dr-preset", @cal_mode == :month && "active"]}
+            phx-click="set_cal_mode"
+            phx-value-mode="month"
+          >
+            {gettext("Month")}
+          </button>
+          <button
+            type="button"
+            class={["dr-preset", @cal_mode == :week && "active"]}
+            phx-click="set_cal_mode"
+            phx-value-mode="week"
+          >
+            {gettext("Week")}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <%!-- Period selector: month dropdown (month & week modes) + week tabs --%>
-  <%= cond do %>
-    <% @period == :month -> %>
-      <.form
-        :let={f}
-        for={to_form(%{"key" => @active_key})}
-        id="objectives-month-form"
-        class="q-select-wrap"
-        phx-change="select_bucket"
+  <%!-- Week drill-down: shown only when the active range is a single month --%>
+  <div :if={@week_buckets != []} class="q-tabs">
+    <%= for b <- @week_buckets do %>
+      <button
+        type="button"
+        class={["q-tab", b.key == @active_week_key && "active"]}
+        phx-click="select_week"
+        phx-value-key={b.key}
       >
-        <select class="q-select" id="objectives-month-select" name={f[:key].name}>
-          <%= for b <- @buckets do %>
-            <option value={b.key} selected={b.key == @active_key}>
-              {b.label} · {bucket_state_label(b.state)}
-            </option>
-          <% end %>
-        </select>
-      </.form>
-    <% @period == :week -> %>
-      <.form
-        :let={f}
-        for={to_form(%{"key" => @week_month_key})}
-        id="objectives-week-month-form"
-        class="q-select-wrap"
-        phx-change="select_week_month"
-      >
-        <select class="q-select" id="objectives-week-month-select" name={f[:key].name}>
-          <%= for m <- @month_options do %>
-            <option value={m.key} selected={m.key == @week_month_key}>
-              {m.label} · {bucket_state_label(m.state)}
-            </option>
-          <% end %>
-        </select>
-      </.form>
-      <div class="q-tabs">
-        <%= for b <- @buckets do %>
-          <button
-            type="button"
-            class={["q-tab", b.key == @active_key && "active"]}
-            phx-click="select_bucket"
-            phx-value-key={b.key}
-          >
-            {b.label}<span class="q-tab-state">· {bucket_state_label(b.state)}</span>
-          </button>
-        <% end %>
-      </div>
-    <% true -> %>
-      <div class="q-tabs">
-        <%= for b <- @buckets do %>
-          <button
-            type="button"
-            class={["q-tab", b.key == @active_key && "active"]}
-            phx-click="select_bucket"
-            phx-value-key={b.key}
-          >
-            {b.label}<span class="q-tab-state">· {bucket_state_label(b.state)}</span>
-          </button>
-        <% end %>
-      </div>
-  <% end %>
+        {b.label}<span class="q-tab-state">· {bucket_state_label(b.state)}</span>
+      </button>
+    <% end %>
+  </div>
 
   <%!-- Period KPI overview --%>
   <div class="q-overview">
