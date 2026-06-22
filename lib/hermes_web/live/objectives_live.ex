@@ -85,13 +85,15 @@ defmodule HermesWeb.ObjectivesLive do
   end
 
   def handle_event("select_preset", %{"preset" => preset}, socket) do
-    preset = String.to_existing_atom(preset)
+    # Match the raw string against the known presets before converting to an
+    # atom — String.to_existing_atom/1 would raise on a tampered value.
+    case Enum.find(Period.presets(), &(Atom.to_string(&1) == preset)) do
+      nil ->
+        {:noreply, socket}
 
-    if preset in Period.presets() do
-      range = Period.preset_range(preset, socket.assigns.today)
-      apply_range(socket, maybe_snap(range, socket))
-    else
-      {:noreply, socket}
+      atom_preset ->
+        range = Period.preset_range(atom_preset, socket.assigns.today)
+        apply_range(socket, maybe_snap(range, socket))
     end
   end
 
