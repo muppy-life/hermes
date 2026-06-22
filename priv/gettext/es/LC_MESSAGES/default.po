@@ -2333,9 +2333,9 @@ msgid "Cycle"
 msgstr "Ciclo"
 
 #: lib/hermes_web/live/dashboard_live.html.heex:125
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} deliveries in this window"
-msgstr "%{count} entregas en los próximos 7 meses"
+msgstr "%{count} entregas en este periodo"
 
 #: lib/hermes_web/live/objectives_live.ex:346
 #, elixir-autogen, elixir-format
@@ -2363,24 +2363,24 @@ msgid "Completed in %{period}"
 msgstr "Completadas en %{period}"
 
 #: lib/hermes_web/live/dashboard_live.ex:282
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Deadline %{date}"
-msgstr "Fecha Límite"
+msgstr "Fecha límite %{date}"
 
 #: lib/hermes_web/live/dashboard_live.ex:281
 #, elixir-autogen, elixir-format
 msgid "Deadline %{date} · due soon"
-msgstr ""
+msgstr "Fecha límite %{date} · vence pronto"
 
 #: lib/hermes_web/live/dashboard_live.ex:280
 #, elixir-autogen, elixir-format
 msgid "Deadline %{date} · due today"
-msgstr ""
+msgstr "Fecha límite %{date} · vence hoy"
 
 #: lib/hermes_web/live/dashboard_live.ex:279
 #, elixir-autogen, elixir-format
 msgid "Deadline %{date} · overdue"
-msgstr ""
+msgstr "Fecha límite %{date} · vencida"
 
 #: lib/hermes_web/live/objectives_live.ex:327
 #, elixir-autogen, elixir-format
@@ -2410,7 +2410,7 @@ msgstr "Mes"
 #: lib/hermes_web/live/dashboard_live.html.heex:240
 #, elixir-autogen, elixir-format
 msgid "Next month"
-msgstr ""
+msgstr "Mes siguiente"
 
 #: lib/hermes_web/live/objectives_live.html.heex:105
 #, elixir-autogen, elixir-format
@@ -2425,7 +2425,7 @@ msgstr "Año siguiente"
 #: lib/hermes_web/live/dashboard_live.html.heex:232
 #, elixir-autogen, elixir-format
 msgid "Previous month"
-msgstr ""
+msgstr "Mes anterior"
 
 #: lib/hermes_web/live/objectives_live.html.heex:96
 #, elixir-autogen, elixir-format
@@ -2438,9 +2438,9 @@ msgid "Previous year"
 msgstr "Año anterior"
 
 #: lib/hermes_web/live/dashboard_live.ex:270
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Priority: %{label}"
-msgstr "Prioridad"
+msgstr "Prioridad: %{label}"
 
 #: lib/hermes_web/live/objectives_live.html.heex:43
 #: lib/hermes_web/live/objectives_live.html.heex:100
@@ -2451,7 +2451,7 @@ msgstr "Q%{n}"
 #: lib/hermes_web/live/dashboard_live.html.heex:188
 #, elixir-autogen, elixir-format
 msgid "Status: %{label}"
-msgstr ""
+msgstr "Estado: %{label}"
 
 #: lib/hermes_web/live/objectives_live.ex:324
 #, elixir-autogen, elixir-format
