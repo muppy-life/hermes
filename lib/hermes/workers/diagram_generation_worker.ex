@@ -23,7 +23,7 @@ defmodule Hermes.Workers.DiagramGenerationWorker do
 
   require Logger
   alias Hermes.Requests
-  alias Hermes.Services.Claude
+  alias Hermes.Services.LLM
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args, attempt: attempt}) do
@@ -37,9 +37,8 @@ defmodule Hermes.Workers.DiagramGenerationWorker do
       # Build the prompt for Claude
       prompt = build_diagram_prompt(request)
 
-      # Generate the diagram using Claude API
-      case Claude.ask(prompt,
-             model: "claude-sonnet-4-20250514",
+      # Generate the diagram using the configured LLM provider
+      case LLM.ask(prompt,
              max_tokens: 2048,
              system: diagram_system_prompt()
            ) do
@@ -69,9 +68,9 @@ defmodule Hermes.Workers.DiagramGenerationWorker do
               {:error, reason}
           end
 
-        {:error, "ANTHROPIC_API_KEY not configured" = reason} ->
-          Logger.warning("Claude API key not configured for request #{request_id}")
-          {:discard, reason}
+        {:error, :missing_api_key} ->
+          Logger.warning("LLM API key not configured for request #{request_id}")
+          {:discard, "LLM API key not configured"}
 
         {:error, reason} ->
           Logger.error("Diagram generation failed for request #{request_id}: #{inspect(reason)}")
