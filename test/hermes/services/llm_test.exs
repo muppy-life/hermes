@@ -72,8 +72,12 @@ defmodule Hermes.Services.LLMTest do
 
     test "returns :missing_api_key when no key configured" do
       put_llm(adapter: Hermes.Services.LLM.Anthropic, anthropic: [api_key: nil])
-      # Guard against a real key leaking in from the environment.
+
+      # Guard against a real key leaking in from the environment, but restore it
+      # afterwards so later tests/modules still see the developer's shell value.
+      original_key = System.get_env("ANTHROPIC_API_KEY")
       System.delete_env("ANTHROPIC_API_KEY")
+      on_exit(fn -> if original_key, do: System.put_env("ANTHROPIC_API_KEY", original_key) end)
 
       assert {:error, :missing_api_key} = LLM.ask("hi")
     end

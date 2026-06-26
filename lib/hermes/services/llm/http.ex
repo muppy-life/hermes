@@ -17,8 +17,8 @@ defmodule Hermes.Services.LLM.HTTP do
   @spec maybe_put_test_options(keyword()) :: keyword()
   def maybe_put_test_options(opts) do
     case Application.get_env(:hermes, :llm_req_options) do
-      nil -> opts
       extra when is_list(extra) -> Keyword.merge(opts, extra)
+      _ -> opts
     end
   end
 end
