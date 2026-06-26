@@ -485,16 +485,25 @@ defmodule Hermes.Services.GitHub do
 
   defp labels_for(%Request{} = r) do
     []
-    |> add_label(
-      r.priority && "priority:#{Request.priority_label(r.priority) |> String.downcase()}"
-    )
-    |> add_label(r.kind && "kind:#{r.kind}")
+    |> add_label(r.kind && github_kind_label(r.kind))
     |> add_label(epic_label_for(r))
+    |> add_label(subtask_label_for(r))
     |> Enum.reject(&is_nil/1)
   end
 
+  # Short label names for the GitHub chip. The full text lives in the
+  # repo label's description. The longer `Request.kind_label/1` is still
+  # used for the issue body and in-app UI.
+  defp github_kind_label(:problem), do: "Problem"
+  defp github_kind_label(:new_need), do: "New need"
+  defp github_kind_label(:improvement), do: "Improvement"
+  defp github_kind_label(_), do: nil
+
   defp epic_label_for(%Request{is_epic: true, parent_id: nil}), do: "Epic"
   defp epic_label_for(_), do: nil
+
+  defp subtask_label_for(%Request{parent_id: nil}), do: nil
+  defp subtask_label_for(%Request{parent_id: _}), do: "subtasks"
 
   defp add_label(list, nil), do: list
   defp add_label(list, label), do: [label | list]
