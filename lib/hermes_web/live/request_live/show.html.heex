@@ -699,7 +699,12 @@ aging = aging_days(@request) %>
       <.form for={@form} id="edit-request-form" phx-change="validate" phx-submit="save">
         <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
           <.input field={@form[:title]} type="text" label={gettext("Title")} />
-          <.input field={@form[:description]} type="textarea" label={gettext("Description")} />
+          <.input
+            field={@form[:description]}
+            type="textarea"
+            label={gettext("Description")}
+            phx-hook="PreserveTextareaHeight"
+          />
 
           <.input
             field={@form[:kind]}
@@ -717,6 +722,7 @@ aging = aging_days(@request) %>
             field={@form[:goal_description]}
             type="textarea"
             label={gettext("Goal Description")}
+            phx-hook="PreserveTextareaHeight"
           />
 
           <.input

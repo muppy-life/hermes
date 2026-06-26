@@ -28,6 +28,23 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 const Hooks = {
+  // Keeps a user-resized textarea's height across LiveView patches. Without this,
+  // phx-change="validate" re-renders the textarea on every keystroke and morphdom
+  // strips the inline height the user set by dragging, snapping it back to default.
+  PreserveTextareaHeight: {
+    mounted() {
+      // Persist the height the user drags to so it survives re-mounts too.
+      this.el.addEventListener("mouseup", () => {
+        if (this.el.style.height) this._height = this.el.style.height
+      })
+    },
+    beforeUpdate() {
+      this._height = this.el.style.height || this._height
+    },
+    updated() {
+      if (this._height) this.el.style.height = this._height
+    }
+  },
   // Triggers a client-side file download from a server push_event("download", ...).
   CsvDownload: {
     mounted() {
