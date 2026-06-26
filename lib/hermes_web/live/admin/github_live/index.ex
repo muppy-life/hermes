@@ -17,7 +17,7 @@ defmodule HermesWeb.Admin.GithubLive.Index do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "GitHub Status Mappings")
+     |> assign(:page_title, gettext("GitHub Status Mappings"))
      |> assign(:hermes_statuses, GitHubStatusMapping.hermes_statuses())
      |> assign(:pending_options, [])
      |> assign(:sync_error, nil)

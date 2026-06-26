@@ -13,7 +13,7 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
 
     {:ok,
      socket
-     |> assign(:page_title, "Admin Dashboard")
+     |> assign(:page_title, gettext("Admin Dashboard"))
      |> assign_stats()
      |> assign_users()}
   end
@@ -154,7 +154,13 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
     end
   end
 
-  defp format_last_seen(nil), do: "Never"
+  defp role_label("admin"), do: pgettext("user role", "Admin")
+  defp role_label("dev_team"), do: gettext("Developer")
+  defp role_label("product_owner"), do: gettext("Product Owner")
+  defp role_label("team_member"), do: gettext("Team Member")
+  defp role_label(role), do: Phoenix.Naming.humanize(role)
+
+  defp format_last_seen(nil), do: gettext("Never")
 
   defp format_last_seen(%DateTime{} = datetime) do
     now = DateTime.utc_now()
