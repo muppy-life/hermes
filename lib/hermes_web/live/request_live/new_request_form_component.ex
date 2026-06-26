@@ -217,6 +217,15 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
 
   defp parse_team_id(_), do: nil
 
+  defp team_name(teams, id) do
+    parsed = parse_team_id(id)
+
+    case Enum.find(teams, &(&1.id == parsed)) do
+      %{name: name} -> name
+      _ -> nil
+    end
+  end
+
   defp to_priority("critica"), do: 4
   defp to_priority("importante"), do: 3
   defp to_priority("normal"), do: 2
@@ -867,6 +876,11 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                     </div>
                     <div class="summary-grid">
                       <.sum_card label={gettext("Request")} value={@form_data["title"]} />
+                      <.sum_card
+                        :if={@can_pick_team?}
+                        label={gettext("Requesting team")}
+                        value={team_name(@teams, @form_data["requesting_team_id"])}
+                      />
                       <.sum_card label={gettext("Type")} value={kind_label(@form_data["kind"])} />
                       <.sum_card
                         label={gettext("Priority")}
