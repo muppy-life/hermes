@@ -1,0 +1,142 @@
+<%!-- Header --%>
+<div class="flex items-end justify-between gap-5 mb-5 pt-6">
+  <div>
+    <h1 class="text-[28px] font-bold text-primary tracking-tight leading-tight">
+      {gettext("Teams")}
+    </h1>
+    <p class="text-[13px] text-base-content/50 font-medium mt-1.5">
+      {gettext("Groups of users")}
+    </p>
+  </div>
+  <button
+    type="button"
+    phx-click="open_new_modal"
+    class="btn btn-primary rounded-full gap-1.5 shadow-sm"
+  >
+    <.icon name="hero-user-group" class="size-4" />{gettext("Add team")}
+  </button>
+</div>
+
+<%!-- Teams table card --%>
+<div class="bg-base-200 rounded-2xl overflow-hidden shadow-sm border border-base-300">
+  <div class="px-[22px] py-4 border-b border-base-300 flex items-center gap-2 text-[13px] font-semibold text-base-content">
+    <.icon name="hero-user-group" class="size-4 text-base-content/40" />
+    {gettext("Teams")}
+    <span class="ml-auto text-base-content/50 font-medium text-[11.5px]">
+      {ngettext("%{count} team", "%{count} teams", length(@teams), count: length(@teams))}
+    </span>
+  </div>
+  <table class="w-full border-collapse">
+    <thead>
+      <tr>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+          {gettext("Name")}
+        </th>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300">
+          {gettext("Description")}
+        </th>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+          {gettext("Members")}
+        </th>
+        <th class="px-[22px] py-3.5 border-b border-base-300"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= for team <- @teams do %>
+        <tr class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors">
+          <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content whitespace-nowrap">
+            {team.name}
+          </td>
+          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
+            {team.description}
+          </td>
+          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap">
+            {Map.get(@member_counts, team.id, 0)}
+          </td>
+          <td class="px-[22px] py-4 text-right whitespace-nowrap">
+            <button
+              type="button"
+              phx-click="open_edit_modal"
+              phx-value-id={team.id}
+              class="det-btn"
+            >
+              {gettext("Edit")}
+            </button>
+            <button
+              type="button"
+              phx-click="open_delete_modal"
+              phx-value-id={team.id}
+              class="det-btn det-btn-danger"
+            >
+              <.icon name="hero-trash" class="size-3.5" />
+            </button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<%!-- Form modal (create / edit) --%>
+<%= if @show_form_modal do %>
+  <div class="app-modal">
+    <div class="app-modal-box" phx-click-away="close_form_modal">
+      <div class="app-modal-title">
+        {if @form_mode == :new, do: gettext("Add team"), else: gettext("Edit team")}
+      </div>
+      <div class="app-modal-sub">
+        {if @form_mode == :new,
+          do: gettext("Create a new group of users."),
+          else: gettext("Update the team details below.")}
+      </div>
+
+      <.form for={@form} id="team-form" phx-change="validate" phx-submit="save">
+        <div class="space-y-4">
+          <.input field={@form[:name]} type="text" label={gettext("Name")} required />
+          <.input
+            field={@form[:description]}
+            type="textarea"
+            label={gettext("Description")}
+            required
+          />
+        </div>
+
+        <div class="app-modal-foot">
+          <button type="button" phx-click="close_form_modal" class="det-btn">
+            {gettext("Cancel")}
+          </button>
+          <button
+            type="submit"
+            class="det-btn det-btn-primary-solid"
+            phx-disable-with={gettext("Saving...")}
+          >
+            {if @form_mode == :new, do: gettext("Create Team"), else: gettext("Save Changes")}
+          </button>
+        </div>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
+<%!-- Delete confirmation modal --%>
+<%= if @show_delete_modal do %>
+  <div class="app-modal">
+    <div class="app-modal-box max-w-sm" phx-click-away="close_delete_modal">
+      <div class="app-modal-title">{gettext("Confirm Deletion")}</div>
+      <div class="app-modal-sub">
+        {gettext(
+          "Are you sure you want to delete the team %{name}? This action cannot be undone.",
+          name: @selected_team.name
+        )}
+      </div>
+      <div class="app-modal-foot">
+        <button type="button" phx-click="close_delete_modal" class="det-btn">
+          {gettext("Cancel")}
+        </button>
+        <button type="button" phx-click="confirm_delete" class="det-btn det-btn-danger-solid">
+          {gettext("Delete Team")}
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>

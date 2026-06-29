@@ -72,6 +72,7 @@ defmodule HermesWeb.Router do
       on_mount: [{HermesWeb.Plugs.Auth, :ensure_admin}] do
       live "/admin", Admin.DashboardLive.Index, :index
       live "/admin/users", Admin.UserLive.Index, :index
+      live "/admin/teams", Admin.TeamLive.Index, :index
       live "/admin/github", Admin.GithubLive.Index, :index
     end
   end
