@@ -23,7 +23,7 @@
     <.icon name="hero-user-group" class="size-4 text-base-content/40" />
     {gettext("Teams")}
     <span class="ml-auto text-base-content/50 font-medium text-[11.5px]">
-      {ngettext("%{count} team", "%{count} teams", length(@teams), count: length(@teams))}
+      {ngettext("%{count} team", "%{count} teams", @team_count, count: @team_count)}
     </span>
   </div>
   <table class="w-full border-collapse">
@@ -41,9 +41,12 @@
         <th class="px-[22px] py-3.5 border-b border-base-300"></th>
       </tr>
     </thead>
-    <tbody>
-      <%= for team <- @teams do %>
-        <tr class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors">
+    <tbody id="teams" phx-update="stream">
+      <%= for {dom_id, team} <- @streams.teams do %>
+        <tr
+          id={dom_id}
+          class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors"
+        >
           <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content whitespace-nowrap">
             {team.name}
           </td>

@@ -9,12 +9,12 @@ defmodule HermesWeb.Admin.TeamLive.Index do
     {:ok,
      socket
      |> assign(:page_title, gettext("Teams"))
-     |> load_teams()
      |> assign(:show_form_modal, false)
      |> assign(:show_delete_modal, false)
      |> assign(:selected_team, nil)
      |> assign(:form_mode, :new)
-     |> assign(:form, to_form(%{}))}
+     |> assign(:form, to_form(%{}))
+     |> load_teams()}
   end
 
   @impl true
@@ -70,7 +70,9 @@ defmodule HermesWeb.Admin.TeamLive.Index do
 
   def handle_event("confirm_delete", _params, socket) do
     team = socket.assigns.selected_team
-    member_count = Map.get(socket.assigns.member_counts, team.id, 0)
+    # Re-read the count at delete time so a concurrent reassignment can't slip
+    # past the guard with a stale value from mount.
+    member_count = Accounts.count_team_members(team.id)
 
     if member_count > 0 do
       {:noreply,
@@ -134,13 +136,11 @@ defmodule HermesWeb.Admin.TeamLive.Index do
 
   defp load_teams(socket) do
     teams = Accounts.list_teams()
-
-    member_counts =
-      Accounts.list_users()
-      |> Enum.frequencies_by(& &1.team_id)
+    member_counts = Accounts.count_users_by_team()
 
     socket
-    |> assign(:teams, teams)
+    |> stream(:teams, teams, reset: true)
+    |> assign(:team_count, length(teams))
     |> assign(:member_counts, member_counts)
   end
 end
