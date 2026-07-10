@@ -1,7 +1,7 @@
 defmodule HermesWeb.Router do
   use HermesWeb, :router
 
-  import HermesWeb.Plugs.Auth, only: [fetch_current_user: 2]
+  import HermesWeb.Plugs.Auth, only: [fetch_current_user: 2, require_authenticated_user: 2]
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -16,6 +16,10 @@ defmodule HermesWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+  end
+
+  pipeline :authenticated do
+    plug :require_authenticated_user
   end
 
   # Health check endpoint for ALB/deployment checks
@@ -45,7 +49,7 @@ defmodule HermesWeb.Router do
 
   # Protected routes - require authentication
   scope "/", HermesWeb do
-    pipe_through :browser
+    pipe_through [:browser, :authenticated]
 
     live_session :authenticated,
       on_mount: [{HermesWeb.Plugs.Auth, :ensure_authenticated}] do
