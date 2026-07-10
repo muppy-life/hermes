@@ -91,10 +91,13 @@ config :phoenix_live_view,
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
 
-# Configure Claude API
-# Set ANTHROPIC_API_KEY environment variable before running the server:
-# export ANTHROPIC_API_KEY="your-api-key-here"
-config :hermes, :anthropic_api_key, System.get_env("ANTHROPIC_API_KEY")
+# Configure the LLM service. In dev, use the in-memory fake by default so
+# LLM-backed features work offline without a key. Set LLM_PROVIDER (and the
+# matching key) in runtime.exs to opt into a real provider.
+config :hermes, :llm,
+  adapter: Hermes.Services.LLM.InMemory,
+  anthropic: [api_key: System.get_env("ANTHROPIC_API_KEY")],
+  openrouter: [api_key: System.get_env("OPENROUTER_API_KEY")]
 
 # Feature flags
 config :hermes, :features,

@@ -12,6 +12,9 @@
     <.link navigate={~p"/admin/users"} class="det-btn">
       <.icon name="hero-users" class="size-3.5" />{gettext("Manage users")}
     </.link>
+    <.link navigate={~p"/admin/teams"} class="det-btn">
+      <.icon name="hero-user-group" class="size-3.5" />{gettext("Manage teams")}
+    </.link>
     <.link navigate={~p"/admin/github"} class="det-btn">
       <.icon name="hero-arrow-path" class="size-3.5" />{gettext("GitHub mappings")}
     </.link>
@@ -81,12 +84,8 @@
           </span>
           <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
         </span>
-        {ngettext(
-          "%{count} online",
-          "%{count} online",
-          @users |> Map.values() |> Enum.count(& &1.online),
-          count: @users |> Map.values() |> Enum.count(& &1.online)
-        )}
+        {online_count = @users |> Map.values() |> Enum.count(& &1.online)
+        ngettext("%{count} online", "%{count} online", online_count, count: online_count)}
       </span>
       <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full bg-base-300 text-base-content/60">
         {gettext("Last 7 days")}

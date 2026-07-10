@@ -43,6 +43,9 @@ config :phoenix_live_view,
 # Use stub storage adapter in tests — no S3 calls, no filesystem I/O
 config :hermes, :storage_adapter, Hermes.Storage.Stub
 
+# Use the in-memory LLM adapter in tests — no network, deterministic output.
+config :hermes, :llm, adapter: Hermes.Services.LLM.InMemory
+
 # Feature flags
 config :hermes, :features,
   # Disabled in tests to avoid API calls

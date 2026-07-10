@@ -31,6 +31,28 @@ defmodule Hermes.Accounts do
     Repo.delete(team)
   end
 
+  @doc """
+  Returns a map of `%{team_id => member_count}` computed with a single
+  aggregate query (no rows loaded).
+  """
+  def count_users_by_team do
+    from(u in User,
+      where: is_nil(u.deleted_at),
+      group_by: u.team_id,
+      select: {u.team_id, count(u.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc """
+  Returns the current number of members in the given team.
+  """
+  def count_team_members(team_id) do
+    from(u in User, where: u.team_id == ^team_id and is_nil(u.deleted_at), select: count(u.id))
+    |> Repo.one()
+  end
+
   ## User functions
 
   def list_users do

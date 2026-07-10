@@ -35,9 +35,30 @@ if appsignal_key not in [nil, ""] do
     enable_error_backend: true
 end
 
-# Configure Claude API key from environment variable
+# Configure the LLM service from environment variables.
+# Select the provider with LLM_PROVIDER ("anthropic" | "openrouter"); keys are
+# read per provider so you can configure both and switch with one env var.
+llm_adapter =
+  case System.get_env("LLM_PROVIDER") do
+    "openrouter" -> Hermes.Services.LLM.OpenRouter
+    "anthropic" -> Hermes.Services.LLM.Anthropic
+    _ -> nil
+  end
+
+if llm_adapter do
+  config :hermes, :llm, adapter: llm_adapter
+end
+
+if default_model = System.get_env("LLM_DEFAULT_MODEL") do
+  config :hermes, :llm, default_model: default_model
+end
+
 if api_key = System.get_env("ANTHROPIC_API_KEY") do
-  config :hermes, :anthropic_api_key, api_key
+  config :hermes, :llm, anthropic: [api_key: api_key]
+end
+
+if api_key = System.get_env("OPENROUTER_API_KEY") do
+  config :hermes, :llm, openrouter: [api_key: api_key]
 end
 
 # Configure GitHub integration from environment variables.

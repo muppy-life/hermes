@@ -84,9 +84,20 @@ config :hermes, HermesWeb.Gettext,
 # For better performance, you can later switch to EXLA.Backend after compiling it
 config :nx, :default_backend, Nx.BinaryBackend
 
-# Configure Claude API
-# API key will be loaded from environment variable in runtime.exs
-config :hermes, :anthropic_api_key, nil
+# Configure the LLM service. The adapter and model can be swapped per env.
+# Keys/URLs are loaded from env in runtime.exs.
+config :hermes, :llm,
+  adapter: Hermes.Services.LLM.Anthropic,
+  default_model: "claude-sonnet-4-20250514",
+  anthropic: [
+    api_key: nil,
+    api_url: "https://api.anthropic.com/v1/messages",
+    api_version: "2023-06-01"
+  ],
+  openrouter: [
+    api_key: nil,
+    api_url: "https://openrouter.ai/api/v1/chat/completions"
+  ]
 
 # GitHub integration. Values loaded from env in runtime.exs.
 config :hermes, :github,

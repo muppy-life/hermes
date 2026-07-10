@@ -10,11 +10,16 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
 
   @impl true
   def update(assigns, socket) do
+    current_user = assigns.current_user
+    can_pick_team? = Accounts.is_product_owner?(current_user)
+
     {:ok,
      socket
      |> assign(assigns)
+     |> assign(:can_pick_team?, can_pick_team?)
+     |> assign_new(:teams, fn -> if can_pick_team?, do: Accounts.list_teams(), else: [] end)
      |> assign_new(:current_step, fn -> 1 end)
-     |> assign_new(:form_data, fn -> default_form_data() end)
+     |> assign_new(:form_data, fn -> default_form_data(current_user) end)
      |> assign_new(:submitted, fn -> false end)
      |> assign_new(:created_request, fn -> nil end)
      |> allow_upload(:files,
@@ -25,7 +30,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
      )}
   end
 
-  defp default_form_data do
+  defp default_form_data(current_user) do
     %{
       "title" => "",
       "kind" => "",
@@ -35,7 +40,8 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
       "goal_description" => "",
       "impact_area" => "",
       "impact_level" => "",
-      "goal_target" => ""
+      "goal_target" => "",
+      "requesting_team_id" => current_user.team_id
     }
   end
 
@@ -132,6 +138,8 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
       Logger.warning("No dev team found — new request will have no assigned team")
     end
 
+    requesting_team_id = resolve_requesting_team_id(form_data, socket)
+
     final_params =
       form_data
       |> Map.update("kind", nil, &kind_to_enum/1)
@@ -139,7 +147,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
       |> Map.update("impact_level", nil, &impact_level_to_enum/1)
       |> blank_to_nil()
       |> Map.put("created_by_id", current_user.id)
-      |> Map.put("requesting_team_id", current_user.team_id)
+      |> Map.put("requesting_team_id", requesting_team_id)
       |> Map.put("assigned_to_team_id", dev_team && dev_team.id)
       |> Map.put("status", "new")
 
@@ -181,6 +189,42 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
   end
 
   # === Helpers ===
+
+  # Privileged users (product owners / admins) may pick the requesting team;
+  # everyone else is locked to their own team. The picked id is validated
+  # against the loaded teams so a forged value falls back to the creator's team.
+  defp resolve_requesting_team_id(form_data, socket) do
+    current_user = socket.assigns.current_user
+
+    if socket.assigns.can_pick_team? do
+      picked = parse_team_id(form_data["requesting_team_id"])
+      valid_ids = Enum.map(socket.assigns.teams, & &1.id)
+
+      if picked in valid_ids, do: picked, else: current_user.team_id
+    else
+      current_user.team_id
+    end
+  end
+
+  defp parse_team_id(id) when is_integer(id), do: id
+
+  defp parse_team_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp parse_team_id(_), do: nil
+
+  defp team_name(teams, id) do
+    parsed = parse_team_id(id)
+
+    case Enum.find(teams, &(&1.id == parsed)) do
+      %{name: name} -> name
+      _ -> nil
+    end
+  end
 
   defp to_priority("critica"), do: 4
   defp to_priority("importante"), do: 3
@@ -381,6 +425,30 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                       <div class="pb-help">{gettext("Calculated when you pick the urgency.")}</div>
                     </div>
                   </div>
+
+                  <div :if={@can_pick_team?} class="f-section">
+                    <div class="f-sec-head">
+                      <div class="f-sec-num">{gettext("00 — Requesting team")}</div>
+                      <div class="f-sec-title">{gettext("Which team is this request for?")}</div>
+                      <div class="f-sec-sub">
+                        {gettext("Create the request on behalf of another team.")}
+                      </div>
+                    </div>
+                    <label class="form-label">
+                      {gettext("Requesting team")}<span class="req">*</span>
+                    </label>
+                    <select name="request[requesting_team_id]" class="form-input">
+                      <option
+                        :for={team <- @teams}
+                        value={team.id}
+                        selected={to_string(@form_data["requesting_team_id"]) == to_string(team.id)}
+                      >
+                        {team.name}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div :if={@can_pick_team?} class="f-divider"></div>
 
                   <div class="f-section">
                     <div class="f-sec-head">
@@ -808,6 +876,11 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                     </div>
                     <div class="summary-grid">
                       <.sum_card label={gettext("Request")} value={@form_data["title"]} />
+                      <.sum_card
+                        :if={@can_pick_team?}
+                        label={gettext("Requesting team")}
+                        value={team_name(@teams, @form_data["requesting_team_id"])}
+                      />
                       <.sum_card label={gettext("Type")} value={kind_label(@form_data["kind"])} />
                       <.sum_card
                         label={gettext("Priority")}
