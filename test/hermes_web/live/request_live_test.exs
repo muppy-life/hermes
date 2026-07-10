@@ -28,7 +28,10 @@ defmodule HermesWeb.RequestLiveTest do
     end
 
     test "show handles non-integer ids", %{conn: conn} do
-      assert {:error, {:live_redirect, %{to: "/backlog"}}} = live(conn, ~p"/backlog/abc")
+      assert {:error, {:live_redirect, %{to: "/backlog", flash: flash}}} =
+               live(conn, ~p"/backlog/abc")
+
+      assert flash["error"] == "Request not found"
     end
 
     test "edit redirects to the backlog with a flash", %{conn: conn} do
@@ -39,7 +42,10 @@ defmodule HermesWeb.RequestLiveTest do
     end
 
     test "edit handles non-integer ids", %{conn: conn} do
-      assert {:error, {:live_redirect, %{to: "/backlog"}}} = live(conn, ~p"/backlog/abc/edit")
+      assert {:error, {:live_redirect, %{to: "/backlog", flash: flash}}} =
+               live(conn, ~p"/backlog/abc/edit")
+
+      assert flash["error"] == "Request not found"
     end
   end
 end

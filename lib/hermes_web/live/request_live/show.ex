@@ -137,16 +137,22 @@ defmodule HermesWeb.RequestLive.Show do
       {:ok, _updated_request} ->
         # Reload the request with all associations preloaded
         request_id = socket.assigns.request.id
-        updated_request = Requests.get_request_with_github_issue(request_id)
-        changes = Requests.list_request_changes(request_id)
 
-        {:noreply,
-         socket
-         |> assign(:request, updated_request)
-         |> assign(:changes, changes)
-         |> assign(:show_edit_modal, false)
-         |> assign(:form, to_form(Requests.change_request(updated_request)))
-         |> put_flash(:info, "Request updated successfully")}
+        case Requests.get_request_with_github_issue(request_id) do
+          nil ->
+            {:noreply, request_gone(socket)}
+
+          updated_request ->
+            changes = Requests.list_request_changes(request_id)
+
+            {:noreply,
+             socket
+             |> assign(:request, updated_request)
+             |> assign(:changes, changes)
+             |> assign(:show_edit_modal, false)
+             |> assign(:form, to_form(Requests.change_request(updated_request)))
+             |> put_flash(:info, "Request updated successfully")}
+        end
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
@@ -345,15 +351,21 @@ defmodule HermesWeb.RequestLive.Show do
     case Requests.update_request(socket.assigns.request, %{status: new_status}, user_id) do
       {:ok, _updated_request} ->
         request_id = socket.assigns.request.id
-        updated_request = Requests.get_request_with_github_issue(request_id)
-        changes = Requests.list_request_changes(request_id)
 
-        {:noreply,
-         socket
-         |> assign(:request, updated_request)
-         |> assign(:changes, changes)
-         |> assign(:form, to_form(Requests.change_request(updated_request)))
-         |> put_flash(:info, gettext("Status updated successfully"))}
+        case Requests.get_request_with_github_issue(request_id) do
+          nil ->
+            {:noreply, request_gone(socket)}
+
+          updated_request ->
+            changes = Requests.list_request_changes(request_id)
+
+            {:noreply,
+             socket
+             |> assign(:request, updated_request)
+             |> assign(:changes, changes)
+             |> assign(:form, to_form(Requests.change_request(updated_request)))
+             |> put_flash(:info, gettext("Status updated successfully"))}
+        end
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update status"))}
@@ -406,18 +418,24 @@ defmodule HermesWeb.RequestLive.Show do
              ) do
           {:ok, _} ->
             request_id = socket.assigns.request.id
-            updated_request = Requests.get_request_with_github_issue(request_id)
-            changes = Requests.list_request_changes(request_id)
-            subtasks = Requests.list_subtasks(request_id)
 
-            {:noreply,
-             socket
-             |> assign(:request, updated_request)
-             |> assign(:changes, changes)
-             |> assign(:subtasks, subtasks)
-             |> assign(:show_discard_modal, false)
-             |> assign(:form, to_form(Requests.change_request(updated_request)))
-             |> put_flash(:info, gettext("Request discarded"))}
+            case Requests.get_request_with_github_issue(request_id) do
+              nil ->
+                {:noreply, request_gone(socket)}
+
+              updated_request ->
+                changes = Requests.list_request_changes(request_id)
+                subtasks = Requests.list_subtasks(request_id)
+
+                {:noreply,
+                 socket
+                 |> assign(:request, updated_request)
+                 |> assign(:changes, changes)
+                 |> assign(:subtasks, subtasks)
+                 |> assign(:show_discard_modal, false)
+                 |> assign(:form, to_form(Requests.change_request(updated_request)))
+                 |> put_flash(:info, gettext("Request discarded"))}
+            end
 
           {:error, :already_completed} ->
             {:noreply,
@@ -444,17 +462,23 @@ defmodule HermesWeb.RequestLive.Show do
     case Requests.restore_request(socket.assigns.request, user_id) do
       {:ok, _} ->
         request_id = socket.assigns.request.id
-        updated_request = Requests.get_request_with_github_issue(request_id)
-        changes = Requests.list_request_changes(request_id)
-        subtasks = Requests.list_subtasks(request_id)
 
-        {:noreply,
-         socket
-         |> assign(:request, updated_request)
-         |> assign(:changes, changes)
-         |> assign(:subtasks, subtasks)
-         |> assign(:form, to_form(Requests.change_request(updated_request)))
-         |> put_flash(:info, gettext("Request restored"))}
+        case Requests.get_request_with_github_issue(request_id) do
+          nil ->
+            {:noreply, request_gone(socket)}
+
+          updated_request ->
+            changes = Requests.list_request_changes(request_id)
+            subtasks = Requests.list_subtasks(request_id)
+
+            {:noreply,
+             socket
+             |> assign(:request, updated_request)
+             |> assign(:changes, changes)
+             |> assign(:subtasks, subtasks)
+             |> assign(:form, to_form(Requests.change_request(updated_request)))
+             |> put_flash(:info, gettext("Request restored"))}
+        end
 
       {:error, :parent_discarded} ->
         {:noreply,
@@ -680,9 +704,18 @@ defmodule HermesWeb.RequestLive.Show do
   @impl true
   def handle_info({:diagram_generated, request_id}, socket) do
     # Reload the request to get the updated diagram
-    updated_request = Requests.get_request_with_github_issue(request_id)
+    case Requests.get_request_with_github_issue(request_id) do
+      nil -> {:noreply, request_gone(socket)}
+      updated_request -> {:noreply, assign(socket, :request, updated_request)}
+    end
+  end
 
-    {:noreply, assign(socket, :request, updated_request)}
+  # The request can disappear between a mutation and its reload (e.g. deleted
+  # from another session); leave the page instead of rendering a nil request.
+  defp request_gone(socket) do
+    socket
+    |> put_flash(:error, "Request not found")
+    |> push_navigate(to: ~p"/backlog")
   end
 
   # Fetches the linked parent issue's GitHub sub-issues; opens the import modal
