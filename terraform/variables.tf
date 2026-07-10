@@ -33,7 +33,7 @@ variable "database_url" {
 variable "instance_type" {
   description = "EC2 instance type (ARM-based Graviton for cost savings)"
   type        = string
-  default     = "t4g.medium"  # ARM-based Graviton2 - 2 vCPU, 4GB RAM
+  default     = "t4g.small" # ARM-based Graviton2 - 2 vCPU, 2GB RAM
 }
 
 variable "instance_count" {
