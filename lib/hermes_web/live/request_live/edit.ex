@@ -7,15 +7,22 @@ defmodule HermesWeb.RequestLive.Edit do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    request = Requests.get_request!(id)
+    case Requests.get_request(id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Request not found")
+         |> push_navigate(to: ~p"/backlog")}
 
-    {:ok,
-     socket
-     |> NavigationHistory.assign_return_path(default: ~p"/backlog")
-     |> assign(:page_title, "Edit Request")
-     |> assign(:request, request)
-     |> assign(:teams, Accounts.list_teams())
-     |> assign(:form, to_form(Requests.change_request(request)))}
+      request ->
+        {:ok,
+         socket
+         |> NavigationHistory.assign_return_path(default: ~p"/backlog")
+         |> assign(:page_title, "Edit Request")
+         |> assign(:request, request)
+         |> assign(:teams, Accounts.list_teams())
+         |> assign(:form, to_form(Requests.change_request(request)))}
+    end
   end
 
   @impl true

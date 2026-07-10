@@ -47,6 +47,19 @@ defmodule Hermes.Requests do
     |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
   end
 
+  @doc """
+  Same as `get_request!/1` but returns `nil` when the id does not exist
+  or is not a valid integer.
+  """
+  def get_request(id) do
+    case Repo.get(Request, id) do
+      nil -> nil
+      request -> Repo.preload(request, [:requesting_team, :assigned_to_team, :created_by])
+    end
+  rescue
+    Ecto.Query.CastError -> nil
+  end
+
   def create_request(attrs \\ %{}, user_id \\ nil) do
     # Generate fallback title from first 10 words of goal if title is missing
     # This ensures request always has a title even if ML model never completes
@@ -833,20 +846,28 @@ defmodule Hermes.Requests do
   # GitHub sync hooks
 
   @doc """
-  Returns a request preloaded with its `github_issue` association.
+  Returns a request preloaded with its `github_issue` association, or `nil`
+  when the id does not exist or is not a valid integer.
   """
   def get_request_with_github_issue(id) do
-    Request
-    |> Repo.get!(id)
-    |> Repo.preload([
-      :requesting_team,
-      :assigned_to_team,
-      :created_by,
-      :discarded_by,
-      :github_issue,
-      :parent
-    ])
-    |> annotate_epic()
+    case Repo.get(Request, id) do
+      nil ->
+        nil
+
+      request ->
+        request
+        |> Repo.preload([
+          :requesting_team,
+          :assigned_to_team,
+          :created_by,
+          :discarded_by,
+          :github_issue,
+          :parent
+        ])
+        |> annotate_epic()
+    end
+  rescue
+    Ecto.Query.CastError -> nil
   end
 
   defp trigger_github_sync(request, action, extra \\ %{}) do

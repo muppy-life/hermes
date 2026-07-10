@@ -22,7 +22,19 @@ defmodule HermesWeb.RequestLive.Show do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    request = Requests.get_request_with_github_issue(id)
+    case Requests.get_request_with_github_issue(id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Request not found")
+         |> push_navigate(to: ~p"/backlog")}
+
+      request ->
+        mount_request(request, id, socket)
+    end
+  end
+
+  defp mount_request(request, id, socket) do
     changes = Requests.list_request_changes(id)
     comments = Requests.list_request_comments(id)
     images = Requests.list_request_images(id)
