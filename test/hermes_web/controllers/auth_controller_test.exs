@@ -51,6 +51,17 @@ defmodule HermesWeb.AuthControllerTest do
       assert redirected_to(conn) == ~p"/dashboard"
     end
 
+    test "ignores a non-local stored return path", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> init_test_session(%{user_return_to: "//evil.com/phish"})
+        |> post(~p"/login", %{
+          "user" => %{"email" => user.email, "password" => @password}
+        })
+
+      assert redirected_to(conn) == ~p"/dashboard"
+    end
+
     test "failed login does not clear the stored return path", %{conn: conn, user: user} do
       conn = get(conn, ~p"/backlog")
 
