@@ -8,6 +8,7 @@ defmodule Hermes.Accounts.User do
     field :role, :string
     field :is_admin, :boolean, default: false
     field :last_seen_at, :utc_datetime
+    field :deleted_at, :utc_datetime
 
     belongs_to :team, Hermes.Accounts.Team
     has_many :created_requests, Hermes.Requests.Request, foreign_key: :created_by_id
@@ -21,6 +22,6 @@ defmodule Hermes.Accounts.User do
     |> cast(attrs, [:email, :hashed_password, :role, :team_id, :is_admin])
     |> validate_required([:email, :hashed_password, :role, :team_id])
     |> validate_inclusion(:role, ["admin", "dev_team", "team_member", "product_owner"])
-    |> unique_constraint(:email)
+    |> unique_constraint(:email, name: :users_email_active_index)
   end
 end

@@ -89,12 +89,13 @@ defmodule HermesWeb.Admin.UserLive.Index do
          socket
          |> assign(:users, list_users())
          |> assign(:show_delete_modal, false)
-         |> put_flash(:info, "User deleted successfully")}
+         |> put_flash(:info, gettext("User deleted successfully"))}
 
       {:error, _changeset} ->
         {:noreply,
          socket
-         |> put_flash(:error, "Failed to delete user")}
+         |> assign(:show_delete_modal, false)
+         |> put_flash(:error, gettext("Failed to delete user"))}
     end
   end
 
