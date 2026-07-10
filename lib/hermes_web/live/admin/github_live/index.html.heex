@@ -9,9 +9,9 @@
     </p>
   </div>
   <div class="flex items-center gap-2">
-    <.link navigate={~p"/admin"} class="det-btn">
+    <button type="button" phx-click={JS.dispatch("phx:history-back")} class="det-btn">
       <.icon name="hero-arrow-left" class="size-3.5" />{gettext("Back")}
-    </.link>
+    </button>
     <button type="button" phx-click="sync" class="det-btn det-btn-primary-solid">
       <.icon name="hero-arrow-path" class="size-3.5" />{gettext("Sync from GitHub")}
     </button>
