@@ -36,7 +36,11 @@ defmodule Hermes.Accounts do
   aggregate query (no rows loaded).
   """
   def count_users_by_team do
-    from(u in User, group_by: u.team_id, select: {u.team_id, count(u.id)})
+    from(u in User,
+      where: is_nil(u.deleted_at),
+      group_by: u.team_id,
+      select: {u.team_id, count(u.id)}
+    )
     |> Repo.all()
     |> Map.new()
   end
@@ -45,22 +49,43 @@ defmodule Hermes.Accounts do
   Returns the current number of members in the given team.
   """
   def count_team_members(team_id) do
-    from(u in User, where: u.team_id == ^team_id, select: count(u.id))
+    from(u in User, where: u.team_id == ^team_id and is_nil(u.deleted_at), select: count(u.id))
     |> Repo.one()
   end
 
   ## User functions
 
   def list_users do
-    Repo.all(User) |> Repo.preload(:team)
+    from(u in User, where: is_nil(u.deleted_at))
+    |> Repo.all()
+    |> Repo.preload(:team)
   end
 
+  @doc """
+  Fetches a user by id regardless of soft-delete state.
+
+  Used for resolving historical references (e.g. the author of a request that
+  was created by a since-deleted user). Do NOT use this for authentication or
+  active-user listings — use `get_active_user/1` / `get_user_by_email/1` there.
+  """
   def get_user!(id) do
     Repo.get!(User, id) |> Repo.preload(:team)
   end
 
+  @doc """
+  Fetches an active (non-deleted) user by id, or nil. Used by the auth layer so
+  a soft-deleted user cannot keep an existing session alive.
+  """
+  def get_active_user(id) do
+    from(u in User, where: u.id == ^id and is_nil(u.deleted_at))
+    |> Repo.one()
+    |> Repo.preload(:team)
+  end
+
   def get_user_by_email(email) when is_binary(email) do
-    Repo.get_by(User, email: email) |> Repo.preload(:team)
+    from(u in User, where: u.email == ^email and is_nil(u.deleted_at))
+    |> Repo.one()
+    |> Repo.preload(:team)
   end
 
   def create_user(attrs \\ %{}) do
@@ -75,8 +100,17 @@ defmodule Hermes.Accounts do
     |> Repo.update()
   end
 
+  @doc """
+  Soft-deletes a user by stamping `deleted_at`. The row is preserved so that
+  historical references (requests, comments) keep resolving their author, but
+  the user becomes invisible to active listings, lookups, and login.
+  """
   def delete_user(%User{} = user) do
-    Repo.delete(user)
+    user
+    |> Ecto.Changeset.change(%{
+      deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
   end
 
   def update_last_seen(%User{} = user) do
@@ -86,7 +120,7 @@ defmodule Hermes.Accounts do
   end
 
   def list_users_by_team(team_id) do
-    from(u in User, where: u.team_id == ^team_id)
+    from(u in User, where: u.team_id == ^team_id and is_nil(u.deleted_at))
     |> Repo.all()
   end
 
@@ -105,7 +139,7 @@ defmodule Hermes.Accounts do
     cutoff = DateTime.utc_now() |> DateTime.add(-days * 24 * 60 * 60, :second)
 
     from(u in User,
-      where: not is_nil(u.last_seen_at) and u.last_seen_at >= ^cutoff,
+      where: not is_nil(u.last_seen_at) and u.last_seen_at >= ^cutoff and is_nil(u.deleted_at),
       order_by: [desc: u.last_seen_at],
       preload: :team
     )

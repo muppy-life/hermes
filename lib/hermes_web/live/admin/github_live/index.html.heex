@@ -1,49 +1,82 @@
-<HermesWeb.Layouts.flash_group flash={@flash} id="lv-flash" />
-
-<.header>
-  GitHub Status Mappings
-  <:subtitle>
-    Map each GitHub Projects v2 Status option to a Hermes request status.
-  </:subtitle>
-  <:actions>
-    <button type="button" phx-click="sync" class="btn btn-primary btn-sm">
-      Sync from GitHub
+<%!-- Greeting header --%>
+<div class="flex items-end justify-between gap-5 mb-5 pt-6">
+  <div>
+    <h1 class="text-[28px] font-bold text-primary tracking-tight leading-tight">
+      {gettext("GitHub Status Mappings")}
+    </h1>
+    <p class="text-[13px] text-base-content/50 font-medium mt-1.5">
+      {gettext("Map each GitHub Projects v2 Status option to a Hermes request status")}
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    <button type="button" phx-click={JS.dispatch("phx:history-back")} class="det-btn">
+      <.icon name="hero-arrow-left" class="size-3.5" />{gettext("Back")}
     </button>
-  </:actions>
-</.header>
+    <button type="button" phx-click="sync" class="det-btn det-btn-primary-solid">
+      <.icon name="hero-arrow-path" class="size-3.5" />{gettext("Sync from GitHub")}
+    </button>
+  </div>
+</div>
 
 <%= if @sync_error do %>
-  <div class="alert alert-error mt-4">
-    Sync failed: <code>{@sync_error}</code>
+  <div class="bg-error/10 border border-error/30 rounded-2xl px-[22px] py-4 mb-[18px] text-[12.5px] text-error font-medium flex items-center gap-2">
+    <.icon name="hero-exclamation-triangle" class="size-4 shrink-0" />
+    {gettext("Sync failed:")} <code class="font-mono text-[11.5px]">{@sync_error}</code>
   </div>
 <% end %>
 
-<div class="mt-6">
-  <h2 class="font-semibold mb-2">Configured mappings</h2>
+<%!-- Configured mappings card --%>
+<div class="bg-base-200 rounded-2xl overflow-hidden shadow-sm border border-base-300 mb-[18px]">
+  <div class="px-[22px] py-4 border-b border-base-300 flex items-center gap-2 text-[13px] font-semibold text-base-content">
+    <.icon name="hero-link" class="size-4 text-base-content/40" />
+    {gettext("Configured mappings")}
+    <span class="ml-auto text-base-content/50 font-medium text-[11.5px]">
+      {ngettext("%{count} mapping", "%{count} mappings", length(@mappings),
+        count: length(@mappings)
+      )}
+    </span>
+  </div>
 
   <%= if @mappings == [] do %>
-    <p class="text-sm opacity-60">No mappings yet. Click "Sync from GitHub" to load options.</p>
+    <div class="text-center py-12 text-base-content/50">
+      <.icon name="hero-link" class="size-10 mx-auto mb-3 opacity-40" />
+      <p class="text-[12.5px] font-medium">
+        {gettext("No mappings yet. Click \"Sync from GitHub\" to load options.")}
+      </p>
+    </div>
   <% else %>
-    <table class="table table-sm">
+    <table class="w-full border-collapse">
       <thead>
         <tr>
-          <th>GitHub option</th>
-          <th>Option ID</th>
-          <th>Hermes status</th>
-          <th></th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+            {gettext("GitHub option")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+            {gettext("Option ID")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+            {gettext("Hermes status")}
+          </th>
+          <th class="px-[22px] py-3.5 border-b border-base-300"></th>
         </tr>
       </thead>
       <tbody>
         <%= for m <- @mappings do %>
-          <tr>
-            <td>{m.github_option_name}</td>
-            <td><code class="text-xs">{m.github_option_id}</code></td>
-            <td>
+          <tr class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors">
+            <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content">
+              {m.github_option_name}
+            </td>
+            <td class="px-[22px] py-4">
+              <code class="font-mono text-[11px] text-base-content/60 bg-base-300 rounded px-1.5 py-0.5">
+                {m.github_option_id}
+              </code>
+            </td>
+            <td class="px-[22px] py-4">
               <form phx-change="update_mapping">
                 <input type="hidden" name="mapping_id" value={m.id} />
                 <select
                   name="hermes_status"
-                  class="select select-bordered select-sm"
+                  class="select select-bordered select-sm rounded-lg text-[12.5px]"
                 >
                   <%= for s <- @hermes_statuses do %>
                     <option value={s} selected={s == m.hermes_status}>
@@ -53,15 +86,15 @@
                 </select>
               </form>
             </td>
-            <td>
+            <td class="px-[22px] py-4 text-right whitespace-nowrap">
               <button
                 type="button"
                 phx-click="delete"
                 phx-value-id={m.id}
-                data-confirm="Delete this mapping?"
-                class="btn btn-xs btn-error"
+                data-confirm={gettext("Delete this mapping?")}
+                class="det-btn det-btn-danger"
               >
-                Delete
+                <.icon name="hero-trash" class="size-3.5" />
               </button>
             </td>
           </tr>
@@ -71,37 +104,59 @@
   <% end %>
 </div>
 
+<%!-- Unmapped new options card --%>
 <%= if @pending_options != [] do %>
-  <div class="mt-8">
-    <h2 class="font-semibold mb-2">New options without a mapping</h2>
+  <div class="bg-base-200 rounded-2xl overflow-hidden shadow-sm border border-base-300">
+    <div class="px-[22px] py-4 border-b border-base-300 flex items-center gap-2 text-[13px] font-semibold text-base-content">
+      <.icon name="hero-plus-circle" class="size-4 text-base-content/40" />
+      {gettext("New options without a mapping")}
+      <span class="ml-auto text-base-content/50 font-medium text-[11.5px]">
+        {ngettext("%{count} option", "%{count} options", length(@pending_options),
+          count: length(@pending_options)
+        )}
+      </span>
+    </div>
 
-    <table class="table table-sm">
+    <table class="w-full border-collapse">
       <thead>
         <tr>
-          <th>GitHub option</th>
-          <th>Option ID</th>
-          <th>Hermes status</th>
-          <th></th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+            {gettext("GitHub option")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+            {gettext("Option ID")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+            {gettext("Hermes status")}
+          </th>
         </tr>
       </thead>
       <tbody>
         <%= for opt <- @pending_options do %>
-          <tr>
-            <td>{opt.name}</td>
-            <td><code class="text-xs">{opt.id}</code></td>
-            <td colspan="2">
+          <tr class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors">
+            <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content">
+              {opt.name}
+            </td>
+            <td class="px-[22px] py-4">
+              <code class="font-mono text-[11px] text-base-content/60 bg-base-300 rounded px-1.5 py-0.5">
+                {opt.id}
+              </code>
+            </td>
+            <td class="px-[22px] py-4">
               <form phx-submit="create_mapping" class="flex gap-2 items-center">
                 <input type="hidden" name="mapping[github_option_id]" value={opt.id} />
                 <input type="hidden" name="mapping[github_option_name]" value={opt.name} />
                 <select
                   name="mapping[hermes_status]"
-                  class="select select-bordered select-sm"
+                  class="select select-bordered select-sm rounded-lg text-[12.5px]"
                 >
                   <%= for s <- @hermes_statuses do %>
                     <option value={s}>{HermesWeb.CoreComponents.status_label(s)}</option>
                   <% end %>
                 </select>
-                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <button type="submit" class="det-btn det-btn-primary-solid">
+                  {gettext("Save")}
+                </button>
               </form>
             </td>
           </tr>
