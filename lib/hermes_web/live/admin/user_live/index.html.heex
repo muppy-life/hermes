@@ -8,13 +8,14 @@
       {gettext("Users and integrations")}
     </p>
   </div>
-  <button
-    type="button"
-    phx-click="open_new_modal"
-    class="btn btn-primary rounded-full gap-1.5 shadow-sm"
-  >
-    <.icon name="hero-user-plus" class="size-4" />{gettext("Add user")}
-  </button>
+  <div class="flex items-center gap-2">
+    <button type="button" phx-click={JS.dispatch("phx:history-back")} class="det-btn">
+      <.icon name="hero-arrow-left" class="size-3.5" />{gettext("Back")}
+    </button>
+    <button type="button" phx-click="open_new_modal" class="det-btn det-btn-primary-solid">
+      <.icon name="hero-user-plus" class="size-3.5" />{gettext("Add user")}
+    </button>
+  </div>
 </div>
 
 <%!-- GitHub integration pointer card (configuration lives on its own page) --%>
