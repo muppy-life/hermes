@@ -163,7 +163,7 @@ defmodule HermesWeb.DashboardLive do
         column_requests =
           by_status
           |> Map.get(status, [])
-          |> Enum.sort_by(&{-&1.priority, &1.id})
+          |> Enum.sort_by(&{-(&1.priority || 0), &1.id})
 
         %{status: status, requests: column_requests, count: length(column_requests)}
       end)
