@@ -89,131 +89,215 @@ user_name =
     </.link>
   </div>
 
-  <%!-- Roadmap --%>
-  <div class="roadmap-card">
-    <div class="roadmap-h">
-      <div>
-        <div class="roadmap-title">
-          {gettext("Roadmap")}
-          <span class="rm-help" tabindex="0">
-            <.icon name="hero-question-mark-circle" class="size-4" />
-            <div class="rm-legend">
-              <div class="rm-legend-title">{gettext("Status")}</div>
-              <div class="rm-legend-grid">
-                <div :for={status <- rm_statuses()} class="rm-legend-item">
-                  <.roadmap_status_icon status={status} />
-                  <span>{rm_status_label(status)}</span>
+  <%!-- Roadmap + Sprint --%>
+  <div class="dash-split">
+    <div class="roadmap-card">
+      <div class="roadmap-h">
+        <div>
+          <div class="roadmap-title">
+            {gettext("Roadmap")}
+            <span class="rm-help" tabindex="0">
+              <.icon name="hero-question-mark-circle" class="size-4" />
+              <div class="rm-legend">
+                <div class="rm-legend-title">{gettext("Status")}</div>
+                <div class="rm-legend-grid">
+                  <div :for={status <- rm_statuses()} class="rm-legend-item">
+                    <.roadmap_status_icon status={status} />
+                    <span>{rm_status_label(status)}</span>
+                  </div>
                 </div>
+                <%= if @roadmap.boards != [] do %>
+                  <div class="rm-legend-title">{gettext("Boards")}</div>
+                  <div class="rm-legend-grid rm-legend-grid-1">
+                    <div :for={board <- @roadmap.boards} class="rm-legend-item">
+                      <span
+                        class="rm-legend-swatch"
+                        style={"background: #{rm_board_swatch(board)};"}
+                      >
+                      </span>
+                      <span>{board}</span>
+                    </div>
+                  </div>
+                <% end %>
               </div>
-              <%= if @roadmap.boards != [] do %>
-                <div class="rm-legend-title">{gettext("Boards")}</div>
-                <div class="rm-legend-grid rm-legend-grid-1">
-                  <div :for={board <- @roadmap.boards} class="rm-legend-item">
-                    <span
-                      class="rm-legend-swatch"
-                      style={"background: #{rm_board_swatch(board)};"}
-                    >
-                    </span>
-                    <span>{board}</span>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          </span>
-        </div>
-        <div class="roadmap-sub">
-          {gettext("%{count} deliveries in this window", count: roadmap_total)}
-        </div>
-      </div>
-      <.link
-        navigate={~p"/backlog"}
-        class="text-[12px] font-semibold text-primary inline-flex items-center gap-1"
-      >
-        {gettext("View backlog")} <.icon name="hero-arrow-right" class="size-3.5" />
-      </.link>
-    </div>
-
-    <div class="roadmap-grid">
-      <%= for month <- @roadmap.months do %>
-        <% month_requests = Map.get(@roadmap.requests_by_month, {month.year, month.month}, [])
-
-        col_class =
-          cond do
-            month.is_current ->
-              "current"
-
-            Date.compare(
-              Date.new!(month.year, month.month, 1),
-              Date.beginning_of_month(@roadmap.today)
-            ) == :lt ->
-              "past"
-
-            true ->
-              ""
-          end %>
-        <div class={["rm-col", col_class]}>
-          <div class="rm-col-head">
-            <span class="rm-col-h">{month.short_label}</span>
-            <span class="rm-col-y">{month.year}</span>
+            </span>
           </div>
-          <%= if month_requests != [] do %>
-            <div class="rm-col-count">{length(month_requests)}</div>
-          <% end %>
+          <div class="roadmap-sub">
+            {gettext("%{count} deliveries in this window", count: roadmap_total)}
+          </div>
+        </div>
+        <.link
+          navigate={~p"/backlog"}
+          class="text-[12px] font-semibold text-primary inline-flex items-center gap-1"
+        >
+          {gettext("View backlog")} <.icon name="hero-arrow-right" class="size-3.5" />
+        </.link>
+      </div>
 
-          <%= if month_requests == [] do %>
-            <div class="rm-empty">{gettext("No deadlines")}</div>
-          <% else %>
-            <div class="rm-weeks">
-              <%= for wk <- 1..4 do %>
-                <% week_requests =
-                  Enum.filter(month_requests, &(week_of_month(&1.deadline) == wk))
+      <div
+        id="roadmap-grid"
+        class="roadmap-grid"
+        phx-hook="RoadmapWindow"
+        style={"grid-template-columns: repeat(#{length(@roadmap.months)}, minmax(0, 1fr));"}
+      >
+        <%= for month <- @roadmap.months do %>
+          <% month_requests = Map.get(@roadmap.requests_by_month, {month.year, month.month}, [])
 
-                is_today_week =
-                  month.is_current and wk == week_of_month(@roadmap.today) %>
-                <div class="rm-week">
-                  <div class={["rm-week-h", is_today_week && "is-today"]}>
-                    {gettext("W%{n}", n: wk)}
-                  </div>
-                  <%= for req <- week_requests do %>
-                    <% {prio_tag_class, prio_tag_label} = rm_priority_tag(req.priority)
-                    {dl_class, dl_label} = rm_deadline(req.deadline)
-                    overdue = rm_overdue?(req.deadline) %>
-                    <div
-                      class={["rm-task rm-task-compact", overdue && "overdue"]}
-                      style={rm_board_style(rm_board_label(req))}
-                      phx-click={JS.navigate(~p"/backlog/#{req.id}")}
-                    >
-                      <div class="rm-task-line">
-                        <.tip text={
-                          gettext("Status: %{label}", label: rm_status_label(req.status))
-                        }>
-                          <.roadmap_status_icon status={req.status} />
-                        </.tip>
-                        <span class="rm-task-ref">#{req.id}</span>
-                        <.tip text={rm_deadline_title(req.deadline)} class="rm-task-date">
-                          <.icon
-                            :if={overdue}
-                            name="hero-exclamation-triangle"
-                            class="size-3.5 text-red-600"
-                          />
-                          <span :if={!overdue} class={["tag-pill tag-date", dl_class]}>
-                            {dl_label}
-                          </span>
-                        </.tip>
-                        <.tip text={rm_priority_title(req.priority)}>
-                          <span class={["tag-pill", prio_tag_class]}>{prio_tag_label}</span>
-                        </.tip>
-                      </div>
-                      <div class="rm-task-expand">
-                        <div class="rm-task-title">{req.title}</div>
-                        <div class="rm-task-top">
-                          <.tip :if={req.created_by} text={req.created_by.email}>
-                            <div class="rm-task-avatar">
-                              {rm_initials(req.created_by.email)}
-                            </div>
+          col_class =
+            cond do
+              month.is_current ->
+                "current"
+
+              Date.compare(
+                Date.new!(month.year, month.month, 1),
+                Date.beginning_of_month(@roadmap.today)
+              ) == :lt ->
+                "past"
+
+              true ->
+                ""
+            end %>
+          <div class={["rm-col", col_class]}>
+            <div class="rm-col-head">
+              <span class="rm-col-h">{month.short_label}</span>
+              <span class="rm-col-y">{month.year}</span>
+            </div>
+            <%= if month_requests != [] do %>
+              <div class="rm-col-count">{length(month_requests)}</div>
+            <% end %>
+
+            <%= if month_requests == [] do %>
+              <div class="rm-empty">{gettext("No deadlines")}</div>
+            <% else %>
+              <div class="rm-weeks">
+                <%= for wk <- 1..4 do %>
+                  <% week_requests =
+                    Enum.filter(month_requests, &(week_of_month(&1.deadline) == wk))
+
+                  is_today_week =
+                    month.is_current and wk == week_of_month(@roadmap.today) %>
+                  <div class="rm-week">
+                    <div class={["rm-week-h", is_today_week && "is-today"]}>
+                      {gettext("W%{n}", n: wk)}
+                    </div>
+                    <%= for req <- week_requests do %>
+                      <% {prio_tag_class, prio_tag_label} = rm_priority_tag(req.priority)
+                      {dl_class, dl_label} = rm_deadline(req.deadline)
+                      overdue = rm_overdue?(req.deadline) %>
+                      <div
+                        class={["rm-task rm-task-compact", overdue && "overdue"]}
+                        style={rm_board_style(rm_board_label(req))}
+                        phx-click={JS.navigate(~p"/backlog/#{req.id}")}
+                      >
+                        <div class="rm-task-line">
+                          <.tip text={
+                            gettext("Status: %{label}", label: rm_status_label(req.status))
+                          }>
+                            <.roadmap_status_icon status={req.status} />
+                          </.tip>
+                          <span class="rm-task-ref">#{req.id}</span>
+                          <.tip text={rm_deadline_title(req.deadline)} class="rm-task-date">
+                            <.icon
+                              :if={overdue}
+                              name="hero-exclamation-triangle"
+                              class="size-3.5 text-red-600"
+                            />
+                            <span :if={!overdue} class={["tag-pill tag-date", dl_class]}>
+                              {dl_label}
+                            </span>
+                          </.tip>
+                          <.tip text={rm_priority_title(req.priority)}>
+                            <span class={["tag-pill", prio_tag_class]}>{prio_tag_label}</span>
                           </.tip>
                         </div>
+                        <div class="rm-task-expand">
+                          <div class="rm-task-title">{req.title}</div>
+                          <div class="rm-task-top">
+                            <.tip :if={req.created_by} text={req.created_by.email}>
+                              <div class="rm-task-avatar">
+                                {rm_initials(req.created_by.email)}
+                              </div>
+                            </.tip>
+                          </div>
+                        </div>
                       </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="roadmap-actions">
+        <button
+          type="button"
+          phx-click="roadmap_prev"
+          class="rm-nav"
+          aria-label={gettext("Previous month")}
+        >
+          <.icon name="hero-chevron-left" class="size-4" />
+        </button>
+        <button
+          type="button"
+          phx-click="roadmap_next"
+          class="rm-nav"
+          aria-label={gettext("Next month")}
+        >
+          <.icon name="hero-chevron-right" class="size-4" />
+        </button>
+      </div>
+    </div>
+
+    <%!-- Sprint board --%>
+    <div class="sprint-card">
+      <div class="roadmap-h">
+        <div>
+          <div class="roadmap-title">{gettext("Current Sprint")}</div>
+          <div class="roadmap-sub">
+            {ngettext(
+              "%{count} request in the current sprint",
+              "%{count} requests in the current sprint",
+              @sprint.total,
+              count: @sprint.total
+            )}
+          </div>
+        </div>
+      </div>
+
+      <%= if @sprint.total == 0 do %>
+        <p class="sprint-empty">{gettext("No requests in the current sprint.")}</p>
+      <% else %>
+        <div id="sprint-cols" class="sprint-cols" phx-hook="SprintClip">
+          <%= for col <- @sprint.columns do %>
+            <div class="sprint-col">
+              <div class="sprint-col-h">
+                <.roadmap_status_icon status={col.status} />
+                <span>{rm_status_label(col.status)}</span>
+                <.link navigate={~p"/backlog?status=#{col.status}"} class="sprint-col-count">
+                  {col.count}
+                </.link>
+              </div>
+              <%= if col.requests == [] do %>
+                <div class="sprint-col-empty">{gettext("None")}</div>
+              <% else %>
+                <div class="sprint-col-list">
+                  <%= for req <- col.requests do %>
+                    <% {prio_class, prio_label} = rm_priority_tag(req.priority) %>
+                    <div class="sprint-item" phx-click={JS.navigate(~p"/backlog/#{req.id}")}>
+                      <span class="sprint-item-ref">#{req.id}</span>
+                      <span class="sprint-item-title">{req.title}</span>
+                      <span
+                        :if={req.requesting_team}
+                        class="sprint-item-team"
+                        title={req.requesting_team.name}
+                      >
+                        {req.requesting_team.name}
+                      </span>
+                      <.tip text={rm_priority_title(req.priority)}>
+                        <span class={["tag-pill", prio_class]}>{prio_label}</span>
+                      </.tip>
                     </div>
                   <% end %>
                 </div>
@@ -222,25 +306,6 @@ user_name =
           <% end %>
         </div>
       <% end %>
-    </div>
-
-    <div class="roadmap-actions">
-      <button
-        type="button"
-        phx-click="roadmap_prev"
-        class="rm-nav"
-        aria-label={gettext("Previous month")}
-      >
-        <.icon name="hero-chevron-left" class="size-4" />
-      </button>
-      <button
-        type="button"
-        phx-click="roadmap_next"
-        class="rm-nav"
-        aria-label={gettext("Next month")}
-      >
-        <.icon name="hero-chevron-right" class="size-4" />
-      </button>
     </div>
   </div>
 

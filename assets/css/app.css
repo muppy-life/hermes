@@ -2279,19 +2279,19 @@
 
 /* Compact single-line card; unfolds full card on hover */
 .rm-task-compact {
-  padding: 4px 5px;
+  padding: 4px 3px;
   border-radius: 8px;
   gap: 0;
 }
 .rm-task-line {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 .rm-task-line .rm-task-ref { flex-shrink: 0; }
 .rm-task-line .tag-pill {
-  padding: 0 4px;
+  padding: 0 3px;
   font-size: 8.5px;
   line-height: 1.5;
 }
@@ -2353,6 +2353,157 @@
   line-height: 1.5;
   font-weight: 500;
   margin-top: 14px;
+}
+
+/* Roadmap + sprint board side by side */
+.dash-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+  align-items: stretch;
+}
+@media (max-width: 1100px) {
+  .dash-split { grid-template-columns: 1fr; }
+}
+.dash-split .roadmap-card { margin-bottom: 0; }
+
+.sprint-card {
+  background: var(--color-base-200);
+  border: 1px solid var(--color-base-300);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sprint-cols {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  max-height: 480px;
+  overflow-y: auto;
+}
+.sprint-col-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in oklch, var(--color-base-content), transparent 30%);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-base-300);
+  margin-bottom: 6px;
+}
+.sprint-col-count {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  font-feature-settings: "tnum";
+  background: var(--color-base-300);
+  color: color-mix(in oklch, var(--color-base-content), transparent 25%);
+  padding: 1px 7px;
+  border-radius: 999px;
+  transition: all 0.15s;
+}
+.sprint-col-count:hover {
+  background: color-mix(in oklch, var(--color-base-content) 15%, transparent);
+}
+.sprint-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  /* ~2.4 rows (30px row + 5px gap): the partially visible 3rd row hints at scroll. */
+  max-height: 82px;
+  overflow-y: auto;
+}
+.sprint-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 0;
+}
+.sprint-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.sprint-item-ref {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  font-feature-settings: "tnum";
+  flex-shrink: 0;
+}
+.sprint-item-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-base-content);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sprint-item-team {
+  font-size: 10px;
+  font-weight: 600;
+  color: color-mix(in oklch, var(--color-base-content), transparent 40%);
+  background: var(--color-base-200);
+  border: 1px solid var(--color-base-300);
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sprint-item .tag-pill {
+  padding: 0 4px;
+  font-size: 8.5px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+/* On hover the pills give way so a clipped title can be read in full.
+   `.is-clipped` is set by the SprintClip hook only when the title actually
+   truncates, so rows with short titles keep their pills. */
+.sprint-item.is-clipped:hover .sprint-item-team,
+.sprint-item.is-clipped:hover .tip {
+  display: none;
+}
+.sprint-item.is-clipped:hover .sprint-item-title {
+  white-space: normal;
+  overflow: visible;
+}
+/* Wide sprint card: single-column rows stretch uncomfortably long, so lay
+   tasks out two per row. Queries the card's content box (padding excluded);
+   600px includes a default MacBook window (card content ~646px). */
+.sprint-card { container-type: inline-size; }
+@container (min-width: 600px) {
+  .sprint-col-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sprint-col-empty {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: color-mix(in oklch, var(--color-base-content), transparent 60%);
+  padding: 2px 0 0;
+}
+.sprint-empty {
+  font-size: 12px;
+  color: color-mix(in oklch, var(--color-base-content), transparent 50%);
+  font-weight: 500;
+  padding: 12px 0;
 }
 
 .dash-dual {
