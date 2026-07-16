@@ -2418,6 +2418,9 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  /* ~2.4 rows (30px row + 5px gap): the partially visible 3rd row hints at scroll. */
+  max-height: 82px;
+  overflow-y: auto;
 }
 .sprint-item {
   display: flex;
@@ -2482,10 +2485,9 @@
 }
 /* Wide sprint card: single-column rows stretch uncomfortably long, so lay
    tasks out two per row. Queries the card's content box (padding excluded);
-   700px keeps a default MacBook window (card content ~646px) on one task
-   per row and switches to two on external/wider screens. */
+   600px includes a default MacBook window (card content ~646px). */
 .sprint-card { container-type: inline-size; }
-@container (min-width: 700px) {
+@container (min-width: 600px) {
   .sprint-col-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
