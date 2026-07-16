@@ -4,6 +4,11 @@ defmodule HermesWeb.DashboardLive do
   alias Hermes.Kanbans
   alias Hermes.Requests
 
+  # Months visible in the roadmap before the client reports how many fit.
+  @default_roadmap_window 3
+  # Upper bound for the client-reported window size.
+  @max_roadmap_window 6
+
   @impl true
   def mount(_params, _session, socket) do
     current_user = socket.assigns[:current_user]
@@ -15,7 +20,9 @@ defmodule HermesWeb.DashboardLive do
      |> assign(:boards, get_boards(current_user))
      |> assign(:stats, get_stats(current_user))
      |> assign(:roadmap_offset, 0)
-     |> assign(:roadmap, get_roadmap_data(current_user, 0))
+     |> assign(:roadmap_window, @default_roadmap_window)
+     |> assign(:roadmap, get_roadmap_data(current_user, 0, @default_roadmap_window))
+     |> assign(:sprint, get_sprint_data(current_user))
      |> assign(:show_new_request, false)}
   end
 
@@ -32,13 +39,28 @@ defmodule HermesWeb.DashboardLive do
     {:noreply, shift_roadmap(socket, 1)}
   end
 
+  def handle_event("roadmap_window", %{"months" => months}, socket) when is_integer(months) do
+    months = months |> max(1) |> min(@max_roadmap_window)
+
+    if months == socket.assigns.roadmap_window do
+      {:noreply, socket}
+    else
+      user = socket.assigns[:current_user]
+
+      {:noreply,
+       socket
+       |> assign(:roadmap_window, months)
+       |> assign(:roadmap, get_roadmap_data(user, socket.assigns.roadmap_offset, months))}
+    end
+  end
+
   defp shift_roadmap(socket, delta) do
     offset = socket.assigns.roadmap_offset + delta
     user = socket.assigns[:current_user]
 
     socket
     |> assign(:roadmap_offset, offset)
-    |> assign(:roadmap, get_roadmap_data(user, offset))
+    |> assign(:roadmap, get_roadmap_data(user, offset, socket.assigns.roadmap_window))
   end
 
   @impl true
@@ -54,7 +76,15 @@ defmodule HermesWeb.DashboardLive do
      |> put_flash(:info, gettext("Request created successfully"))
      |> assign(:recent_requests, get_recent_requests(current_user))
      |> assign(:stats, get_stats(current_user))
-     |> assign(:roadmap, get_roadmap_data(current_user, socket.assigns.roadmap_offset))}
+     |> assign(
+       :roadmap,
+       get_roadmap_data(
+         current_user,
+         socket.assigns.roadmap_offset,
+         socket.assigns.roadmap_window
+       )
+     )
+     |> assign(:sprint, get_sprint_data(current_user))}
   end
 
   def handle_info({:new_request_flash, kind, msg}, socket) do
@@ -117,15 +147,36 @@ defmodule HermesWeb.DashboardLive do
     }
   end
 
-  # Number of months visible in the roadmap window (current + 2 ahead by default).
-  @roadmap_window 3
+  # Sprint board columns, in board order. Completed is excluded entirely:
+  # completed requests can't be attributed to the current sprint.
+  @sprint_statuses ~w(todo_in_sprint in_progress review)
 
-  defp get_roadmap_data(user, offset) do
+  defp get_sprint_data(user) do
+    requests =
+      Requests.list_requests_by_team(user.team_id)
+      |> Enum.filter(&(&1.status in @sprint_statuses))
+
+    by_status = Enum.group_by(requests, & &1.status)
+
+    columns =
+      Enum.map(@sprint_statuses, fn status ->
+        column_requests =
+          by_status
+          |> Map.get(status, [])
+          |> Enum.sort_by(&{-&1.priority, &1.id})
+
+        %{status: status, requests: column_requests, count: length(column_requests)}
+      end)
+
+    %{columns: columns, total: length(requests)}
+  end
+
+  defp get_roadmap_data(user, offset, window) do
     today = Date.utc_today()
 
-    # Visible window: current month shifted by `offset`, spanning @roadmap_window months.
+    # Visible window: current month shifted by `offset`, spanning `window` months.
     window_start = today |> Date.beginning_of_month() |> Date.shift(month: offset)
-    window_end = window_start |> Date.shift(month: @roadmap_window - 1) |> Date.end_of_month()
+    window_end = window_start |> Date.shift(month: window - 1) |> Date.end_of_month()
 
     # Get all team requests with deadlines inside the visible window.
     requests = Requests.list_requests_by_team(user.team_id)
@@ -140,7 +191,7 @@ defmodule HermesWeb.DashboardLive do
       end)
       |> Enum.sort_by(& &1.deadline, Date)
 
-    months = generate_months(today, window_start, @roadmap_window)
+    months = generate_months(today, window_start, window)
 
     requests_by_month =
       Enum.group_by(requests_with_deadlines, fn r ->

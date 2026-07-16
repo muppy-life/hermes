@@ -61,6 +61,57 @@ const Hooks = {
       })
     }
   },
+  // Reports how many month columns fit in the roadmap so the server can size
+  // the visible window to the available width instead of a fixed month count.
+  RoadmapWindow: {
+    mounted() {
+      this._months = null
+      this._observer = new ResizeObserver(() => this.report())
+      this._observer.observe(this.el)
+      this.report()
+    },
+    destroyed() {
+      this._observer.disconnect()
+    },
+    report() {
+      const width = this.el.clientWidth
+      if (!width) return
+      // A month column needs ~390px for its 4 week sub-columns to hold a
+      // compact task card (status icon + ref + date/priority pills) without
+      // the pills overflowing the card. Sized so a default MacBook window
+      // (1470px viewport) fits 2 months next to the sprint card.
+      const months = Math.min(6, Math.max(1, Math.floor(width / 390)))
+      if (months !== this._months) {
+        this._months = months
+        this.pushEvent("roadmap_window", {months})
+      }
+    }
+  },
+  // Marks a sprint row whose title is actually truncated so CSS can expand
+  // it on hover (pills hide, full title shows) — rows with short titles
+  // keep their pills.
+  SprintClip: {
+    mounted() {
+      this._onOver = (e) => {
+        const item = e.target.closest(".sprint-item")
+        if (!item || (e.relatedTarget && item.contains(e.relatedTarget))) return
+        const title = item.querySelector(".sprint-item-title")
+        if (title) item.classList.toggle("is-clipped", title.scrollWidth > title.clientWidth)
+      }
+      this._onOut = (e) => {
+        const item = e.target.closest(".sprint-item")
+        if (item && !(e.relatedTarget && item.contains(e.relatedTarget))) {
+          item.classList.remove("is-clipped")
+        }
+      }
+      this.el.addEventListener("mouseover", this._onOver)
+      this.el.addEventListener("mouseout", this._onOut)
+    },
+    destroyed() {
+      this.el.removeEventListener("mouseover", this._onOver)
+      this.el.removeEventListener("mouseout", this._onOut)
+    }
+  },
   ActiveNav: {
     mounted() {
       this.highlight(false)
