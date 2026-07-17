@@ -111,7 +111,7 @@ defmodule Hermes.Notifications do
       when not is_nil(detail) do
     author =
       if detail.mentioned_by_user,
-        do: detail.mentioned_by_user.email |> String.split("@") |> List.first(),
+        do: Hermes.Accounts.User.display_name(detail.mentioned_by_user),
         else: "Someone"
 
     request_title = if detail.request, do: detail.request.title, else: "##{detail.request_id}"

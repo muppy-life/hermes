@@ -109,8 +109,11 @@
                   <div class="k-card-top">
                     <span class={["k-card-status", kanban_status_class(req.status)]}></span>
                     <span class="k-card-ref">hermes #{req.id}</span>
-                    <div class="k-card-init" title={req.created_by.email}>
-                      {initials(req.created_by.email)}
+                    <div
+                      class="k-card-init"
+                      title={Hermes.Accounts.User.display_name(req.created_by)}
+                    >
+                      {initials(req.created_by)}
                     </div>
                   </div>
 

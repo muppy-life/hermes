@@ -157,7 +157,7 @@
               <% end %>
             </td>
             <td class="px-[22px] py-[15px] text-[12.5px] text-base-content/70 truncate">
-              {if request.created_by, do: List.first(String.split(request.created_by.email, "@"))}
+              {if request.created_by, do: Hermes.Accounts.User.display_name(request.created_by)}
             </td>
             <td class="px-[22px] py-[15px] text-[12.5px] text-base-content/70 truncate">
               <%= if request.assigned_to_team do %>

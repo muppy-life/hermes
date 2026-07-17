@@ -9,12 +9,7 @@ roadmap_total =
   @roadmap.requests_by_month |> Map.values() |> Enum.map(&length/1) |> Enum.sum()
 
 user_name =
-  if @current_user,
-    do:
-      @current_user.email
-      |> String.split("@")
-      |> List.first()
-      |> String.capitalize() %>
+  if @current_user, do: Hermes.Accounts.User.display_name(@current_user) %>
 
 <div class="pt-6">
   <%!-- Greeting --%>
@@ -213,9 +208,12 @@ user_name =
                         <div class="rm-task-expand">
                           <div class="rm-task-title">{req.title}</div>
                           <div class="rm-task-top">
-                            <.tip :if={req.created_by} text={req.created_by.email}>
+                            <.tip
+                              :if={req.created_by}
+                              text={Hermes.Accounts.User.display_name(req.created_by)}
+                            >
                               <div class="rm-task-avatar">
-                                {rm_initials(req.created_by.email)}
+                                {rm_initials(req.created_by)}
                               </div>
                             </.tip>
                           </div>

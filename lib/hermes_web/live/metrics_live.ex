@@ -410,30 +410,12 @@ defmodule HermesWeb.MetricsLive do
   def pct(_value, 0), do: 0
   def pct(value, total), do: round(value / total * 100)
 
-  @doc "Initials from an email address."
-  def initials(email) when is_binary(email) do
-    email
-    |> String.split("@")
-    |> List.first()
-    |> String.replace(~r/[._-]+/, " ")
-    |> String.split(" ", trim: true)
-    |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
-  end
+  @doc "Initials from a user's name (email fallback)."
+  def initials(user), do: Hermes.Accounts.User.initials(user)
 
-  def initials(_), do: "?"
-
-  @doc "Display name derived from an email local part."
-  def display_name(email) when is_binary(email) do
-    email
-    |> String.split("@")
-    |> List.first()
-    |> String.replace(~r/[._-]+/, " ")
-    |> String.capitalize()
-  end
-
-  def display_name(_), do: gettext("Unknown")
+  @doc "Display name from a user's name and surname (email fallback)."
+  def display_name(nil), do: gettext("Unknown")
+  def display_name(user), do: Hermes.Accounts.User.display_name(user)
 
   @doc """
   Smooth area SVG (Catmull-Rom-ish) for the KPI mini charts.

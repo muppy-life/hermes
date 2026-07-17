@@ -211,11 +211,11 @@
                         <div class="w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
                           <img
                             src={"https://api.dicebear.com/7.x/avataaars/svg?seed=#{user.user_id}"}
-                            alt={user.user_email}
+                            alt={Hermes.Accounts.User.display_name(user.user)}
                           />
                         </div>
                       </div>
-                      <span>{user.user_email}</span>
+                      <span>{Hermes.Accounts.User.display_name(user.user)}</span>
                     </div>
                   </td>
                   <td>
@@ -269,7 +269,7 @@
                   <td>
                     <.priority_badge priority={request.priority} size="sm" />
                   </td>
-                  <td class="text-sm">{request.created_by.email}</td>
+                  <td class="text-sm">{Hermes.Accounts.User.display_name(request.created_by)}</td>
                   <td class="font-mono text-sm">{request.completion_time}</td>
                   <td class="text-sm">
                     {Calendar.strftime(request.updated_at, "%b %d, %Y %H:%M")}

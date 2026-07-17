@@ -58,6 +58,9 @@
     <thead>
       <tr>
         <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
+          {gettext("Name")}
+        </th>
+        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
           {gettext("Email")}
         </th>
         <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
@@ -76,6 +79,9 @@
       <%= for user <- @users do %>
         <tr class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors">
           <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content">
+            {User.display_name(user)}
+          </td>
+          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
             {user.email}
           </td>
           <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
@@ -145,6 +151,11 @@
 
       <.form for={@form} id="user-form" phx-change="validate" phx-submit="save">
         <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <.input field={@form[:name]} type="text" label={gettext("Name")} />
+            <.input field={@form[:surname]} type="text" label={gettext("Surname")} />
+          </div>
+
           <.input field={@form[:email]} type="email" label={gettext("Email")} required />
 
           <%= if @form_mode == :new do %>
@@ -225,8 +236,8 @@
       <div class="app-modal-title">{gettext("Confirm Deletion")}</div>
       <div class="app-modal-sub">
         {gettext(
-          "Are you sure you want to delete the user %{email}? This action cannot be undone.",
-          email: @selected_user.email
+          "Are you sure you want to delete the user %{name}? This action cannot be undone.",
+          name: User.display_name(@selected_user)
         )}
       </div>
       <div class="app-modal-foot">

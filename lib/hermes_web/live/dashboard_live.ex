@@ -244,19 +244,8 @@ defmodule HermesWeb.DashboardLive do
   def rm_priority_tag(2), do: {"tag-p1", "P1"}
   def rm_priority_tag(_), do: {"tag-p2", "P2"}
 
-  @doc "Initials from an email address."
-  def rm_initials(email) when is_binary(email) do
-    email
-    |> String.split("@")
-    |> List.first()
-    |> String.replace(~r/[._-]+/, " ")
-    |> String.split(" ", trim: true)
-    |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
-  end
-
-  def rm_initials(_), do: "?"
+  @doc "Initials from a user's name (email fallback)."
+  def rm_initials(user), do: Hermes.Accounts.User.initials(user)
 
   @doc "Whether a deadline is overdue (past, not today)."
   def rm_overdue?(date), do: Date.diff(date, Date.utc_today()) < 0

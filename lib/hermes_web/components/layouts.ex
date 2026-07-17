@@ -186,19 +186,10 @@ defmodule HermesWeb.Layouts do
       "transition-colors cursor-pointer"
   end
 
-  # Two-letter initials derived from the email local-part.
-  defp user_initials(email) when is_binary(email) do
-    email
-    |> String.split("@")
-    |> List.first()
-    |> String.replace(~r/[._-]+/, " ")
-    |> String.split(" ", trim: true)
-    |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
-  end
+  # Two-letter initials derived from the user's name (email fallback).
+  defp user_initials(user), do: Hermes.Accounts.User.initials(user)
 
-  defp user_initials(_), do: "?"
+  defp user_display_name(user), do: Hermes.Accounts.User.display_name(user)
 
   @doc """
   Shows the flash group with standard titles and content.
@@ -305,9 +296,9 @@ defmodule HermesWeb.Layouts do
       <button
         tabindex="0"
         class="shrink-0 w-[38px] h-[38px] rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-semibold tracking-wide cursor-pointer"
-        title={@current_user.email}
+        title={user_display_name(@current_user)}
       >
-        {user_initials(@current_user.email)}
+        {user_initials(@current_user)}
       </button>
       <ul
         tabindex="0"
@@ -316,11 +307,11 @@ defmodule HermesWeb.Layouts do
         <li class="menu-title pointer-events-none -mx-1.5 -mt-1.5 mb-1.5 !p-0 border-b border-base-content/15">
           <div class="flex items-center gap-3 px-3 py-3.5">
             <span class="shrink-0 w-[38px] h-[38px] rounded-full bg-primary text-primary-content flex items-center justify-center text-[13px] font-semibold tracking-wide">
-              {user_initials(@current_user.email)}
+              {user_initials(@current_user)}
             </span>
             <div class="min-w-0 flex-1">
               <div class="text-[13px] font-semibold text-base-content truncate leading-tight">
-                {@current_user.email}
+                {user_display_name(@current_user)}
               </div>
               <div class="text-[11px] text-base-content/50 leading-tight mt-0.5">
                 {Phoenix.Naming.humanize(@current_user.role)}

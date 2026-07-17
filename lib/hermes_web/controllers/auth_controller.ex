@@ -18,7 +18,7 @@ defmodule HermesWeb.AuthController do
           return_to = safe_return_to(get_session(conn, :user_return_to))
 
           conn
-          |> put_flash(:info, "Welcome back, #{user.email}!")
+          |> put_flash(:info, "Welcome back, #{Hermes.Accounts.User.display_name(user)}!")
           |> delete_session(:user_return_to)
           |> put_session(:user_id, user.id)
           |> configure_session(renew: true)
