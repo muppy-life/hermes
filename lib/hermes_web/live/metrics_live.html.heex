@@ -301,9 +301,9 @@
         <div class="people-list">
           <%= for {user, count} <- @requester_top do %>
             <div class="person-row">
-              <div class="person-avatar">{initials(user.email)}</div>
+              <div class="person-avatar">{initials(user)}</div>
               <div class="person-info">
-                <div class="person-name">{display_name(user.email)}</div>
+                <div class="person-name">{display_name(user)}</div>
                 <div class="person-sub">{user.email}</div>
               </div>
               <div class="person-cnt">{count}</div>

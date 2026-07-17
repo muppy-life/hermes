@@ -68,6 +68,7 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
             Map.put(acc, user_id, %{
               id: String.to_integer(user_id),
               email: meta.email,
+              display_name: meta[:display_name] || meta.email,
               role: meta.role,
               current_view: meta.current_view,
               last_seen_at: DateTime.utc_now() |> DateTime.truncate(:second),
@@ -75,8 +76,15 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
             })
 
           existing_user ->
-            # Update existing user's view
-            Map.put(acc, user_id, %{existing_user | current_view: meta.current_view, online: true})
+            # Update the view and refresh identity fields, which may have
+            # changed since the entry was first built (e.g. a rename).
+            Map.put(acc, user_id, %{
+              existing_user
+              | current_view: meta.current_view,
+                online: true,
+                email: meta.email,
+                display_name: meta[:display_name] || meta.email
+            })
         end
       end)
 
@@ -102,6 +110,7 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
          %{
            id: String.to_integer(user_id),
            email: meta.email,
+           display_name: meta[:display_name] || meta.email,
            role: meta.role,
            current_view: meta.current_view,
            last_seen_at: DateTime.utc_now() |> DateTime.truncate(:second),
@@ -118,6 +127,7 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
          %{
            id: user.id,
            email: user.email,
+           display_name: Hermes.Accounts.User.display_name(user),
            role: user.role,
            current_view: nil,
            last_seen_at: user.last_seen_at,

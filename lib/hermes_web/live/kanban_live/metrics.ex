@@ -110,10 +110,10 @@ defmodule HermesWeb.KanbanLive.Metrics do
     from(r in Request,
       join: u in assoc(r, :created_by),
       where: r.id in ^request_ids,
-      group_by: [u.id, u.email],
+      group_by: u.id,
       select: %{
         user_id: u.id,
-        user_email: u.email,
+        user: u,
         count: count(r.id)
       },
       order_by: [desc: count(r.id)]

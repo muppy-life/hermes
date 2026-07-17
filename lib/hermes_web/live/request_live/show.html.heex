@@ -156,7 +156,7 @@ aging = aging_days(@request) %>
                 {gettext("Discarded by")}
                 <strong>
                   {if @request.discarded_by,
-                    do: String.split(@request.discarded_by.email, "@") |> List.first(),
+                    do: Hermes.Accounts.User.display_name(@request.discarded_by),
                     else: gettext("Unknown")}
                 </strong>
                 <%= if @request.discarded_at do %>
@@ -445,12 +445,12 @@ aging = aging_days(@request) %>
             <%= for comment <- @comments do %>
               <div class="comment">
                 <div class="c-avatar">
-                  {String.first(comment.user.email) |> String.upcase()}
+                  {Hermes.Accounts.User.initials(comment.user)}
                 </div>
                 <div class="c-bubble">
                   <div class="c-meta flex items-center justify-between gap-2">
                     <span>
-                      <strong>{String.split(comment.user.email, "@") |> List.first()}</strong>
+                      <strong>{Hermes.Accounts.User.display_name(comment.user)}</strong>
                       · {Calendar.strftime(comment.inserted_at, "%b %d, %H:%M")}
                     </span>
                     <%= if @current_user && comment.user_id == @current_user.id && @editing_comment_id != comment.id do %>
@@ -605,7 +605,7 @@ aging = aging_days(@request) %>
           <div class="detail-meta-row">
             <span class="detail-meta-l">{gettext("Reporter")}</span>
             <span class="detail-meta-v">
-              {String.split(@request.created_by.email, "@") |> List.first()}
+              {Hermes.Accounts.User.display_name(@request.created_by)}
             </span>
           </div>
           <div class="detail-meta-row">
@@ -648,7 +648,7 @@ aging = aging_days(@request) %>
                   <div class="flex items-center justify-between mb-1">
                     <span class="font-semibold truncate">
                       {if change.user,
-                        do: String.split(change.user.email, "@") |> List.first(),
+                        do: Hermes.Accounts.User.display_name(change.user),
                         else: gettext("System")}
                     </span>
                     <span class="text-[10px] opacity-60 ml-1 flex-shrink-0">
