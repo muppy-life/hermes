@@ -4,6 +4,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
   require Logger
 
   alias Hermes.Accounts
+  alias Hermes.Accounts.User
   alias Hermes.Requests
 
   @max_file_size 15 * 1_024 * 1_024
@@ -288,8 +289,13 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
 
   defp load_team_users(team_id) do
     case parse_id(team_id) do
-      nil -> []
-      id -> id |> Accounts.list_users_by_team() |> Enum.sort_by(& &1.email)
+      nil ->
+        []
+
+      id ->
+        id
+        |> Accounts.list_users_by_team()
+        |> Enum.sort_by(&String.downcase(User.display_name(&1)))
     end
   end
 
@@ -323,14 +329,18 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
     end
   end
 
-  defp user_email(users, id) do
+  defp user_name(users, id) do
     parsed = parse_id(id)
 
     case Enum.find(users, &(&1.id == parsed)) do
-      %{email: email} -> email
+      %User{} = user -> User.display_name(user)
       _ -> nil
     end
   end
+
+  # Admin-facing picker: the email disambiguates users whose display name
+  # falls back to the same email local part.
+  defp user_option_label(user), do: "#{User.display_name(user)} (#{user.email})"
 
   defp to_priority("critica"), do: 4
   defp to_priority("importante"), do: 3
@@ -564,7 +574,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                         value={user.id}
                         selected={to_string(@form_data["created_by_id"]) == to_string(user.id)}
                       >
-                        {user.email}
+                        {user_option_label(user)}
                       </option>
                     </select>
                     <div :if={@team_users == []} class="f-hint">
@@ -1010,7 +1020,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                       <.sum_card
                         :if={@can_pick_team?}
                         label={gettext("Requesting user")}
-                        value={user_email(@team_users, @form_data["created_by_id"])}
+                        value={user_name(@team_users, @form_data["created_by_id"])}
                       />
                       <.sum_card label={gettext("Type")} value={kind_label(@form_data["kind"])} />
                       <.sum_card

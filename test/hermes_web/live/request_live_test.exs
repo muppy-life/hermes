@@ -64,6 +64,8 @@ defmodule HermesWeb.RequestLiveTest do
 
       {:ok, member} =
         Accounts.create_user(%{
+          name: "Mary",
+          surname: "Vega",
           email: "member@example.com",
           hashed_password: :crypto.hash(:sha256, "secret123") |> Base.encode16(case: :lower),
           role: "team_member",
@@ -87,13 +89,14 @@ defmodule HermesWeb.RequestLiveTest do
 
       view |> element(~s|button[phx-click="show_new_request"]|) |> render_click()
 
-      # Picking another team reloads its members into the user select
+      # Picking another team reloads its members into the user select,
+      # labeled by display name with the email for disambiguation
       html =
         view
         |> form("#step-1-form", request: %{requesting_team_id: to_string(other_team.id)})
         |> render_change()
 
-      assert html =~ "member@example.com"
+      assert html =~ "Mary Vega (member@example.com)"
 
       view
       |> element(~s|button[phx-value-field="kind"][phx-value-pick="problema"]|)
