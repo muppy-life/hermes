@@ -132,10 +132,17 @@
               <div class="flex items-center gap-3">
                 <img
                   src={"https://api.dicebear.com/7.x/avataaars/svg?seed=#{user.id}"}
-                  alt={user.email}
+                  alt={user.display_name}
                   class="w-9 h-9 rounded-full bg-base-300 ring-1 ring-base-300"
                 />
-                <span class="text-[12.5px] font-medium text-base-content">{user.email}</span>
+                <span class="min-w-0">
+                  <span class="block text-[12.5px] font-medium text-base-content truncate">
+                    {user.display_name}
+                  </span>
+                  <span class="block text-[11px] text-base-content/50 truncate">
+                    {user.email}
+                  </span>
+                </span>
               </div>
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap">

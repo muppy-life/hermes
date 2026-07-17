@@ -129,6 +129,7 @@ defmodule HermesWeb.Plugs.Auth do
     {:ok, _} =
       HermesWeb.Presence.track(self(), "users:online", user.id, %{
         email: user.email,
+        display_name: Hermes.Accounts.User.display_name(user),
         role: user.role,
         current_view: current_path,
         joined_at: System.system_time(:second)

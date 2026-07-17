@@ -36,19 +36,8 @@ defmodule HermesWeb.KanbanLive.Board do
   def priority_tag(1), do: {"tag-p2", "P2"}
   def priority_tag(_), do: {"tag-p2", "P2"}
 
-  @doc "Initials from an email address."
-  def initials(email) when is_binary(email) do
-    email
-    |> String.split("@")
-    |> List.first()
-    |> String.replace(~r/[._-]+/, " ")
-    |> String.split(" ", trim: true)
-    |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
-  end
-
-  def initials(_), do: "?"
+  @doc "Initials from a user's name (email fallback)."
+  def initials(user), do: Hermes.Accounts.User.initials(user)
 
   @doc "Deadline pill class given days remaining (nil if no deadline)."
   def deadline_class(nil), do: nil
