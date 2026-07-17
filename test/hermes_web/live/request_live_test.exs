@@ -127,9 +127,8 @@ defmodule HermesWeb.RequestLiveTest do
       assert request.requesting_team_id == other_team.id
     end
 
-    test "a forged user outside the requesting team falls back to the creator", %{
+    test "a forged or stale user outside the requesting team is rejected", %{
       admin_conn: conn,
-      admin: admin,
       other_team: other_team,
       user: outsider
     } do
@@ -155,9 +154,52 @@ defmodule HermesWeb.RequestLiveTest do
         }
       })
 
-      request = Hermes.Repo.get_by!(Request, title: "Forged request")
+      assert Hermes.Repo.get_by(Request, title: "Forged request") == nil
 
-      assert request.created_by_id == admin.id
+      # Back on step 1 with the member list reloaded for the requesting team
+      html = render(view)
+      assert html =~ "step-1-form"
+      assert html =~ "member@example.com"
+    end
+
+    test "a team change bundled with the step submit reloads the member list", %{
+      admin_conn: conn,
+      other_team: other_team,
+      member: member
+    } do
+      {:ok, view, _html} = live(conn, ~p"/backlog")
+
+      view |> element(~s|button[phx-click="show_new_request"]|) |> render_click()
+
+      view
+      |> element(~s|button[phx-value-field="kind"][phx-value-pick="problema"]|)
+      |> render_click()
+
+      view |> element(~s|button[phx-value-priority="normal"]|) |> render_click()
+
+      view
+      |> element(~s|button[phx-value-field="target_user_type"][phx-value-pick="internal"]|)
+      |> render_click()
+
+      # The team change arrives with the step submit, without a validate event
+      view
+      |> form("#step-1-form",
+        request: %{title: "Bundled team change", requesting_team_id: to_string(other_team.id)}
+      )
+      |> render_submit()
+
+      view
+      |> form("#step-2-form", request: %{current_situation: "bad", goal_description: "good"})
+      |> render_submit()
+
+      view |> element(~s|button[phx-value-area="eficiencia"]|) |> render_click()
+      view |> element(~s|button[phx-value-level="medio"]|) |> render_click()
+
+      view |> form("#step-3-form") |> render_submit()
+
+      request = Hermes.Repo.get_by!(Request, title: "Bundled team change")
+
+      assert request.created_by_id == member.id
       assert request.requesting_team_id == other_team.id
     end
 

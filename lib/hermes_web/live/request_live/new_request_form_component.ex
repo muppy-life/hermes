@@ -94,25 +94,27 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
   def handle_event("go_step", %{"step" => step} = params, socket) do
     current_step = socket.assigns.current_step
     target_step = parse_step(step, current_step)
+    prev_team_id = socket.assigns.form_data["requesting_team_id"]
     form_data = Map.merge(socket.assigns.form_data, Map.get(params, "request", %{}))
+
+    # A team change can arrive bundled with the step submit instead of a
+    # preceding validate event, so reconcile the member list here as well.
+    socket =
+      socket
+      |> assign(:form_data, form_data)
+      |> maybe_reload_team_users(prev_team_id)
 
     # Backward navigation skips validation so users can revise earlier steps.
     if target_step <= current_step do
-      {:noreply,
-       socket
-       |> assign(:form_data, form_data)
-       |> assign(:current_step, target_step)}
+      {:noreply, assign(socket, :current_step, target_step)}
     else
-      case validate_step(current_step, form_data) do
+      case validate_step(current_step, socket.assigns.form_data) do
         :ok ->
-          {:noreply,
-           socket
-           |> assign(:form_data, form_data)
-           |> assign(:current_step, target_step)}
+          {:noreply, assign(socket, :current_step, target_step)}
 
         {:error, msg} ->
           send(self(), {:new_request_flash, :error, msg})
-          {:noreply, assign(socket, :form_data, form_data)}
+          {:noreply, socket}
       end
     end
   end
@@ -141,7 +143,6 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
   end
 
   defp do_submit(form_data, socket) do
-    current_user = socket.assigns.current_user
     dev_team = Accounts.get_dev_team()
 
     if is_nil(dev_team) do
@@ -149,7 +150,33 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
     end
 
     requesting_team_id = resolve_requesting_team_id(form_data, socket)
-    created_by_id = resolve_created_by_id(form_data, socket, requesting_team_id)
+
+    case resolve_created_by_id(form_data, socket, requesting_team_id) do
+      {:ok, created_by_id} ->
+        create_request(form_data, socket, requesting_team_id, created_by_id, dev_team)
+
+      :error ->
+        users = load_team_users(requesting_team_id)
+
+        send(
+          self(),
+          {:new_request_flash, :error,
+           gettext("The selected requesting user is no longer available. Please pick another.")}
+        )
+
+        {:noreply,
+         socket
+         |> assign(:team_users, users)
+         |> assign(
+           :form_data,
+           Map.put(form_data, "created_by_id", default_requesting_user_id(users, socket))
+         )
+         |> assign(:current_step, 1)}
+    end
+  end
+
+  defp create_request(form_data, socket, requesting_team_id, created_by_id, dev_team) do
+    current_user = socket.assigns.current_user
 
     final_params =
       form_data
@@ -219,17 +246,25 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
 
   # Privileged users may create the request in the name of any member of the
   # requesting team. The picked id is re-validated against the team's users at
-  # submit time so a forged or stale value falls back to the creator.
+  # submit time: a value that is no longer a member (stale or forged) is an
+  # error rather than a silent reattribution, except when the team has no
+  # members at all — then the request falls back to the creator, matching the
+  # hint shown in the form.
   defp resolve_created_by_id(form_data, socket, requesting_team_id) do
     current_user = socket.assigns.current_user
 
     if socket.assigns.can_pick_team? do
       picked = parse_id(form_data["created_by_id"])
-      valid_ids = requesting_team_id |> Accounts.list_users_by_team() |> Enum.map(& &1.id)
 
-      if picked in valid_ids, do: picked, else: current_user.id
+      case Accounts.list_users_by_team(requesting_team_id) do
+        [] ->
+          {:ok, current_user.id}
+
+        users ->
+          if picked in Enum.map(users, & &1.id), do: {:ok, picked}, else: :error
+      end
     else
-      current_user.id
+      {:ok, current_user.id}
     end
   end
 
