@@ -45,8 +45,8 @@ defmodule Hermes.Workers.RequestNotificationWorker do
     end
   end
 
-  defp send_notification(request, "created", _args) do
-    recipients = build_created_recipients(request)
+  defp send_notification(request, "created", args) do
+    recipients = build_created_recipients(request, args["notify_creator"] == true)
     Email.send_request_created_notification(request, recipients)
   end
 
@@ -76,7 +76,10 @@ defmodule Hermes.Workers.RequestNotificationWorker do
     {:discard, "Unknown notification type"}
   end
 
-  defp build_created_recipients(request) do
+  # `notify_creator` is set when the request was created in the creator's name
+  # by someone else (admin impersonation) — then the creator is a recipient
+  # like any other team member instead of being skipped as the author.
+  defp build_created_recipients(request, notify_creator) do
     requesting_team_users =
       if request.requesting_team_id,
         do: Accounts.list_users_by_team(request.requesting_team_id),
@@ -91,6 +94,6 @@ defmodule Hermes.Workers.RequestNotificationWorker do
 
     (requesting_team_users ++ assigned_team_users)
     |> Enum.uniq_by(& &1.id)
-    |> Enum.reject(&(&1.id == creator.id))
+    |> Enum.reject(&(&1.id == creator.id and not notify_creator))
   end
 end
