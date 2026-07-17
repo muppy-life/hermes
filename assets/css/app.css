@@ -2355,16 +2355,12 @@
   margin-top: 14px;
 }
 
-/* Roadmap + sprint board side by side */
+/* Roadmap with sprint board stacked below */
 .dash-split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 24px;
-  align-items: stretch;
-}
-@media (max-width: 1100px) {
-  .dash-split { grid-template-columns: 1fr; }
 }
 .dash-split .roadmap-card { margin-bottom: 0; }
 
@@ -2380,12 +2376,13 @@
 }
 .sprint-cols {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   flex: 1;
   min-height: 0;
-  max-height: 480px;
-  overflow-y: auto;
+}
+.sprint-col {
+  flex: 1;
+  min-width: 0;
 }
 .sprint-col-h {
   display: flex;
@@ -2418,8 +2415,8 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  /* ~2.4 rows (30px row + 5px gap): the partially visible 3rd row hints at scroll. */
-  max-height: 82px;
+  /* ~5.6 rows (30px row + 5px gap): the partially visible 6th row hints at scroll. */
+  max-height: 193px;
   overflow-y: auto;
 }
 .sprint-item {
@@ -2483,15 +2480,11 @@
   white-space: normal;
   overflow: visible;
 }
-/* Wide sprint card: single-column rows stretch uncomfortably long, so lay
-   tasks out two per row. Queries the card's content box (padding excluded);
-   600px includes a default MacBook window (card content ~646px). */
+/* Narrow sprint card: side-by-side status columns get too cramped, so
+   fall back to stacking them. Queries the card's content box. */
 .sprint-card { container-type: inline-size; }
-@container (min-width: 600px) {
-  .sprint-col-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+@container (max-width: 599.98px) {
+  .sprint-cols { flex-direction: column; gap: 10px; }
 }
 .sprint-col-empty {
   font-size: 10.5px;
