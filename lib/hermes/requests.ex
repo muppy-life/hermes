@@ -82,7 +82,7 @@ defmodule Hermes.Requests do
         # This will create a visual representation of the solution flow
         trigger_diagram_generation(request)
 
-        trigger_request_created_notification(request)
+        trigger_request_created_notification(request, user_id)
 
         {:ok, request}
 
@@ -837,8 +837,15 @@ defmodule Hermes.Requests do
     end)
   end
 
-  defp trigger_request_created_notification(request) do
-    %{request_id: request.id, type: "created"}
+  # When the request is created in the name of someone other than the actor
+  # (admin impersonation), the nominal creator did not perform the action and
+  # must be notified like any other team member.
+  defp trigger_request_created_notification(request, actor_id) do
+    %{
+      request_id: request.id,
+      type: "created",
+      notify_creator: not is_nil(actor_id) and actor_id != request.created_by_id
+    }
     |> Hermes.Workers.RequestNotificationWorker.new()
     |> Oban.insert()
   end
