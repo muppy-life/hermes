@@ -236,8 +236,9 @@
       <div class="app-modal-title">{gettext("Confirm Deletion")}</div>
       <div class="app-modal-sub">
         {gettext(
-          "Are you sure you want to delete the user %{name}? This action cannot be undone.",
-          name: User.display_name(@selected_user)
+          "Are you sure you want to delete the user %{name} (%{email})? This action cannot be undone.",
+          name: User.display_name(@selected_user),
+          email: @selected_user.email
         )}
       </div>
       <div class="app-modal-foot">

@@ -76,8 +76,15 @@ defmodule HermesWeb.Admin.DashboardLive.Index do
             })
 
           existing_user ->
-            # Update existing user's view
-            Map.put(acc, user_id, %{existing_user | current_view: meta.current_view, online: true})
+            # Update the view and refresh identity fields, which may have
+            # changed since the entry was first built (e.g. a rename).
+            Map.put(acc, user_id, %{
+              existing_user
+              | current_view: meta.current_view,
+                online: true,
+                email: meta.email,
+                display_name: meta[:display_name] || meta.email
+            })
         end
       end)
 
