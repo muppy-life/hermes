@@ -1,0 +1,149 @@
+defmodule HermesWeb.TechOpsLiveTest do
+  use HermesWeb.ConnCase
+
+  import Phoenix.LiveViewTest
+
+  alias Hermes.Accounts
+  alias Hermes.TechOps
+
+  defp create_user(role, email, team_id) do
+    {:ok, user} =
+      Accounts.create_user(%{
+        email: email,
+        hashed_password: :crypto.hash(:sha256, "secret123") |> Base.encode16(case: :lower),
+        role: role,
+        team_id: team_id
+      })
+
+    user
+  end
+
+  setup %{conn: conn} do
+    {:ok, team} = Accounts.create_team(%{name: "Team", description: "d"})
+    dev = create_user("dev_team", "dev@example.com", team.id)
+    %{conn: conn, team: team, dev: dev}
+  end
+
+  describe "access control" do
+    test "a non-tech-team user is redirected to the dashboard", %{conn: conn, team: team} do
+      member = create_user("team_member", "member@example.com", team.id)
+      conn = init_test_session(conn, %{user_id: member.id})
+
+      assert {:error, {:redirect, %{to: "/dashboard", flash: flash}}} =
+               live(conn, ~p"/tech-ops")
+
+      assert flash["error"] =~ "tech team"
+    end
+
+    test "an unauthenticated visitor is redirected to login", %{conn: conn} do
+      assert {:error, {:redirect, %{to: "/", flash: _}}} = live(conn, ~p"/tech-ops")
+    end
+
+    test "a dev_team user can load the view", %{conn: conn, dev: dev} do
+      conn = init_test_session(conn, %{user_id: dev.id})
+      {:ok, _lv, html} = live(conn, ~p"/tech-ops")
+      assert html =~ "Tech Ops"
+    end
+
+    test "an admin can load the view", %{conn: conn, team: team} do
+      {:ok, admin} =
+        Accounts.create_user(%{
+          email: "admin@example.com",
+          hashed_password: :crypto.hash(:sha256, "secret123") |> Base.encode16(case: :lower),
+          role: "admin",
+          is_admin: true,
+          team_id: team.id
+        })
+
+      conn = init_test_session(conn, %{user_id: admin.id})
+      {:ok, _lv, html} = live(conn, ~p"/tech-ops")
+      assert html =~ "Tech Ops"
+    end
+  end
+
+  describe "recording tasks" do
+    setup %{conn: conn, dev: dev} do
+      %{conn: init_test_session(conn, %{user_id: dev.id})}
+    end
+
+    test "creates a task through the form", %{conn: conn, dev: dev} do
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv |> element("button", "Record task") |> render_click()
+
+      html =
+        lv
+        |> form("#tech-ops-task-form",
+          task: %{
+            recorded_on: "2026-07-24",
+            reported_problem: "DB connection pool exhausted",
+            issue_origin: "monitoring",
+            status: "in_progress",
+            responsible_id: dev.id
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "DB connection pool exhausted"
+      assert html =~ "In progress"
+
+      assert [task] = TechOps.list_tech_ops_tasks()
+      assert task.reported_problem == "DB connection pool exhausted"
+      assert task.status == :in_progress
+    end
+
+    test "shows validation errors on an incomplete form", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv |> element("button", "Record task") |> render_click()
+
+      html =
+        lv
+        |> form("#tech-ops-task-form", task: %{recorded_on: "", reported_problem: ""})
+        |> render_submit()
+
+      assert html =~ "can&#39;t be blank"
+      assert TechOps.list_tech_ops_tasks() == []
+    end
+
+    test "edits an existing task", %{conn: conn} do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "original"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv |> element("button[phx-value-id='#{task.id}']", "Edit") |> render_click()
+
+      html =
+        lv
+        |> form("#tech-ops-task-form",
+          task: %{status: "resolved", resolution: "fixed it"}
+        )
+        |> render_submit()
+
+      assert html =~ "Resolved"
+      assert html =~ "fixed it"
+    end
+
+    test "deletes a task", %{conn: conn} do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "to be removed"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv
+      |> element("button[phx-click='open_delete_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      lv |> element("button", "Delete Task") |> render_click()
+
+      assert TechOps.list_tech_ops_tasks() == []
+    end
+  end
+end

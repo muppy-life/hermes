@@ -89,6 +89,14 @@ defmodule HermesWeb.Layouts do
               <.link navigate={~p"/objectives"} class={nav_tab_class()} data-path="/objectives">
                 <.icon name="hero-flag" class="size-3.5" />{gettext("Objectives")}
               </.link>
+              <.link
+                :if={Hermes.Accounts.is_dev_team?(@current_user)}
+                navigate={~p"/tech-ops"}
+                class={nav_tab_class()}
+                data-path="/tech-ops"
+              >
+                <.icon name="hero-wrench-screwdriver" class="size-3.5" />{gettext("Tech Ops")}
+              </.link>
             </div>
           </nav>
         <% else %>

@@ -70,6 +70,13 @@ defmodule HermesWeb.Router do
       live "/notifications", NotificationLive.Index, :index
     end
 
+    # Tech ops routes - require tech team (dev_team or admin) access. Separate
+    # live_session because the on_mount hook differs.
+    live_session :tech_team,
+      on_mount: [{HermesWeb.Plugs.Auth, :ensure_tech_team}] do
+      live "/tech-ops", TechOpsLive.Index, :index
+    end
+
     # Admin routes - require admin access. Separate live_session because the
     # on_mount hook differs; live navigation to/from admin does a full reload.
     live_session :admin,
