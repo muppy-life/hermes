@@ -159,5 +159,12 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
       assert data["status"] == "resolved"
       assert data["resolution"] == "restarted service"
     end
+
+    test "PUT updates the same as PATCH", %{conn: conn, auth: auth, dev_token: t, task: task} do
+      conn =
+        auth.(conn, t) |> put(~p"/api/v1/tech_ops_tasks/#{task.id}", %{"status" => "in_progress"})
+
+      assert json_response(conn, 200)["data"]["status"] == "in_progress"
+    end
   end
 end
