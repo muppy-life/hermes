@@ -1,0 +1,165 @@
+<%!-- Header --%>
+<div class="flex items-end justify-between gap-5 mb-5 pt-6">
+  <div>
+    <h1 class="text-[28px] font-bold text-primary tracking-tight leading-tight">
+      {gettext("API Tokens")}
+    </h1>
+    <p class="text-[13px] text-base-content/50 font-medium mt-1.5">
+      {gettext("Tokens for REST API and MCP (Claude) access to tech-ops tasks")}
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    <.link navigate={~p"/admin"} class="det-btn">
+      <.icon name="hero-arrow-left" class="size-3.5" />{gettext("Back to admin")}
+    </.link>
+    <button type="button" class="det-btn" phx-click="open_new_modal">
+      <.icon name="hero-plus" class="size-3.5" />{gettext("New token")}
+    </button>
+  </div>
+</div>
+
+<%!-- Tokens table --%>
+<div class="bg-base-200 rounded-2xl overflow-hidden shadow-sm border border-base-300">
+  <div class="px-[22px] py-4 border-b border-base-300 flex items-center gap-2 text-[13px] font-semibold text-base-content">
+    <.icon name="hero-key" class="size-4 text-base-content/40" />
+    {gettext("Active tokens")}
+  </div>
+
+  <%= if @tokens == [] do %>
+    <div class="text-center py-12 text-base-content/50">
+      <.icon name="hero-key" class="size-10 mx-auto mb-3 opacity-40" />
+      <p class="text-[12.5px] font-medium">{gettext("No API tokens yet")}</p>
+    </div>
+  <% else %>
+    <table class="w-full border-collapse">
+      <thead>
+        <tr>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300">
+            {gettext("Name")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300">
+            {gettext("Owner")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300">
+            {gettext("Last used")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300">
+            {gettext("Created")}
+          </th>
+          <th class="px-[22px] py-3.5 border-b border-base-300"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for token <- @tokens do %>
+          <tr class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors">
+            <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content">
+              {token.name}
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
+              {Hermes.Accounts.User.display_name(token.user)}
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/60">
+              <%= if token.last_used_at do %>
+                {Calendar.strftime(token.last_used_at, "%Y-%m-%d %H:%M")}
+              <% else %>
+                <span class="text-base-content/30">{gettext("Never")}</span>
+              <% end %>
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/60">
+              {Calendar.strftime(token.inserted_at, "%Y-%m-%d")}
+            </td>
+            <td class="px-[22px] py-4 text-right">
+              <button
+                type="button"
+                class="text-[12px] font-medium text-error hover:underline"
+                phx-click="revoke_token"
+                phx-value-id={token.id}
+                data-confirm={gettext("Revoke this token? Apps using it will stop working.")}
+              >
+                {gettext("Revoke")}
+              </button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>
+
+<%!-- New token modal --%>
+<%= if @show_form_modal do %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="bg-base-100 rounded-2xl shadow-xl border border-base-300 w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-[17px] font-bold text-base-content">{gettext("New API token")}</h2>
+        <button
+          type="button"
+          phx-click="close_form_modal"
+          class="text-base-content/40 hover:text-base-content"
+        >
+          <.icon name="hero-x-mark" class="size-5" />
+        </button>
+      </div>
+
+      <%= if @new_token do %>
+        <%!-- Show the raw token once --%>
+        <div class="space-y-3">
+          <p class="text-[12.5px] text-base-content/70">
+            {gettext("Token for")}
+            <span class="font-semibold">
+              {Hermes.Accounts.User.display_name(@new_token.user)}
+            </span>
+            ({@new_token.name}).
+          </p>
+          <div class="rounded-lg bg-warning/10 border border-warning/30 p-3 text-[12px] text-warning-content/80">
+            {gettext("Copy this token now. For security it will not be shown again.")}
+          </div>
+          <code class="block w-full break-all rounded-lg bg-base-300 p-3 text-[12px] font-mono text-base-content select-all">
+            {@new_token.raw}
+          </code>
+          <button type="button" class="det-btn w-full justify-center" phx-click="close_form_modal">
+            {gettext("Done")}
+          </button>
+        </div>
+      <% else %>
+        <form phx-submit="create_token" class="space-y-4">
+          <div>
+            <label class="block text-[12px] font-semibold text-base-content/70 mb-1.5">
+              {gettext("User (tech team)")}
+            </label>
+            <select
+              name="user_id"
+              class="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-[13px] text-base-content"
+            >
+              <option value="">{gettext("Select a user…")}</option>
+              <%= for user <- @tech_users do %>
+                <option value={user.id}>
+                  {Hermes.Accounts.User.display_name(user)} ({user.email})
+                </option>
+              <% end %>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[12px] font-semibold text-base-content/70 mb-1.5">
+              {gettext("Token name")}
+            </label>
+            <input
+              type="text"
+              name="name"
+              placeholder={gettext("e.g. Claude MCP")}
+              class="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-[13px] text-base-content"
+            />
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="det-btn" phx-click="close_form_modal">
+              {gettext("Cancel")}
+            </button>
+            <button type="submit" class="det-btn det-btn-primary-solid">
+              {gettext("Create token")}
+            </button>
+          </div>
+        </form>
+      <% end %>
+    </div>
+  </div>
+<% end %>

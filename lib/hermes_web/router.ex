@@ -18,6 +18,13 @@ defmodule HermesWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Token-authenticated API/MCP surface. ApiAuth resolves the token owner and
+  # restricts access to the tech team.
+  pipeline :api_authenticated do
+    plug :accepts, ["json"]
+    plug HermesWeb.Plugs.ApiAuth
+  end
+
   pipeline :authenticated do
     plug :require_authenticated_user
   end
@@ -32,6 +39,22 @@ defmodule HermesWeb.Router do
   scope "/api/github", HermesWeb do
     pipe_through [:api, HermesWeb.Plugs.VerifyGitHubSignature]
     post "/webhook", GitHubWebhookController, :create
+  end
+
+  # Token-authenticated REST API (tech-ops tasks).
+  scope "/api/v1", HermesWeb.Api do
+    pipe_through :api_authenticated
+
+    get "/me", MeController, :show
+    resources "/tech_ops_tasks", TechOpsTaskController, only: [:index, :show, :create, :update]
+    resources "/requests", RequestController, only: [:index, :show]
+  end
+
+  # MCP endpoint (JSON-RPC 2.0 over HTTP) for Claude and other MCP clients.
+  scope "/mcp", HermesWeb.Api do
+    pipe_through :api_authenticated
+
+    post "/", MCPController, :handle
   end
 
   # Public routes
@@ -85,6 +108,7 @@ defmodule HermesWeb.Router do
       live "/admin/users", Admin.UserLive.Index, :index
       live "/admin/teams", Admin.TeamLive.Index, :index
       live "/admin/github", Admin.GithubLive.Index, :index
+      live "/admin/api-tokens", Admin.ApiTokenLive.Index, :index
     end
   end
 

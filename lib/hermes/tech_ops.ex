@@ -17,6 +17,19 @@ defmodule Hermes.TechOps do
 
   def get_tech_ops_task!(id), do: Repo.get!(Task, id) |> Repo.preload(:responsible)
 
+  @doc """
+  Fetches a tech-ops task by id, returning `nil` when it does not exist or the
+  id is not a valid integer. Used by the API/MCP layer.
+  """
+  def get_tech_ops_task(id) do
+    case Repo.get(Task, id) do
+      nil -> nil
+      task -> Repo.preload(task, :responsible)
+    end
+  rescue
+    Ecto.Query.CastError -> nil
+  end
+
   def create_tech_ops_task(attrs \\ %{}) do
     %Task{}
     |> Task.changeset(attrs)
