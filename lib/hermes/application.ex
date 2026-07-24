@@ -17,7 +17,8 @@ defmodule Hermes.Application do
         {DNSCluster, query: Application.get_env(:hermes, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: Hermes.PubSub},
         HermesWeb.Presence,
-        Hermes.Requests.DraftStore
+        Hermes.Requests.DraftStore,
+        Hermes.RateLimiter
       ] ++
         github_in_memory_child() ++
         [

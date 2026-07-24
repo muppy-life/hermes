@@ -53,3 +53,7 @@ config :hermes, :features,
 
 # Disable Oban during tests
 config :hermes, Oban, testing: :inline
+
+# Disable API rate limiting by default in tests so suites that fire many
+# requests aren't throttled. The rate-limit test enables it locally.
+config :hermes, HermesWeb.Plugs.RateLimit, enabled: false

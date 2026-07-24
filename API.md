@@ -21,7 +21,23 @@ Authorization: Bearer hermes_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Error responses are JSON: `{"error": {"code": "...", "message": "..."}}`.
 Statuses: `401` missing/invalid token, `403` not tech team, `404` not found,
-`422` validation failed.
+`422` validation failed, `429` rate limited.
+
+## Rate limiting
+
+The API/MCP surface is rate limited: **60 requests per minute** per token (or per
+client IP for requests without a token). The limiter runs *before*
+authentication, so invalid-token guessing is throttled too. When exceeded, the
+response is `429 Too Many Requests` with a `Retry-After` header (seconds):
+
+```json
+{ "error": { "code": "rate_limited", "message": "Too many requests" } }
+```
+
+Limits are configured in `config :hermes, HermesWeb.Plugs.RateLimit`
+(`limit`, `window_ms`, `enabled`). The limiter is in-memory and per-node — behind
+multiple app instances each node enforces it independently, so an edge/load
+balancer limiter should remain the outer line of defense.
 
 ## REST API
 

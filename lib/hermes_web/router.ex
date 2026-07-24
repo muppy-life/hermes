@@ -22,6 +22,7 @@ defmodule HermesWeb.Router do
   # restricts access to the tech team.
   pipeline :api_authenticated do
     plug :accepts, ["json"]
+    plug HermesWeb.Plugs.RateLimit
     plug HermesWeb.Plugs.ApiAuth
   end
 
