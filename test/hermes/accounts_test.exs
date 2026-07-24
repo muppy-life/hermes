@@ -193,4 +193,50 @@ defmodule Hermes.AccountsTest do
       assert Accounts.is_admin?(user) == true
     end
   end
+
+  describe "list_tech_users/0" do
+    setup do
+      {:ok, team} = Accounts.create_team(%{name: "Tech Users Team", description: "d"})
+
+      mk = fn email, role, is_admin ->
+        {:ok, u} =
+          Accounts.create_user(%{
+            email: email,
+            hashed_password: "hashed_password",
+            role: role,
+            team_id: team.id,
+            is_admin: is_admin
+          })
+
+        u
+      end
+
+      %{
+        dev: mk.("tu-dev@test.com", "dev_team", false),
+        admin_role: mk.("tu-admin@test.com", "admin", false),
+        admin_flag: mk.("tu-adminflag@test.com", "team_member", true),
+        member: mk.("tu-member@test.com", "team_member", false),
+        po: mk.("tu-po@test.com", "product_owner", false)
+      }
+    end
+
+    test "includes dev_team, admin role, and is_admin users", ctx do
+      ids = Accounts.list_tech_users() |> Enum.map(& &1.id)
+      assert ctx.dev.id in ids
+      assert ctx.admin_role.id in ids
+      assert ctx.admin_flag.id in ids
+    end
+
+    test "excludes non-tech users", ctx do
+      ids = Accounts.list_tech_users() |> Enum.map(& &1.id)
+      refute ctx.member.id in ids
+      refute ctx.po.id in ids
+    end
+
+    test "excludes soft-deleted tech users", ctx do
+      {:ok, _} = Accounts.delete_user(ctx.dev)
+      ids = Accounts.list_tech_users() |> Enum.map(& &1.id)
+      refute ctx.dev.id in ids
+    end
+  end
 end

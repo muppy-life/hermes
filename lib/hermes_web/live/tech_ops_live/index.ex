@@ -15,14 +15,18 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:selected_task, nil)
      |> assign(:form_mode, :new)
      |> assign(:form, to_form(%{}))
-     |> assign(:users, Accounts.list_users())
+     |> assign(:users, Accounts.list_tech_users())
      |> assign(:teams, Accounts.list_teams())
      |> load_tasks()}
   end
 
   @impl true
   def handle_event("open_new_modal", _params, socket) do
-    changeset = Task.changeset(%Task{status: :open}, %{"recorded_on" => Date.utc_today()})
+    changeset =
+      Task.changeset(%Task{status: :open}, %{
+        "recorded_on" => Date.utc_today(),
+        "responsible_id" => socket.assigns.current_user.id
+      })
 
     {:noreply,
      socket
