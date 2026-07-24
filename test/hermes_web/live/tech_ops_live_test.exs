@@ -19,7 +19,7 @@ defmodule HermesWeb.TechOpsLiveTest do
   end
 
   setup %{conn: conn} do
-    {:ok, team} = Accounts.create_team(%{name: "Team", description: "d"})
+    {:ok, team} = Accounts.create_team(%{name: "Platform Squad", description: "d"})
     dev = create_user("dev_team", "dev@example.com", team.id)
     %{conn: conn, team: team, dev: dev}
   end
@@ -66,7 +66,7 @@ defmodule HermesWeb.TechOpsLiveTest do
       %{conn: init_test_session(conn, %{user_id: dev.id})}
     end
 
-    test "creates a task through the form", %{conn: conn, dev: dev} do
+    test "creates a task through the form", %{conn: conn, dev: dev, team: team} do
       {:ok, lv, _html} = live(conn, ~p"/tech-ops")
 
       lv |> element("button", "Record task") |> render_click()
@@ -77,19 +77,47 @@ defmodule HermesWeb.TechOpsLiveTest do
           task: %{
             recorded_on: "2026-07-24",
             reported_problem: "DB connection pool exhausted",
+            reporter: "on-call engineer",
             issue_origin: "monitoring",
             status: "in_progress",
-            responsible_id: dev.id
+            cause: "traffic spike",
+            responsible_id: dev.id,
+            team_id: team.id
           }
         )
         |> render_submit()
 
       assert html =~ "DB connection pool exhausted"
+      assert html =~ "on-call engineer"
       assert html =~ "In progress"
+      assert html =~ "traffic spike"
+      assert html =~ team.name
 
       assert [task] = TechOps.list_tech_ops_tasks()
       assert task.reported_problem == "DB connection pool exhausted"
+      assert task.reporter == "on-call engineer"
       assert task.status == :in_progress
+      assert task.cause == "traffic spike"
+      assert task.team_id == team.id
+    end
+
+    test "defaults the responsible to the current user on a new task", %{conn: conn, dev: dev} do
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      html = lv |> element("button", "Record task") |> render_click()
+
+      assert html =~ ~s(<option selected="" value="#{dev.id}">)
+    end
+
+    test "responsible dropdown only lists tech users", %{conn: conn, team: team, dev: dev} do
+      # A non-tech user must not appear as a responsible option.
+      member = create_user("team_member", "member@example.com", team.id)
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+      html = lv |> element("button", "Record task") |> render_click()
+
+      assert html =~ ~s(value="#{dev.id}")
+      refute html =~ ~s(value="#{member.id}")
     end
 
     test "shows validation errors on an incomplete form", %{conn: conn} do
@@ -144,6 +172,47 @@ defmodule HermesWeb.TechOpsLiveTest do
       lv |> element("button", "Delete Task") |> render_click()
 
       assert TechOps.list_tech_ops_tasks() == []
+    end
+
+    test "opening edit on a concurrently-deleted task does not crash", %{conn: conn} do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "stale"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      # Another user deletes it after this page rendered.
+      TechOps.delete_tech_ops_task(task)
+
+      # Must not raise / crash the process.
+      lv
+      |> element("button[phx-click='open_edit_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # LiveView is still alive, the stale row is gone, and the user is informed.
+      assert render(lv) =~ "Tech Ops"
+      refute render(lv) =~ "stale"
+    end
+
+    test "opening delete on a concurrently-deleted task does not crash", %{conn: conn} do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "stale"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      TechOps.delete_tech_ops_task(task)
+
+      lv
+      |> element("button[phx-click='open_delete_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      assert render(lv) =~ "Tech Ops"
+      refute render(lv) =~ "stale"
     end
   end
 end

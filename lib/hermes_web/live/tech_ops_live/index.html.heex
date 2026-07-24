@@ -24,95 +24,121 @@
       {ngettext("%{count} task", "%{count} tasks", @task_count, count: @task_count)}
     </span>
   </div>
-  <table class="w-full border-collapse">
-    <thead>
-      <tr>
-        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
-          {gettext("Date")}
-        </th>
-        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300">
-          {gettext("Reported problem")}
-        </th>
-        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300">
-          {gettext("Issue origin")}
-        </th>
-        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
-          {gettext("Responsible")}
-        </th>
-        <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap">
-          {gettext("Status")}
-        </th>
-        <th class="px-[22px] py-3.5 border-b border-base-300"></th>
-      </tr>
-    </thead>
-    <tbody id="tech-ops-tasks" phx-update="stream">
-      <tr id="tech-ops-tasks-empty" class="only:table-row hidden">
-        <td colspan="6" class="px-[22px] py-10 text-center text-[12.5px] text-base-content/50">
-          {gettext("No tasks recorded yet.")}
-        </td>
-      </tr>
-      <%= for {dom_id, task} <- @streams.tasks do %>
-        <tr
-          id={dom_id}
-          class="border-b border-base-300 last:border-0 hover:bg-base-300/50 transition-colors align-top"
-        >
-          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap">
-            {Calendar.strftime(task.recorded_on, "%Y-%m-%d")}
-          </td>
-          <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content max-w-md">
-            <div class="whitespace-pre-line">{task.reported_problem}</div>
-            <div
-              :if={task.resolution not in [nil, ""]}
-              class="mt-1 text-[11.5px] text-base-content/50"
-            >
-              <span class="font-semibold">{gettext("Resolution")}:</span>
-              <span class="whitespace-pre-line">{task.resolution}</span>
-            </div>
-          </td>
-          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
-            {task.issue_origin}
-          </td>
-          <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap">
-            {if task.responsible,
-              do: Hermes.Accounts.User.display_name(task.responsible),
-              else: "—"}
-          </td>
-          <td class="px-[22px] py-4 whitespace-nowrap">
-            <span class={[
-              "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
-              task_status_badge_class(task.status)
-            ]}>
-              {task_status_label(task.status)}
-            </span>
-          </td>
-          <td class="px-[22px] py-4 text-right whitespace-nowrap">
-            <button
-              type="button"
-              phx-click="open_edit_modal"
-              phx-value-id={task.id}
-              class="det-btn"
-            >
-              {gettext("Edit")}
-            </button>
-            <button
-              type="button"
-              phx-click="open_delete_modal"
-              phx-value-id={task.id}
-              class="det-btn det-btn-danger"
-            >
-              <.icon name="hero-trash" class="size-3.5" />
-            </button>
+  <div class="overflow-x-auto">
+    <table class="min-w-max w-full border-collapse">
+      <thead>
+        <tr>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 whitespace-nowrap min-w-[7rem]">
+            {gettext("Date")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[18rem]">
+            {gettext("Reported problem")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[10rem]">
+            {gettext("Reporter")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[12rem]">
+            {gettext("Issue origin")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[10rem]">
+            {gettext("Responsible")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[8rem]">
+            {gettext("Status")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[18rem]">
+            {gettext("Resolution")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[10rem]">
+            {gettext("Team")}
+          </th>
+          <th class="px-[22px] py-3.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-base-content/50 border-b border-base-300 min-w-[16rem]">
+            {gettext("Cause")}
+          </th>
+          <th class="sticky right-0 z-10 bg-base-200 px-[22px] py-3.5 border-b border-l border-base-300 shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.25)]">
+          </th>
+        </tr>
+      </thead>
+      <tbody id="tech-ops-tasks" phx-update="stream">
+        <tr id="tech-ops-tasks-empty" class="only:table-row hidden">
+          <td colspan="10" class="px-[22px] py-10 text-center text-[12.5px] text-base-content/50">
+            {gettext("No tasks recorded yet.")}
           </td>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+        <%= for {dom_id, task} <- @streams.tasks do %>
+          <tr
+            id={dom_id}
+            class="group border-b border-base-300 last:border-0 hover:bg-base-300 transition-colors align-middle"
+          >
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap min-w-[7rem]">
+              {Calendar.strftime(task.recorded_on, "%Y-%m-%d")}
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content min-w-[18rem]">
+              <div class="whitespace-pre-line" phx-no-format>{task.reported_problem}</div>
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[10rem]">
+              {if task.reporter in [nil, ""], do: "—", else: task.reporter}
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[12rem]">
+              {if task.issue_origin in [nil, ""], do: "—", else: task.issue_origin}
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap min-w-[10rem]">
+              {if task.responsible,
+                do: Hermes.Accounts.User.display_name(task.responsible),
+                else: "—"}
+            </td>
+            <td class="px-[22px] py-4 whitespace-nowrap min-w-[8rem]">
+              <span class={[
+                "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                task_status_badge_class(task.status)
+              ]}>
+                {task_status_label(task.status)}
+              </span>
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[18rem]">
+              <div
+                :if={task.resolution not in [nil, ""]}
+                class="whitespace-pre-line"
+                phx-no-format
+              >{task.resolution}</div>
+              <span :if={task.resolution in [nil, ""]}>—</span>
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap min-w-[10rem]">
+              {if task.team, do: task.team.name, else: "—"}
+            </td>
+            <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[16rem]">
+              <div :if={task.cause not in [nil, ""]} class="whitespace-pre-line" phx-no-format>{task.cause}</div>
+              <span :if={task.cause in [nil, ""]}>—</span>
+            </td>
+            <td class="sticky right-0 z-10 bg-base-200 group-hover:bg-base-300 px-[22px] py-4 text-right whitespace-nowrap border-l border-base-300 shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.25)] transition-colors">
+              <button
+                type="button"
+                phx-click="open_edit_modal"
+                phx-value-id={task.id}
+                class="det-btn"
+              >
+                {gettext("Edit")}
+              </button>
+              <button
+                type="button"
+                phx-click="open_delete_modal"
+                phx-value-id={task.id}
+                class="det-btn det-btn-danger"
+              >
+                <.icon name="hero-trash" class="size-3.5" />
+              </button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <%!-- Form modal (create / edit) --%>
 <%= if @show_form_modal do %>
-  <div class="app-modal">
-    <div class="app-modal-box" phx-click-away="close_form_modal">
+  <div class="app-modal items-start overflow-y-auto pt-24 pb-16">
+    <div class="app-modal-box my-auto" phx-click-away="close_form_modal">
       <div class="app-modal-title">
         {if @form_mode == :new, do: gettext("Record task"), else: gettext("Edit task")}
       </div>
@@ -130,6 +156,12 @@
             type="textarea"
             label={gettext("Reported problem")}
             required
+          />
+          <.input
+            field={@form[:reporter]}
+            type="text"
+            label={gettext("Reporter")}
+            placeholder={gettext("Who reported the issue")}
           />
           <.input
             field={@form[:issue_origin]}
@@ -151,11 +183,15 @@
             options={task_status_options()}
             required
           />
+          <.input field={@form[:resolution]} type="textarea" label={gettext("Resolution")} />
           <.input
-            field={@form[:resolution]}
-            type="textarea"
-            label={gettext("Resolution")}
+            field={@form[:team_id]}
+            type="select"
+            label={gettext("Team")}
+            prompt={gettext("No team")}
+            options={Enum.map(@teams, &{&1.name, &1.id})}
           />
+          <.input field={@form[:cause]} type="textarea" label={gettext("Cause")} />
         </div>
 
         <div class="app-modal-foot">

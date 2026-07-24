@@ -20,20 +20,26 @@ defmodule Hermes.TechOpsTest do
   end
 
   describe "create_tech_ops_task/1" do
-    test "creates a task with valid attributes", %{user: user} do
+    test "creates a task with valid attributes", %{user: user, team: team} do
       attrs = %{
         "recorded_on" => Date.utc_today(),
         "reported_problem" => "Server is down",
+        "reporter" => "Jane from support",
         "issue_origin" => "monitoring alert",
         "status" => "open",
-        "responsible_id" => user.id
+        "cause" => "disk full",
+        "responsible_id" => user.id,
+        "team_id" => team.id
       }
 
       assert {:ok, %Task{} = task} = TechOps.create_tech_ops_task(attrs)
       assert task.reported_problem == "Server is down"
+      assert task.reporter == "Jane from support"
       assert task.issue_origin == "monitoring alert"
       assert task.status == :open
+      assert task.cause == "disk full"
       assert task.responsible_id == user.id
+      assert task.team_id == team.id
     end
 
     test "defaults status to :open when omitted" do
@@ -83,6 +89,7 @@ defmodule Hermes.TechOpsTest do
       assert newer.reported_problem == "newer"
       assert older.reported_problem == "older"
       assert %Accounts.User{} = older.responsible
+      assert %Ecto.Association.NotLoaded{} != newer.team
     end
   end
 
@@ -115,6 +122,29 @@ defmodule Hermes.TechOpsTest do
 
       assert {:ok, _} = TechOps.delete_tech_ops_task(task)
       assert_raise Ecto.NoResultsError, fn -> TechOps.get_tech_ops_task!(task.id) end
+    end
+  end
+
+  describe "get_tech_ops_task/1" do
+    test "returns the task with associations preloaded" do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x"
+        })
+
+      fetched = TechOps.get_tech_ops_task(task.id)
+      assert fetched.id == task.id
+      refute match?(%Ecto.Association.NotLoaded{}, fetched.responsible)
+      refute match?(%Ecto.Association.NotLoaded{}, fetched.team)
+    end
+
+    test "returns nil for a missing id (no raise)" do
+      assert TechOps.get_tech_ops_task(999_999) == nil
+    end
+
+    test "returns nil for a non-integer id (no raise)" do
+      assert TechOps.get_tech_ops_task("not-an-id") == nil
     end
   end
 end
