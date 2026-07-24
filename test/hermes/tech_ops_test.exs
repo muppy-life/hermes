@@ -124,4 +124,27 @@ defmodule Hermes.TechOpsTest do
       assert_raise Ecto.NoResultsError, fn -> TechOps.get_tech_ops_task!(task.id) end
     end
   end
+
+  describe "get_tech_ops_task/1" do
+    test "returns the task with associations preloaded" do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x"
+        })
+
+      fetched = TechOps.get_tech_ops_task(task.id)
+      assert fetched.id == task.id
+      refute match?(%Ecto.Association.NotLoaded{}, fetched.responsible)
+      refute match?(%Ecto.Association.NotLoaded{}, fetched.team)
+    end
+
+    test "returns nil for a missing id (no raise)" do
+      assert TechOps.get_tech_ops_task(999_999) == nil
+    end
+
+    test "returns nil for a non-integer id (no raise)" do
+      assert TechOps.get_tech_ops_task("not-an-id") == nil
+    end
+  end
 end

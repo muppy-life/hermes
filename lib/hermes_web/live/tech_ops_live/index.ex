@@ -37,15 +37,20 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   def handle_event("open_edit_modal", %{"id" => id}, socket) do
-    task = TechOps.get_tech_ops_task!(String.to_integer(id))
-    changeset = Task.changeset(task, %{})
+    case TechOps.get_tech_ops_task(id) do
+      nil ->
+        {:noreply, handle_missing_task(socket)}
 
-    {:noreply,
-     socket
-     |> assign(:form_mode, :edit)
-     |> assign(:selected_task, task)
-     |> assign(:form, to_form(changeset))
-     |> assign(:show_form_modal, true)}
+      task ->
+        changeset = Task.changeset(task, %{})
+
+        {:noreply,
+         socket
+         |> assign(:form_mode, :edit)
+         |> assign(:selected_task, task)
+         |> assign(:form, to_form(changeset))
+         |> assign(:show_form_modal, true)}
+    end
   end
 
   def handle_event("close_form_modal", _params, socket) do
@@ -53,12 +58,16 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   def handle_event("open_delete_modal", %{"id" => id}, socket) do
-    task = TechOps.get_tech_ops_task!(String.to_integer(id))
+    case TechOps.get_tech_ops_task(id) do
+      nil ->
+        {:noreply, handle_missing_task(socket)}
 
-    {:noreply,
-     socket
-     |> assign(:selected_task, task)
-     |> assign(:show_delete_modal, true)}
+      task ->
+        {:noreply,
+         socket
+         |> assign(:selected_task, task)
+         |> assign(:show_delete_modal, true)}
+    end
   end
 
   def handle_event("close_delete_modal", _params, socket) do
@@ -90,6 +99,14 @@ defmodule HermesWeb.TechOpsLive.Index do
          |> assign(:show_delete_modal, false)
          |> put_flash(:error, gettext("Failed to delete task"))}
     end
+  rescue
+    # Already deleted by another user; treat as done and refresh the list.
+    Ecto.StaleEntryError ->
+      {:noreply,
+       socket
+       |> load_tasks()
+       |> assign(:show_delete_modal, false)
+       |> put_flash(:info, gettext("Task deleted successfully"))}
   end
 
   defp save_task(socket, :new, task_params) do
@@ -120,6 +137,9 @@ defmodule HermesWeb.TechOpsLive.Index do
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
     end
+  rescue
+    # The task was deleted by another user after this modal was opened.
+    Ecto.StaleEntryError -> {:noreply, handle_missing_task(socket)}
   end
 
   defp load_tasks(socket) do
@@ -128,6 +148,16 @@ defmodule HermesWeb.TechOpsLive.Index do
     socket
     |> stream(:tasks, tasks, reset: true)
     |> assign(:task_count, length(tasks))
+  end
+
+  # A task referenced by a stale row no longer exists (deleted by another user).
+  # Close any open modal, drop the stale row via a reload, and inform the user.
+  defp handle_missing_task(socket) do
+    socket
+    |> assign(:show_form_modal, false)
+    |> assign(:show_delete_modal, false)
+    |> load_tasks()
+    |> put_flash(:error, gettext("This task no longer exists."))
   end
 
   # Translated status label for the UI.

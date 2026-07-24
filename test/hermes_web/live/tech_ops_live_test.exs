@@ -173,5 +173,46 @@ defmodule HermesWeb.TechOpsLiveTest do
 
       assert TechOps.list_tech_ops_tasks() == []
     end
+
+    test "opening edit on a concurrently-deleted task does not crash", %{conn: conn} do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "stale"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      # Another user deletes it after this page rendered.
+      TechOps.delete_tech_ops_task(task)
+
+      # Must not raise / crash the process.
+      lv
+      |> element("button[phx-click='open_edit_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # LiveView is still alive, the stale row is gone, and the user is informed.
+      assert render(lv) =~ "Tech Ops"
+      refute render(lv) =~ "stale"
+    end
+
+    test "opening delete on a concurrently-deleted task does not crash", %{conn: conn} do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "stale"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      TechOps.delete_tech_ops_task(task)
+
+      lv
+      |> element("button[phx-click='open_delete_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      assert render(lv) =~ "Tech Ops"
+      refute render(lv) =~ "stale"
+    end
   end
 end

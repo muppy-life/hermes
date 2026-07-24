@@ -15,7 +15,20 @@ defmodule Hermes.TechOps do
     |> Repo.preload([:responsible, :team])
   end
 
-  def get_tech_ops_task!(id), do: Repo.get!(Task, id) |> Repo.preload(:responsible)
+  def get_tech_ops_task!(id), do: Repo.get!(Task, id) |> Repo.preload([:responsible, :team])
+
+  @doc """
+  Fetches a task by id, or nil if it does not exist. Used by the LiveView so a
+  concurrently-deleted task (stale row) does not crash the process.
+  """
+  def get_tech_ops_task(id) do
+    case Repo.get(Task, id) do
+      nil -> nil
+      task -> Repo.preload(task, [:responsible, :team])
+    end
+  rescue
+    Ecto.Query.CastError -> nil
+  end
 
   def create_tech_ops_task(attrs \\ %{}) do
     %Task{}
