@@ -16,6 +16,7 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:form_mode, :new)
      |> assign(:form, to_form(%{}))
      |> assign(:users, Accounts.list_users())
+     |> assign(:teams, Accounts.list_teams())
      |> load_tasks()}
   end
 

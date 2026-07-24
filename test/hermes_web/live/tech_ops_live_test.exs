@@ -19,7 +19,7 @@ defmodule HermesWeb.TechOpsLiveTest do
   end
 
   setup %{conn: conn} do
-    {:ok, team} = Accounts.create_team(%{name: "Team", description: "d"})
+    {:ok, team} = Accounts.create_team(%{name: "Platform Squad", description: "d"})
     dev = create_user("dev_team", "dev@example.com", team.id)
     %{conn: conn, team: team, dev: dev}
   end
@@ -66,7 +66,7 @@ defmodule HermesWeb.TechOpsLiveTest do
       %{conn: init_test_session(conn, %{user_id: dev.id})}
     end
 
-    test "creates a task through the form", %{conn: conn, dev: dev} do
+    test "creates a task through the form", %{conn: conn, dev: dev, team: team} do
       {:ok, lv, _html} = live(conn, ~p"/tech-ops")
 
       lv |> element("button", "Record task") |> render_click()
@@ -77,19 +77,28 @@ defmodule HermesWeb.TechOpsLiveTest do
           task: %{
             recorded_on: "2026-07-24",
             reported_problem: "DB connection pool exhausted",
+            reporter: "on-call engineer",
             issue_origin: "monitoring",
             status: "in_progress",
-            responsible_id: dev.id
+            cause: "traffic spike",
+            responsible_id: dev.id,
+            team_id: team.id
           }
         )
         |> render_submit()
 
       assert html =~ "DB connection pool exhausted"
+      assert html =~ "on-call engineer"
       assert html =~ "In progress"
+      assert html =~ "traffic spike"
+      assert html =~ team.name
 
       assert [task] = TechOps.list_tech_ops_tasks()
       assert task.reported_problem == "DB connection pool exhausted"
+      assert task.reporter == "on-call engineer"
       assert task.status == :in_progress
+      assert task.cause == "traffic spike"
+      assert task.team_id == team.id
     end
 
     test "shows validation errors on an incomplete form", %{conn: conn} do

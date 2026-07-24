@@ -12,7 +12,7 @@ defmodule Hermes.TechOps do
   def list_tech_ops_tasks do
     from(t in Task, order_by: [desc: t.recorded_on, desc: t.id])
     |> Repo.all()
-    |> Repo.preload(:responsible)
+    |> Repo.preload([:responsible, :team])
   end
 
   def get_tech_ops_task!(id), do: Repo.get!(Task, id) |> Repo.preload(:responsible)
