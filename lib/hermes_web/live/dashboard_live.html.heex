@@ -204,6 +204,9 @@ user_name =
                           <.tip text={rm_priority_title(req.priority)}>
                             <span class={["tag-pill", prio_tag_class]}>{prio_tag_label}</span>
                           </.tip>
+                          <span :if={req.is_epic} class="tag-pill tag-epic">
+                            <.icon name="hero-square-3-stack-3d" class="size-3" /> EPIC
+                          </span>
                         </div>
                         <div class="rm-task-expand">
                           <div class="rm-task-title">{req.title}</div>
@@ -292,6 +295,9 @@ user_name =
                         title={req.requesting_team.name}
                       >
                         {req.requesting_team.name}
+                      </span>
+                      <span :if={req.is_epic} class="tag-pill tag-epic">
+                        <.icon name="hero-square-3-stack-3d" class="size-3" /> EPIC
                       </span>
                       <.tip text={rm_priority_title(req.priority)}>
                         <span class={["tag-pill", prio_class]}>{prio_label}</span>

@@ -120,6 +120,11 @@
                   <div class="k-card-title">{req.title}</div>
 
                   <div class="k-card-tags">
+                    <%= if req.is_epic do %>
+                      <span class="tag-pill tag-epic">
+                        <.icon name="hero-square-3-stack-3d" class="size-3" /> EPIC
+                      </span>
+                    <% end %>
                     <span class={["tag-pill", prio_class]}>{prio_label}</span>
                     <span class="tag-pill tag-team">{req.requesting_team.name}</span>
                     <%= if req.deadline do %>

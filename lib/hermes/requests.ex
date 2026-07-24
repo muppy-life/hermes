@@ -22,6 +22,7 @@ defmodule Hermes.Requests do
     Request
     |> Repo.all()
     |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
+    |> annotate_epics()
   end
 
   def list_requests_by_team(team_id) do
@@ -31,6 +32,25 @@ defmodule Hermes.Requests do
     )
     |> Repo.all()
     |> Repo.preload([:requesting_team, :assigned_to_team, :created_by])
+    |> annotate_epics()
+  end
+
+  # Sets the virtual `is_epic` flag on each request that has at least one
+  # active (non-discarded) subtask. Uses a single query over the given
+  # requests to avoid N+1 lookups.
+  defp annotate_epics(requests) when is_list(requests) do
+    ids = Enum.map(requests, & &1.id)
+
+    epic_ids =
+      from(r in Request,
+        where: r.parent_id in ^ids and r.status != "discarded",
+        distinct: true,
+        select: r.parent_id
+      )
+      |> Repo.all()
+      |> MapSet.new()
+
+    Enum.map(requests, &%{&1 | is_epic: MapSet.member?(epic_ids, &1.id)})
   end
 
   def list_pending_requests do
