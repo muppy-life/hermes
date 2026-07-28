@@ -194,7 +194,7 @@ defmodule Hermes.AccountsTest do
     end
   end
 
-  describe "list_tech_users/0" do
+  describe "list_dev_team/0" do
     setup do
       {:ok, team} = Accounts.create_team(%{name: "Tech Users Team", description: "d"})
 
@@ -221,21 +221,21 @@ defmodule Hermes.AccountsTest do
     end
 
     test "includes dev_team, admin role, and is_admin users", ctx do
-      ids = Accounts.list_tech_users() |> Enum.map(& &1.id)
+      ids = Accounts.list_dev_team() |> Enum.map(& &1.id)
       assert ctx.dev.id in ids
       assert ctx.admin_role.id in ids
       assert ctx.admin_flag.id in ids
     end
 
     test "excludes non-tech users", ctx do
-      ids = Accounts.list_tech_users() |> Enum.map(& &1.id)
+      ids = Accounts.list_dev_team() |> Enum.map(& &1.id)
       refute ctx.member.id in ids
       refute ctx.po.id in ids
     end
 
     test "excludes soft-deleted tech users", ctx do
       {:ok, _} = Accounts.delete_user(ctx.dev)
-      ids = Accounts.list_tech_users() |> Enum.map(& &1.id)
+      ids = Accounts.list_dev_team() |> Enum.map(& &1.id)
       refute ctx.dev.id in ids
     end
   end
