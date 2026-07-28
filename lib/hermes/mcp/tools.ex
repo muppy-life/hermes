@@ -10,6 +10,7 @@ defmodule Hermes.MCP.Tools do
   translate those into HTTP or JSON-RPC responses.
   """
 
+  alias Hermes.Accounts
   alias Hermes.Accounts.User
   alias Hermes.Requests
   alias Hermes.Requests.Request
@@ -23,7 +24,7 @@ defmodule Hermes.MCP.Tools do
   def definitions do
     [
       %{
-        name: "list_tasks",
+        name: "list_tech_ops_tasks",
         description:
           "List tech-ops tasks (engineering/operational issues), most recent first. " <>
             "Optionally filter by status.",
@@ -40,7 +41,7 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "get_task",
+        name: "get_tech_ops_task",
         description: "Fetch a single tech-ops task by id.",
         input_schema: %{
           type: "object",
@@ -52,17 +53,44 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "report_task",
+        name: "report_tech_ops_task",
         description:
           "Report (create) a new tech-ops task. Use this when you discover or are " <>
             "asked to record an engineering/operational issue. You are set as the " <>
-            "responsible person and the task starts in 'open' status.",
+            "responsible person unless `responsible` names someone else, and the " <>
+            "task starts in 'open' status unless `status` says otherwise.",
         input_schema: %{
           type: "object",
           properties: %{
             reported_problem: %{
               type: "string",
               description: "Description of the problem/issue being reported."
+            },
+            cause: %{
+              type: "string",
+              description: "Root cause of the issue, once known. Free text."
+            },
+            team: %{
+              type: "string",
+              description:
+                "Team the issue belongs to (e.g. Operations, Rentals). Must name an " <>
+                  "existing team; unknown values are rejected with suggestions."
+            },
+            responsible: %{
+              type: "string",
+              description:
+                "Tech-ops person responsible, by full name or email. Must match an " <>
+                  "existing user; unknown values are rejected with suggestions. " <>
+                  "Defaults to the calling user."
+            },
+            status: %{
+              type: "string",
+              enum: status_enum(),
+              description: "Initial status. Defaults to 'open'."
+            },
+            resolution: %{
+              type: "string",
+              description: "Notes on what was done / how it was resolved, if already known."
             },
             issue_origin: %{
               type: "string",
@@ -89,7 +117,7 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "update_task",
+        name: "update_tech_ops_task",
         description:
           "Update a tech-ops task: change its status and/or add work notes. Set any " <>
             "subset of fields.",
@@ -117,6 +145,22 @@ defmodule Hermes.MCP.Tools do
               description:
                 "Correct or set the reporter. Must be an existing value " <>
                   "(see list_reporters); unknown values are rejected with suggestions."
+            },
+            cause: %{
+              type: "string",
+              description: "Correct or set the root cause. Free text."
+            },
+            team: %{
+              type: "string",
+              description:
+                "Correct or set the team. Must name an existing team; unknown values " <>
+                  "are rejected with suggestions."
+            },
+            responsible: %{
+              type: "string",
+              description:
+                "Correct or set the responsible person, by full name or email. Must " <>
+                  "match an existing user; unknown values are rejected with suggestions."
             }
           },
           required: ["id"],
@@ -124,7 +168,7 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "resolve_task",
+        name: "resolve_tech_ops_task",
         description:
           "Complete a tech-ops task: set its status to 'resolved' and record how it " <>
             "was resolved. Use this when the issue is fixed.",
@@ -229,7 +273,7 @@ defmodule Hermes.MCP.Tools do
   """
   def call(_name, _args, user) when not is_struct(user, User), do: {:error, :unauthenticated}
 
-  def call("list_tasks", args, _user) do
+  def call("list_tech_ops_tasks", args, _user) do
     tasks = TechOps.list_tech_ops_tasks()
 
     tasks =
@@ -242,43 +286,48 @@ defmodule Hermes.MCP.Tools do
     {:ok, %{tasks: Enum.map(tasks, &serialize/1)}}
   end
 
-  def call("get_task", %{"id" => id}, _user) do
+  def call("get_tech_ops_task", %{"id" => id}, _user) do
     with {:ok, task} <- fetch_task(id) do
       {:ok, serialize(task)}
     end
   end
 
-  def call("report_task", args, %User{} = user) do
-    base = %{
-      "reported_problem" => Map.get(args, "reported_problem"),
-      "recorded_on" => Map.get(args, "recorded_on") || Date.utc_today(),
-      "status" => "open",
-      "responsible_id" => user.id
-    }
+  def call("report_tech_ops_task", args, %User{} = user) do
+    base =
+      %{
+        "reported_problem" => Map.get(args, "reported_problem"),
+        "recorded_on" => Map.get(args, "recorded_on") || Date.utc_today(),
+        "status" => Map.get(args, "status") || "open",
+        "cause" => Map.get(args, "cause"),
+        "resolution" => Map.get(args, "resolution"),
+        # Overridden by `lookups` when `responsible` names someone else.
+        "responsible_id" => user.id
+      }
+      |> reject_nil()
 
     with {:ok, lookups} <- resolve_lookups(args),
          attrs = Map.merge(base, lookups),
          {:ok, task} <- TechOps.create_tech_ops_task(attrs) do
-      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
+      {:ok, serialize_reloaded(task)}
     end
   end
 
-  def call("update_task", %{"id" => id} = args, _user) do
-    base = args |> Map.take(["status", "resolution"]) |> reject_nil()
+  def call("update_tech_ops_task", %{"id" => id} = args, _user) do
+    base = args |> Map.take(["status", "resolution", "cause"]) |> reject_nil()
 
     with {:ok, lookups} <- resolve_lookups(args),
          {:ok, task} <- fetch_task(id),
          {:ok, task} <- TechOps.update_tech_ops_task(task, Map.merge(base, lookups)) do
-      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
+      {:ok, serialize_reloaded(task)}
     end
   end
 
-  def call("resolve_task", %{"id" => id} = args, _user) do
+  def call("resolve_tech_ops_task", %{"id" => id} = args, _user) do
     attrs = %{"status" => "resolved", "resolution" => Map.get(args, "resolution")}
 
     with {:ok, task} <- fetch_task(id),
          {:ok, task} <- TechOps.update_tech_ops_task(task, attrs) do
-      {:ok, serialize(task)}
+      {:ok, serialize_reloaded(task)}
     end
   end
 
@@ -338,6 +387,13 @@ defmodule Hermes.MCP.Tools do
     end
   end
 
+  # A write returns the task without preloads. Load them onto that struct rather
+  # than re-fetching by id: associations resolve by foreign key, so the response
+  # is complete even if another process deletes the task's own row first.
+  defp serialize_reloaded(%Task{} = task) do
+    serialize(TechOps.preload_task(task))
+  end
+
   @doc "Serializes a task to a plain, JSON-safe map for API/MCP responses."
   def serialize(%Task{} = task) do
     %{
@@ -351,6 +407,7 @@ defmodule Hermes.MCP.Tools do
       resolution: task.resolution,
       recorded_on: task.recorded_on,
       responsible: serialize_user(task.responsible),
+      team: serialize_lookup(task.team),
       inserted_at: task.inserted_at,
       updated_at: task.updated_at
     }
@@ -373,8 +430,10 @@ defmodule Hermes.MCP.Tools do
   # (only for keys that were provided) or {:error, {:unknown_value, field,
   # suggestions}}.
   defp resolve_lookups(args) do
-    with {:ok, acc} <- resolve_lookup(args, "issue_origin", "issue_origin_id", %{}) do
-      resolve_lookup(args, "reporter", "reporter_id", acc)
+    with {:ok, acc} <- resolve_lookup(args, "issue_origin", "issue_origin_id", %{}),
+         {:ok, acc} <- resolve_lookup(args, "reporter", "reporter_id", acc),
+         {:ok, acc} <- resolve_lookup(args, "team", "team_id", acc) do
+      resolve_lookup(args, "responsible", "responsible_id", acc)
     end
   end
 
@@ -404,11 +463,44 @@ defmodule Hermes.MCP.Tools do
   defp find_lookup("issue_origin", name), do: TechOps.find_issue_origin(name)
   defp find_lookup("reporter", name), do: TechOps.find_reporter(name)
 
+  defp find_lookup("team", name) do
+    Enum.find(Accounts.list_teams(), &(normalize_name(&1.name) == normalize_name(name)))
+  end
+
+  # Users are matched on email first (unambiguous), then on display name.
+  defp find_lookup("responsible", name) do
+    key = normalize_name(name)
+
+    users = Accounts.list_users()
+
+    Enum.find(users, &(normalize_name(&1.email) == key)) ||
+      Enum.find(users, &(normalize_name(User.display_name(&1)) == key))
+  end
+
   defp suggest_lookup("issue_origin", name),
     do: TechOps.suggest_issue_origins(name) |> Enum.map(& &1.name)
 
   defp suggest_lookup("reporter", name),
     do: TechOps.suggest_reporters(name) |> Enum.map(& &1.name)
+
+  defp suggest_lookup("team", _name), do: Enum.map(Accounts.list_teams(), & &1.name)
+
+  defp suggest_lookup("responsible", name) do
+    key = normalize_name(name)
+
+    Accounts.list_users()
+    |> Enum.map(&User.display_name/1)
+    |> Enum.filter(&(&1 && String.contains?(normalize_name(&1), first_word(key))))
+    |> Enum.take(5)
+  end
+
+  defp normalize_name(nil), do: ""
+
+  defp normalize_name(value) when is_binary(value) do
+    value |> String.trim() |> String.replace(~r/\s+/u, " ") |> String.downcase()
+  end
+
+  defp first_word(key), do: key |> String.split(" ", parts: 2) |> List.first()
 
   @doc "Serializes a request to a plain, JSON-safe map for the read API/MCP."
   def serialize_request(%Request{} = request) do

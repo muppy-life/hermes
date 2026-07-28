@@ -71,6 +71,10 @@ defmodule HermesWeb.TechOpsLiveTest do
 
       lv |> element("button", "Record task") |> render_click()
 
+      # Both lookups are new values, so switch each field to free-text entry.
+      lv |> element("button[phx-value-field='reporter']") |> render_click()
+      lv |> element("button[phx-value-field='issue_origin']") |> render_click()
+
       html =
         lv
         |> form("#tech-ops-task-form",
@@ -108,6 +112,9 @@ defmodule HermesWeb.TechOpsLiveTest do
       {:ok, lv, _html} = live(conn, ~p"/tech-ops")
       lv |> element("button", "Record task") |> render_click()
 
+      # Free-text entry is what allows the case-variant spelling to be submitted.
+      lv |> element("button[phx-value-field='issue_origin']") |> render_click()
+
       lv
       |> form("#tech-ops-task-form",
         task: %{
@@ -141,6 +148,79 @@ defmodule HermesWeb.TechOpsLiveTest do
 
       assert html =~ ~s(value="#{dev.id}")
       refute html =~ ~s(value="#{member.id}")
+    end
+
+    test "lookup fields are dropdowns of existing values by default", %{conn: conn} do
+      {:ok, _} = TechOps.resolve_or_create_reporter("Alejandra")
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+      html = lv |> element("button", "Record task") |> render_click()
+
+      assert html =~ ~s(<select name="task[reporter_name]")
+      assert html =~ "Alejandra"
+    end
+
+    test "the new-value button swaps the dropdown for a datalist input", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+      lv |> element("button", "Record task") |> render_click()
+
+      html = lv |> element("button[phx-value-field='reporter']") |> render_click()
+
+      # The reporter field is now free text; issue origin stays a dropdown.
+      assert html =~ ~s(name="task[reporter_name]" value="" list="tech-ops-reporters")
+      refute html =~ ~s(<select name="task[reporter_name]")
+      assert html =~ ~s(<select name="task[issue_origin_name]")
+
+      # Toggling back restores the dropdown.
+      html = lv |> element("button[phx-value-field='reporter']") |> render_click()
+      assert html =~ ~s(<select name="task[reporter_name]")
+    end
+
+    test "editing a task preselects its current lookup values", %{conn: conn} do
+      {:ok, _} = TechOps.resolve_or_create_reporter("Alejandra")
+
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x",
+          "reporter_name" => "Alejandra"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv
+      |> element("button[phx-click='open_edit_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      assert render(lv) =~ ~s(<option value="Alejandra" selected="">)
+    end
+
+    test "toggling a lookup mode twice keeps the saved value", %{conn: conn} do
+      {:ok, _} = TechOps.resolve_or_create_reporter("Alejandra")
+
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x",
+          "reporter_name" => "Alejandra"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv
+      |> element("button[phx-click='open_edit_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # Switch to free text and straight back without typing anything.
+      lv |> element("button[phx-value-field='reporter']") |> render_click()
+      lv |> element("button[phx-value-field='reporter']") |> render_click()
+
+      lv
+      |> form("#tech-ops-task-form", task: %{reported_problem: "x"})
+      |> render_submit()
+
+      # The association survived the round trip.
+      assert TechOps.get_tech_ops_task(task.id).reporter.name == "Alejandra"
     end
 
     test "shows validation errors on an incomplete form", %{conn: conn} do
@@ -255,6 +335,8 @@ defmodule HermesWeb.TechOpsLiveTest do
       TechOps.delete_tech_ops_task(task)
 
       # Submit the edit with a brand-new issue-origin value.
+      lv |> element("button[phx-value-field='issue_origin']") |> render_click()
+
       lv
       |> form("#tech-ops-task-form",
         task: %{reported_problem: "stale", issue_origin_name: "Brand New Origin"}

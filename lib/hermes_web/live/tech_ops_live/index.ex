@@ -15,6 +15,10 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:selected_task, nil)
      |> assign(:form_mode, :new)
      |> assign(:form, to_form(%{}))
+     |> assign(:reporter_name, "")
+     |> assign(:issue_origin_name, "")
+     |> assign(:new_reporter, false)
+     |> assign(:new_issue_origin, false)
      |> assign(:users, Accounts.list_dev_team())
      |> assign(:teams, Accounts.list_teams())
      |> load_lookups()
@@ -36,6 +40,8 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:form, to_form(changeset))
      |> assign(:reporter_name, "")
      |> assign(:issue_origin_name, "")
+     |> assign(:new_reporter, false)
+     |> assign(:new_issue_origin, false)
      |> assign(:show_form_modal, true)}
   end
 
@@ -54,6 +60,13 @@ defmodule HermesWeb.TechOpsLive.Index do
          |> assign(:form, to_form(changeset))
          |> assign(:reporter_name, lookup_name(task.reporter))
          |> assign(:issue_origin_name, lookup_name(task.issue_origin))
+         # A value no longer in the lookup list would vanish from a <select>,
+         # so fall back to the free-text input to preserve it.
+         |> assign(:new_reporter, orphan_value?(task.reporter, socket.assigns.reporters))
+         |> assign(
+           :new_issue_origin,
+           orphan_value?(task.issue_origin, socket.assigns.issue_origins)
+         )
          |> assign(:show_form_modal, true)}
     end
   end
@@ -88,6 +101,25 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:form, to_form(changeset, action: :validate))
      |> assign(:reporter_name, Map.get(task_params, "reporter_name", ""))
      |> assign(:issue_origin_name, Map.get(task_params, "issue_origin_name", ""))}
+  end
+
+  # Swaps a lookup field between picking an existing value and typing a new one.
+  def handle_event("toggle_new_lookup", %{"field" => "reporter"}, socket) do
+    new? = !socket.assigns.new_reporter
+
+    {:noreply,
+     socket
+     |> assign(:new_reporter, new?)
+     |> assign(:reporter_name, toggled_lookup_name(socket, new?, & &1.reporter))}
+  end
+
+  def handle_event("toggle_new_lookup", %{"field" => "issue_origin"}, socket) do
+    new? = !socket.assigns.new_issue_origin
+
+    {:noreply,
+     socket
+     |> assign(:new_issue_origin, new?)
+     |> assign(:issue_origin_name, toggled_lookup_name(socket, new?, & &1.issue_origin))}
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
@@ -173,6 +205,23 @@ defmodule HermesWeb.TechOpsLive.Index do
 
   defp lookup_name(%{name: name}), do: name
   defp lookup_name(_), do: ""
+
+  # Switching to free text starts blank, so a value picked from the dropdown is
+  # not resubmitted as a new one. Switching back restores the task's saved value
+  # rather than submitting a blank, which would drop the association.
+  defp toggled_lookup_name(_socket, true, _getter), do: ""
+
+  defp toggled_lookup_name(socket, false, getter) do
+    case socket.assigns.selected_task do
+      nil -> ""
+      task -> lookup_name(getter.(task))
+    end
+  end
+
+  # True when the task holds a lookup value that is absent from the current
+  # options, so the <select> could not represent it.
+  defp orphan_value?(%{id: id}, options), do: not Enum.any?(options, &(&1.id == id))
+  defp orphan_value?(_, _), do: false
 
   # A task referenced by a stale row no longer exists (deleted by another user).
   # Close any open modal, drop the stale row via a reload, and inform the user.

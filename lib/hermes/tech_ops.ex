@@ -26,6 +26,13 @@ defmodule Hermes.TechOps do
   def get_tech_ops_task!(id), do: Repo.get!(Task, id) |> Repo.preload(@task_preloads)
 
   @doc """
+  Loads a task's associations onto a struct already in hand. Associations are
+  fetched by foreign key, so this still works when the task's own row has since
+  been deleted — unlike re-fetching it by id.
+  """
+  def preload_task(%Task{} = task), do: Repo.preload(task, @task_preloads)
+
+  @doc """
   Fetches a task by id, or nil if it does not exist. Used by the LiveView (so a
   concurrently-deleted task does not crash the process) and by the API/MCP layer.
   """

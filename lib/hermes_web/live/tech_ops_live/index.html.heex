@@ -158,38 +158,84 @@
             required
           />
           <div class="fieldset mb-2">
-            <label>
-              <span class="label mb-1">{gettext("Reporter")}</span>
-              <input
-                type="text"
-                name="task[reporter_name]"
-                value={@reporter_name}
-                list="tech-ops-reporters"
-                autocomplete="off"
-                placeholder={gettext("Pick or type a new one")}
-                class="w-full input"
-              />
-            </label>
-            <datalist id="tech-ops-reporters">
-              <option :for={r <- @reporters} value={r.name}></option>
-            </datalist>
+            <span class="label mb-1">{gettext("Reporter")}</span>
+            <div class="flex items-start gap-2">
+              <%= if @new_reporter do %>
+                <input
+                  type="text"
+                  name="task[reporter_name]"
+                  value={@reporter_name}
+                  list="tech-ops-reporters"
+                  autocomplete="off"
+                  placeholder={gettext("Type a new one")}
+                  class="flex-1 input"
+                />
+                <datalist id="tech-ops-reporters">
+                  <option :for={r <- @reporters} value={r.name}></option>
+                </datalist>
+              <% else %>
+                <select name="task[reporter_name]" class="flex-1 select">
+                  <option value="">{gettext("Unassigned")}</option>
+                  <option
+                    :for={r <- @reporters}
+                    value={r.name}
+                    selected={r.name == @reporter_name}
+                  >
+                    {r.name}
+                  </option>
+                </select>
+              <% end %>
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm"
+                phx-click="toggle_new_lookup"
+                phx-value-field="reporter"
+                title={if @new_reporter, do: gettext("Pick existing"), else: gettext("Add new")}
+              >
+                {if @new_reporter, do: gettext("Cancel"), else: gettext("+ New")}
+              </button>
+            </div>
           </div>
           <div class="fieldset mb-2">
-            <label>
-              <span class="label mb-1">{gettext("Issue origin")}</span>
-              <input
-                type="text"
-                name="task[issue_origin_name]"
-                value={@issue_origin_name}
-                list="tech-ops-issue-origins"
-                autocomplete="off"
-                placeholder={gettext("Pick or type a new one")}
-                class="w-full input"
-              />
-            </label>
-            <datalist id="tech-ops-issue-origins">
-              <option :for={o <- @issue_origins} value={o.name}></option>
-            </datalist>
+            <span class="label mb-1">{gettext("Issue origin")}</span>
+            <div class="flex items-start gap-2">
+              <%= if @new_issue_origin do %>
+                <input
+                  type="text"
+                  name="task[issue_origin_name]"
+                  value={@issue_origin_name}
+                  list="tech-ops-issue-origins"
+                  autocomplete="off"
+                  placeholder={gettext("Type a new one")}
+                  class="flex-1 input"
+                />
+                <datalist id="tech-ops-issue-origins">
+                  <option :for={o <- @issue_origins} value={o.name}></option>
+                </datalist>
+              <% else %>
+                <select name="task[issue_origin_name]" class="flex-1 select">
+                  <option value="">{gettext("Unassigned")}</option>
+                  <option
+                    :for={o <- @issue_origins}
+                    value={o.name}
+                    selected={o.name == @issue_origin_name}
+                  >
+                    {o.name}
+                  </option>
+                </select>
+              <% end %>
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm"
+                phx-click="toggle_new_lookup"
+                phx-value-field="issue_origin"
+                title={
+                  if @new_issue_origin, do: gettext("Pick existing"), else: gettext("Add new")
+                }
+              >
+                {if @new_issue_origin, do: gettext("Cancel"), else: gettext("+ New")}
+              </button>
+            </div>
           </div>
           <.input
             field={@form[:responsible_id]}
