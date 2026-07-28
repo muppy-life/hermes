@@ -51,16 +51,16 @@ Base path: `/api/v1`
 | Method | Path                       | Description                          |
 |--------|----------------------------|--------------------------------------|
 | GET    | `/me`                      | Authenticated token owner            |
-| GET    | `/tech_ops_tasks`          | List tasks (`?status=` filter)       |
-| GET    | `/tech_ops_tasks/:id`      | Get one task                         |
-| POST   | `/tech_ops_tasks`          | Report (create) a task               |
-| PATCH  | `/tech_ops_tasks/:id`      | Update status / resolution           |
+| GET    | `/tech-ops-tasks`          | List tasks (`?status=` filter)       |
+| GET    | `/tech-ops-tasks/:id`      | Get one task                         |
+| POST   | `/tech-ops-tasks`          | Report (create) a task               |
+| PATCH  | `/tech-ops-tasks/:id`      | Update status / resolution           |
 | GET    | `/requests`                | List team requests (`?status=`)      |
 | GET    | `/requests/:id`            | Get one request                      |
 | GET    | `/reporters`               | List canonical reporter values       |
 | POST   | `/reporters`               | Add a reporter value                 |
-| GET    | `/issue_origins`           | List canonical issue-origin values   |
-| POST   | `/issue_origins`           | Add an issue-origin value            |
+| GET    | `/issue-origins`           | List canonical issue-origin values   |
+| POST   | `/issue-origins`           | Add an issue-origin value            |
 
 Tech-ops task statuses: `open`, `in_progress`, `blocked`, `resolved`, `closed`.
 
@@ -78,7 +78,7 @@ suggestions — it is not silently created:
     "suggestions": ["AppSignal alert"] } }
 ```
 
-To add a new value first, `POST /reporters` or `POST /issue_origins` with
+To add a new value first, `POST /reporters` or `POST /issue-origins` with
 `{"name": "..."}` (idempotent — returns the existing row if it already exists).
 Pass `""` to clear a task's reporter/origin.
 
@@ -93,17 +93,17 @@ request outside that scope returns `404` (its existence is never revealed).
 curl -H "Authorization: Bearer $TOKEN" https://<host>/api/v1/me
 
 # Add an issue-origin value (once), then report an issue using it
-curl -X POST https://<host>/api/v1/issue_origins \
+curl -X POST https://<host>/api/v1/issue-origins \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"name": "AppSignal alert"}'
 
-curl -X POST https://<host>/api/v1/tech_ops_tasks \
+curl -X POST https://<host>/api/v1/tech-ops-tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"reported_problem": "Disk full on web-1", "issue_origin": "AppSignal alert"}'
 
 # Resolve it
-curl -X PATCH https://<host>/api/v1/tech_ops_tasks/42 \
+curl -X PATCH https://<host>/api/v1/tech-ops-tasks/42 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"status": "resolved", "resolution": "Rotated logs, expanded volume"}'

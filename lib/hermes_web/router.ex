@@ -47,10 +47,10 @@ defmodule HermesWeb.Router do
     pipe_through :api_authenticated
 
     get "/me", MeController, :show
-    resources "/tech_ops_tasks", TechOpsTaskController, only: [:index, :show, :create, :update]
+    resources "/tech-ops-tasks", TechOpsTaskController, only: [:index, :show, :create, :update]
     resources "/requests", RequestController, only: [:index, :show]
     resources "/reporters", ReporterController, only: [:index, :create]
-    resources "/issue_origins", IssueOriginController, only: [:index, :create]
+    resources "/issue-origins", IssueOriginController, only: [:index, :create]
   end
 
   # MCP endpoint (JSON-RPC 2.0 over HTTP) for Claude and other MCP clients.

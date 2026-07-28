@@ -39,12 +39,12 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
 
   describe "authentication" do
     test "401 without a token", %{conn: conn} do
-      conn = get(conn, ~p"/api/v1/tech_ops_tasks")
+      conn = get(conn, ~p"/api/v1/tech-ops-tasks")
       assert json_response(conn, 401)["error"]["code"] == "unauthorized"
     end
 
     test "401 with an invalid token", %{conn: conn, auth: auth} do
-      conn = auth.(conn, "hermes_bad") |> get(~p"/api/v1/tech_ops_tasks")
+      conn = auth.(conn, "hermes_bad") |> get(~p"/api/v1/tech-ops-tasks")
       assert json_response(conn, 401)
     end
 
@@ -52,7 +52,7 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
       conn =
         conn
         |> put_req_header("authorization", "Bearer ")
-        |> get(~p"/api/v1/tech_ops_tasks")
+        |> get(~p"/api/v1/tech-ops-tasks")
 
       assert json_response(conn, 401)["error"]["code"] == "unauthorized"
     end
@@ -61,13 +61,13 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
       conn =
         conn
         |> put_req_header("authorization", "Token abc")
-        |> get(~p"/api/v1/tech_ops_tasks")
+        |> get(~p"/api/v1/tech-ops-tasks")
 
       assert json_response(conn, 401)
     end
 
     test "403 for a non-tech-team token owner", %{conn: conn, auth: auth, member_token: t} do
-      conn = auth.(conn, t) |> get(~p"/api/v1/tech_ops_tasks")
+      conn = auth.(conn, t) |> get(~p"/api/v1/tech-ops-tasks")
       assert json_response(conn, 403)["error"]["code"] == "forbidden"
     end
 
@@ -85,7 +85,7 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
           "reported_problem" => "a"
         })
 
-      conn = auth.(conn, t) |> get(~p"/api/v1/tech_ops_tasks")
+      conn = auth.(conn, t) |> get(~p"/api/v1/tech-ops-tasks")
       assert [%{"reported_problem" => "a"}] = json_response(conn, 200)["data"]
     end
 
@@ -104,7 +104,7 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
           "status" => "resolved"
         })
 
-      conn = auth.(conn, t) |> get(~p"/api/v1/tech_ops_tasks?status=resolved")
+      conn = auth.(conn, t) |> get(~p"/api/v1/tech-ops-tasks?status=resolved")
       assert [%{"reported_problem" => "resolved one"}] = json_response(conn, 200)["data"]
     end
   end
@@ -117,7 +117,7 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
       dev: dev
     } do
       params = %{"reported_problem" => "Disk full"}
-      conn = auth.(conn, t) |> post(~p"/api/v1/tech_ops_tasks", params)
+      conn = auth.(conn, t) |> post(~p"/api/v1/tech-ops-tasks", params)
       data = json_response(conn, 201)["data"]
       assert data["reported_problem"] == "Disk full"
       assert data["status"] == "open"
@@ -140,7 +140,7 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
 
       data =
         auth.(conn, t)
-        |> post(~p"/api/v1/tech_ops_tasks", params)
+        |> post(~p"/api/v1/tech-ops-tasks", params)
         |> json_response(201)
         |> Map.fetch!("data")
 
@@ -157,14 +157,14 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
       {:ok, _} = Hermes.TechOps.create_issue_origin("AppSignal alert")
 
       params = %{"reported_problem" => "x", "issue_origin" => "appsignal"}
-      body = auth.(conn, t) |> post(~p"/api/v1/tech_ops_tasks", params) |> json_response(422)
+      body = auth.(conn, t) |> post(~p"/api/v1/tech-ops-tasks", params) |> json_response(422)
 
       assert body["error"]["code"] == "unknown_issue_origin"
       assert "AppSignal alert" in body["error"]["suggestions"]
     end
 
     test "422 on missing reported_problem", %{conn: conn, auth: auth, dev_token: t} do
-      conn = auth.(conn, t) |> post(~p"/api/v1/tech_ops_tasks", %{})
+      conn = auth.(conn, t) |> post(~p"/api/v1/tech-ops-tasks", %{})
       assert json_response(conn, 422)["error"]["code"] == "validation_failed"
     end
   end
@@ -182,18 +182,18 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
     end
 
     test "shows a task", %{conn: conn, auth: auth, dev_token: t, task: task} do
-      conn = auth.(conn, t) |> get(~p"/api/v1/tech_ops_tasks/#{task.id}")
+      conn = auth.(conn, t) |> get(~p"/api/v1/tech-ops-tasks/#{task.id}")
       assert json_response(conn, 200)["data"]["id"] == task.id
     end
 
     test "404 for a missing task", %{conn: conn, auth: auth, dev_token: t} do
-      conn = auth.(conn, t) |> get(~p"/api/v1/tech_ops_tasks/999999")
+      conn = auth.(conn, t) |> get(~p"/api/v1/tech-ops-tasks/999999")
       assert json_response(conn, 404)["error"]["code"] == "not_found"
     end
 
     test "updates status and resolution", %{conn: conn, auth: auth, dev_token: t, task: task} do
       params = %{"status" => "resolved", "resolution" => "restarted service"}
-      conn = auth.(conn, t) |> patch(~p"/api/v1/tech_ops_tasks/#{task.id}", params)
+      conn = auth.(conn, t) |> patch(~p"/api/v1/tech-ops-tasks/#{task.id}", params)
       data = json_response(conn, 200)["data"]
       assert data["status"] == "resolved"
       assert data["resolution"] == "restarted service"
@@ -201,7 +201,7 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
 
     test "PUT updates the same as PATCH", %{conn: conn, auth: auth, dev_token: t, task: task} do
       conn =
-        auth.(conn, t) |> put(~p"/api/v1/tech_ops_tasks/#{task.id}", %{"status" => "in_progress"})
+        auth.(conn, t) |> put(~p"/api/v1/tech-ops-tasks/#{task.id}", %{"status" => "in_progress"})
 
       assert json_response(conn, 200)["data"]["status"] == "in_progress"
     end
