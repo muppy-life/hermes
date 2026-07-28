@@ -23,7 +23,7 @@ defmodule Hermes.MCP.Tools do
   def definitions do
     [
       %{
-        name: "list_tech_ops_tasks",
+        name: "list_tasks",
         description:
           "List tech-ops tasks (engineering/operational issues), most recent first. " <>
             "Optionally filter by status.",
@@ -40,7 +40,7 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "get_tech_ops_task",
+        name: "get_task",
         description: "Fetch a single tech-ops task by id.",
         input_schema: %{
           type: "object",
@@ -52,7 +52,7 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "report_tech_ops_task",
+        name: "report_task",
         description:
           "Report (create) a new tech-ops task. Use this when you discover or are " <>
             "asked to record an engineering/operational issue. You are set as the " <>
@@ -89,7 +89,7 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "update_tech_ops_task",
+        name: "update_task",
         description:
           "Update a tech-ops task: change its status and/or add work notes. Set any " <>
             "subset of fields.",
@@ -124,7 +124,7 @@ defmodule Hermes.MCP.Tools do
         }
       },
       %{
-        name: "resolve_tech_ops_task",
+        name: "resolve_task",
         description:
           "Complete a tech-ops task: set its status to 'resolved' and record how it " <>
             "was resolved. Use this when the issue is fixed.",
@@ -229,7 +229,7 @@ defmodule Hermes.MCP.Tools do
   """
   def call(_name, _args, user) when not is_struct(user, User), do: {:error, :unauthenticated}
 
-  def call("list_tech_ops_tasks", args, _user) do
+  def call("list_tasks", args, _user) do
     tasks = TechOps.list_tech_ops_tasks()
 
     tasks =
@@ -242,13 +242,13 @@ defmodule Hermes.MCP.Tools do
     {:ok, %{tasks: Enum.map(tasks, &serialize/1)}}
   end
 
-  def call("get_tech_ops_task", %{"id" => id}, _user) do
+  def call("get_task", %{"id" => id}, _user) do
     with {:ok, task} <- fetch_task(id) do
       {:ok, serialize(task)}
     end
   end
 
-  def call("report_tech_ops_task", args, %User{} = user) do
+  def call("report_task", args, %User{} = user) do
     base = %{
       "reported_problem" => Map.get(args, "reported_problem"),
       "recorded_on" => Map.get(args, "recorded_on") || Date.utc_today(),
@@ -263,7 +263,7 @@ defmodule Hermes.MCP.Tools do
     end
   end
 
-  def call("update_tech_ops_task", %{"id" => id} = args, _user) do
+  def call("update_task", %{"id" => id} = args, _user) do
     base = args |> Map.take(["status", "resolution"]) |> reject_nil()
 
     with {:ok, lookups} <- resolve_lookups(args),
@@ -273,7 +273,7 @@ defmodule Hermes.MCP.Tools do
     end
   end
 
-  def call("resolve_tech_ops_task", %{"id" => id} = args, _user) do
+  def call("resolve_task", %{"id" => id} = args, _user) do
     attrs = %{"status" => "resolved", "resolution" => Map.get(args, "resolution")}
 
     with {:ok, task} <- fetch_task(id),

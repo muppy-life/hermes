@@ -48,19 +48,22 @@ balancer limiter should remain the outer line of defense.
 
 Base path: `/api/v1`
 
-| Method | Path                       | Description                          |
-|--------|----------------------------|--------------------------------------|
-| GET    | `/me`                      | Authenticated token owner            |
-| GET    | `/tech-ops-tasks`          | List tasks (`?status=` filter)       |
-| GET    | `/tech-ops-tasks/:id`      | Get one task                         |
-| POST   | `/tech-ops-tasks`          | Report (create) a task               |
-| PATCH  | `/tech-ops-tasks/:id`      | Update status / resolution           |
-| GET    | `/requests`                | List team requests (`?status=`)      |
-| GET    | `/requests/:id`            | Get one request                      |
-| GET    | `/reporters`               | List canonical reporter values       |
-| POST   | `/reporters`               | Add a reporter value                 |
-| GET    | `/issue-origins`           | List canonical issue-origin values   |
-| POST   | `/issue-origins`           | Add an issue-origin value            |
+| Method | Path                             | Description                          |
+|--------|----------------------------------|--------------------------------------|
+| GET    | `/me`                            | Authenticated token owner            |
+| GET    | `/requests`                      | List team requests (`?status=`)      |
+| GET    | `/requests/:id`                  | Get one request                      |
+| GET    | `/tech-ops/tasks`                | List tasks (`?status=` filter)       |
+| GET    | `/tech-ops/tasks/:id`            | Get one task                         |
+| POST   | `/tech-ops/tasks`                | Report (create) a task               |
+| PATCH  | `/tech-ops/tasks/:id`            | Update status / resolution           |
+| GET    | `/tech-ops/reporters`            | List canonical reporter values       |
+| POST   | `/tech-ops/reporters`            | Add a reporter value                 |
+| GET    | `/tech-ops/issue-origins`        | List canonical issue-origin values   |
+| POST   | `/tech-ops/issue-origins`        | Add an issue-origin value            |
+
+Tech-ops resources are grouped under `/api/v1/tech-ops/`. `requests` is a
+separate, read-only domain and stays top-level.
 
 Tech-ops task statuses: `open`, `in_progress`, `blocked`, `resolved`, `closed`.
 
@@ -78,7 +81,8 @@ suggestions — it is not silently created:
     "suggestions": ["AppSignal alert"] } }
 ```
 
-To add a new value first, `POST /reporters` or `POST /issue-origins` with
+To add a new value first, `POST /tech-ops/reporters` or
+`POST /tech-ops/issue-origins` with
 `{"name": "..."}` (idempotent — returns the existing row if it already exists).
 Pass `""` to clear a task's reporter/origin.
 
@@ -93,17 +97,17 @@ request outside that scope returns `404` (its existence is never revealed).
 curl -H "Authorization: Bearer $TOKEN" https://<host>/api/v1/me
 
 # Add an issue-origin value (once), then report an issue using it
-curl -X POST https://<host>/api/v1/issue-origins \
+curl -X POST https://<host>/api/v1/tech-ops/issue-origins \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"name": "AppSignal alert"}'
 
-curl -X POST https://<host>/api/v1/tech-ops-tasks \
+curl -X POST https://<host>/api/v1/tech-ops/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"reported_problem": "Disk full on web-1", "issue_origin": "AppSignal alert"}'
 
 # Resolve it
-curl -X PATCH https://<host>/api/v1/tech-ops-tasks/42 \
+curl -X PATCH https://<host>/api/v1/tech-ops/tasks/42 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"status": "resolved", "resolution": "Rotated logs, expanded volume"}'
@@ -120,11 +124,11 @@ Successful responses wrap the payload in `{"data": ...}`.
 
 | Tool                    | Purpose                                              |
 |-------------------------|------------------------------------------------------|
-| `list_tech_ops_tasks`   | List tasks, optional `status` filter                 |
-| `get_tech_ops_task`     | Fetch one task by `id`                               |
-| `report_tech_ops_task`  | Create a task (`reported_problem` required)          |
-| `update_tech_ops_task`  | Change `status` / `resolution` / `issue_origin`      |
-| `resolve_tech_ops_task` | Complete a task: status → `resolved` + `resolution`  |
+| `list_tasks`            | List tech-ops tasks, optional `status` filter        |
+| `get_task`              | Fetch one task by `id`                               |
+| `report_task`           | Create a task (`reported_problem` required)          |
+| `update_task`           | Change `status` / `resolution` / `issue_origin`      |
+| `resolve_task`          | Complete a task: status → `resolved` + `resolution`  |
 | `list_requests`         | List your team's requests, optional `status` filter  |
 | `get_request`           | Fetch one request by `id` (team-scoped, read-only)   |
 | `list_reporters`        | List canonical reporter values                       |
@@ -162,8 +166,8 @@ Or in an `mcp.json` / client config:
 }
 ```
 
-Once connected, Claude can call e.g. `report_tech_ops_task` to file an issue and
-`resolve_tech_ops_task` to close it out.
+Once connected, Claude can call e.g. `report_task` to file an issue and
+`resolve_task` to close it out.
 
 ## Implementation notes
 

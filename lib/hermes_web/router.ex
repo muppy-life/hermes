@@ -42,15 +42,21 @@ defmodule HermesWeb.Router do
     post "/webhook", GitHubWebhookController, :create
   end
 
-  # Token-authenticated REST API (tech-ops tasks).
+  # Token-authenticated REST API.
   scope "/api/v1", HermesWeb.Api do
     pipe_through :api_authenticated
 
     get "/me", MeController, :show
-    resources "/tech-ops-tasks", TechOpsTaskController, only: [:index, :show, :create, :update]
+
+    # Team requests (separate, read-only domain).
     resources "/requests", RequestController, only: [:index, :show]
-    resources "/reporters", ReporterController, only: [:index, :create]
-    resources "/issue-origins", IssueOriginController, only: [:index, :create]
+
+    # Tech-ops domain: tasks plus their managed lookups.
+    scope "/tech-ops" do
+      resources "/tasks", TechOpsTaskController, only: [:index, :show, :create, :update]
+      resources "/reporters", ReporterController, only: [:index, :create]
+      resources "/issue-origins", IssueOriginController, only: [:index, :create]
+    end
   end
 
   # MCP endpoint (JSON-RPC 2.0 over HTTP) for Claude and other MCP clients.

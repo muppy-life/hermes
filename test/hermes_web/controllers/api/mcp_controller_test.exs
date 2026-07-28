@@ -59,8 +59,8 @@ defmodule HermesWeb.Api.MCPControllerTest do
       tools = json_response(resp, 200)["result"]["tools"]
       names = Enum.map(tools, & &1["name"])
 
-      assert "report_tech_ops_task" in names
-      assert "resolve_tech_ops_task" in names
+      assert "report_task" in names
+      assert "resolve_task" in names
       assert "list_requests" in names
       assert "get_request" in names
       assert "list_reporters" in names
@@ -150,7 +150,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
   end
 
   describe "tools/call" do
-    test "report_tech_ops_task creates a task attributed to the caller", %{conn: conn, dev: dev} do
+    test "report_task creates a task attributed to the caller", %{conn: conn, dev: dev} do
       {:ok, _} = TechOps.create_issue_origin("AppSignal")
 
       resp =
@@ -159,7 +159,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           id: 3,
           method: "tools/call",
           params: %{
-            name: "report_tech_ops_task",
+            name: "report_task",
             arguments: %{reported_problem: "API latency spike", issue_origin: "AppSignal"}
           }
         })
@@ -173,7 +173,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
       assert payload["issue_origin"]["name"] == "AppSignal"
     end
 
-    test "report_tech_ops_task rejects an unknown issue_origin with suggestions", %{conn: conn} do
+    test "report_task rejects an unknown issue_origin with suggestions", %{conn: conn} do
       {:ok, _} = TechOps.create_issue_origin("AppSignal alert")
 
       resp =
@@ -182,7 +182,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           id: 30,
           method: "tools/call",
           params: %{
-            name: "report_tech_ops_task",
+            name: "report_task",
             arguments: %{reported_problem: "x", issue_origin: "appsignal"}
           }
         })
@@ -221,7 +221,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
       assert "Deploy" in Enum.map(payload["issue_origins"], & &1["name"])
     end
 
-    test "resolve_tech_ops_task completes a task", %{conn: conn} do
+    test "resolve_task completes a task", %{conn: conn} do
       {:ok, task} =
         TechOps.create_tech_ops_task(%{
           "recorded_on" => Date.utc_today(),
@@ -234,7 +234,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           id: 4,
           method: "tools/call",
           params: %{
-            name: "resolve_tech_ops_task",
+            name: "resolve_task",
             arguments: %{id: task.id, resolution: "patched"}
           }
         })
@@ -255,7 +255,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           jsonrpc: "2.0",
           id: 5,
           method: "tools/call",
-          params: %{name: "get_tech_ops_task", arguments: %{id: 999_999}}
+          params: %{name: "get_task", arguments: %{id: 999_999}}
         })
 
       assert json_response(resp, 200)["result"]["isError"] == true

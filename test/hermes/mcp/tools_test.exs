@@ -12,7 +12,7 @@ defmodule Hermes.MCP.ToolsTest do
     end
 
     test "rejects a non-User struct" do
-      assert Tools.call("list_tech_ops_tasks", %{}, %{id: 1}) == {:error, :unauthenticated}
+      assert Tools.call("list_tasks", %{}, %{id: 1}) == {:error, :unauthenticated}
     end
 
     test "an unknown tool with a nil user is still unauthenticated (auth checked first)" do

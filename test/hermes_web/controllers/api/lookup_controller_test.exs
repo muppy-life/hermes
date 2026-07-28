@@ -28,7 +28,7 @@ defmodule HermesWeb.Api.LookupControllerTest do
 
   describe "reporters" do
     test "requires authentication", %{conn: conn} do
-      conn = conn |> delete_req_header("authorization") |> get(~p"/api/v1/reporters")
+      conn = conn |> delete_req_header("authorization") |> get(~p"/api/v1/tech-ops/reporters")
       assert json_response(conn, 401)
     end
 
@@ -38,7 +38,7 @@ defmodule HermesWeb.Api.LookupControllerTest do
 
       names =
         conn
-        |> get(~p"/api/v1/reporters")
+        |> get(~p"/api/v1/tech-ops/reporters")
         |> json_response(200)
         |> Map.fetch!("data")
         |> Enum.map(& &1["name"])
@@ -49,7 +49,7 @@ defmodule HermesWeb.Api.LookupControllerTest do
     test "adds a reporter", %{conn: conn} do
       data =
         conn
-        |> post(~p"/api/v1/reporters", %{"name" => "On-call"})
+        |> post(~p"/api/v1/tech-ops/reporters", %{"name" => "On-call"})
         |> json_response(201)
         |> Map.fetch!("data")
 
@@ -60,13 +60,13 @@ defmodule HermesWeb.Api.LookupControllerTest do
     test "adding is idempotent (normalized)", %{conn: conn} do
       first =
         conn
-        |> post(~p"/api/v1/reporters", %{"name" => "On-call"})
+        |> post(~p"/api/v1/tech-ops/reporters", %{"name" => "On-call"})
         |> json_response(201)
         |> Map.fetch!("data")
 
       second =
         conn
-        |> post(~p"/api/v1/reporters", %{"name" => "  on-call "})
+        |> post(~p"/api/v1/tech-ops/reporters", %{"name" => "  on-call "})
         |> json_response(201)
         |> Map.fetch!("data")
 
@@ -74,7 +74,7 @@ defmodule HermesWeb.Api.LookupControllerTest do
     end
 
     test "422 on a blank name", %{conn: conn} do
-      conn = post(conn, ~p"/api/v1/reporters", %{"name" => ""})
+      conn = post(conn, ~p"/api/v1/tech-ops/reporters", %{"name" => ""})
       assert json_response(conn, 422)["error"]["code"] == "validation_failed"
     end
   end
@@ -85,7 +85,7 @@ defmodule HermesWeb.Api.LookupControllerTest do
 
       names =
         conn
-        |> get(~p"/api/v1/issue-origins")
+        |> get(~p"/api/v1/tech-ops/issue-origins")
         |> json_response(200)
         |> Map.fetch!("data")
         |> Enum.map(& &1["name"])
@@ -94,7 +94,7 @@ defmodule HermesWeb.Api.LookupControllerTest do
 
       created =
         conn
-        |> post(~p"/api/v1/issue-origins", %{"name" => "Deploy"})
+        |> post(~p"/api/v1/tech-ops/issue-origins", %{"name" => "Deploy"})
         |> json_response(201)
         |> Map.fetch!("data")
 
