@@ -63,6 +63,10 @@ defmodule HermesWeb.Api.MCPControllerTest do
       assert "resolve_tech_ops_task" in names
       assert "list_requests" in names
       assert "get_request" in names
+      assert "list_reporters" in names
+      assert "add_reporter" in names
+      assert "list_issue_origins" in names
+      assert "add_issue_origin" in names
       assert Enum.all?(tools, &is_map(&1["inputSchema"]))
     end
   end
@@ -147,6 +151,8 @@ defmodule HermesWeb.Api.MCPControllerTest do
 
   describe "tools/call" do
     test "report_tech_ops_task creates a task attributed to the caller", %{conn: conn, dev: dev} do
+      {:ok, _} = TechOps.create_issue_origin("AppSignal")
+
       resp =
         rpc(conn, %{
           jsonrpc: "2.0",
@@ -164,6 +170,55 @@ defmodule HermesWeb.Api.MCPControllerTest do
       assert payload["reported_problem"] == "API latency spike"
       assert payload["status"] == "open"
       assert payload["responsible"]["id"] == dev.id
+      assert payload["issue_origin"]["name"] == "AppSignal"
+    end
+
+    test "report_tech_ops_task rejects an unknown issue_origin with suggestions", %{conn: conn} do
+      {:ok, _} = TechOps.create_issue_origin("AppSignal alert")
+
+      resp =
+        rpc(conn, %{
+          jsonrpc: "2.0",
+          id: 30,
+          method: "tools/call",
+          params: %{
+            name: "report_tech_ops_task",
+            arguments: %{reported_problem: "x", issue_origin: "appsignal"}
+          }
+        })
+
+      result = json_response(resp, 200)["result"]
+      assert result["isError"] == true
+      text = result["content"] |> hd() |> Map.fetch!("text") |> Jason.decode!()
+      assert text["error"] =~ "AppSignal alert"
+    end
+
+    test "add_issue_origin then list_issue_origins round-trips", %{conn: conn} do
+      add =
+        rpc(conn, %{
+          jsonrpc: "2.0",
+          id: 31,
+          method: "tools/call",
+          params: %{name: "add_issue_origin", arguments: %{name: "Deploy"}}
+        })
+
+      assert json_response(add, 200)["result"]["isError"] == false
+
+      list =
+        rpc(conn, %{
+          jsonrpc: "2.0",
+          id: 32,
+          method: "tools/call",
+          params: %{name: "list_issue_origins"}
+        })
+
+      payload =
+        json_response(list, 200)["result"]["content"]
+        |> hd()
+        |> Map.fetch!("text")
+        |> Jason.decode!()
+
+      assert "Deploy" in Enum.map(payload["issue_origins"], & &1["name"])
     end
 
     test "resolve_tech_ops_task completes a task", %{conn: conn} do

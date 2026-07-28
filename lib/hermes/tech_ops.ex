@@ -68,6 +68,15 @@ defmodule Hermes.TechOps do
   """
   def resolve_or_create_reporter(name), do: resolve_or_create(Reporter, name)
 
+  @doc "Finds a reporter by normalized name, or nil. Does not create."
+  def find_reporter(name), do: find_lookup(Reporter, name)
+
+  @doc "Explicitly creates a canonical reporter (normalized upsert semantics)."
+  def create_reporter(name), do: create_lookup(Reporter, name)
+
+  @doc "Reporters whose name is close to `name` (for 'did you mean' suggestions)."
+  def suggest_reporters(name, limit \\ 5), do: suggest_lookup(Reporter, name, limit)
+
   ## Issue origins (lookup)
 
   def list_issue_origins do
@@ -79,6 +88,67 @@ defmodule Hermes.TechOps do
   creating it if none exists. Blank input returns `{:ok, nil}`.
   """
   def resolve_or_create_issue_origin(name), do: resolve_or_create(IssueOrigin, name)
+
+  @doc "Finds an issue origin by normalized name, or nil. Does not create."
+  def find_issue_origin(name), do: find_lookup(IssueOrigin, name)
+
+  @doc "Explicitly creates a canonical issue origin (normalized upsert semantics)."
+  def create_issue_origin(name), do: create_lookup(IssueOrigin, name)
+
+  @doc "Issue origins whose name is close to `name` (for suggestions)."
+  def suggest_issue_origins(name, limit \\ 5), do: suggest_lookup(IssueOrigin, name, limit)
+
+  # Look up an existing lookup row by normalized key; nil for blank/unknown.
+  defp find_lookup(schema, name) do
+    case schema.normalize(name) do
+      "" -> nil
+      key -> Repo.get_by(schema, normalized: key)
+    end
+  end
+
+  # Explicit create: returns {:ok, row} for a new or existing (idempotent)
+  # value, or {:error, changeset} for a blank name. Race-safe via the unique
+  # normalized index.
+  defp create_lookup(schema, name) do
+    case schema.normalize(name) do
+      "" ->
+        # Surface a real validation error for a blank name rather than a
+        # silent no-op.
+        {:error, struct(schema) |> schema.changeset(%{"name" => name})}
+
+      key ->
+        case Repo.get_by(schema, normalized: key) do
+          nil -> insert_lookup(schema, name, key)
+          row -> {:ok, row}
+        end
+    end
+  end
+
+  # Suggestions: rows whose normalized key contains the (normalized) query as a
+  # substring. Empty query yields no suggestions.
+  defp suggest_lookup(schema, name, limit) do
+    case schema.normalize(name) do
+      "" ->
+        []
+
+      key ->
+        pattern = "%#{escape_like(key)}%"
+
+        from(r in schema,
+          where: like(r.normalized, ^pattern),
+          order_by: [asc: r.name],
+          limit: ^limit
+        )
+        |> Repo.all()
+    end
+  end
+
+  defp escape_like(term) do
+    term
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
+  end
 
   # Shared resolve-or-create for the lookup schemas. Normalizes, looks up by the
   # unique normalized key, and inserts if missing. On a concurrent insert the

@@ -57,8 +57,30 @@ Base path: `/api/v1`
 | PATCH  | `/tech_ops_tasks/:id`      | Update status / resolution           |
 | GET    | `/requests`                | List team requests (`?status=`)      |
 | GET    | `/requests/:id`            | Get one request                      |
+| GET    | `/reporters`               | List canonical reporter values       |
+| POST   | `/reporters`               | Add a reporter value                 |
+| GET    | `/issue_origins`           | List canonical issue-origin values   |
+| POST   | `/issue_origins`           | Add an issue-origin value            |
 
 Tech-ops task statuses: `open`, `in_progress`, `blocked`, `resolved`, `closed`.
+
+### Reporter & issue origin are controlled vocabularies
+
+`reporter` and `issue_origin` on a task are **managed lookup values**, not free
+text. On create/update you pass the **name** (matched case- and
+whitespace-insensitively). An **unknown value is rejected** with `422` and
+suggestions — it is not silently created:
+
+```json
+{ "error": {
+    "code": "unknown_issue_origin",
+    "message": "Unknown issue origin. Use an existing value or add it first.",
+    "suggestions": ["AppSignal alert"] } }
+```
+
+To add a new value first, `POST /reporters` or `POST /issue_origins` with
+`{"name": "..."}` (idempotent — returns the existing row if it already exists).
+Pass `""` to clear a task's reporter/origin.
 
 **Requests are read-only** over the API. Visibility matches the app: you only
 see requests where your team is the requesting or assigned team. Fetching a
@@ -70,7 +92,11 @@ request outside that scope returns `404` (its existence is never revealed).
 # Verify a token
 curl -H "Authorization: Bearer $TOKEN" https://<host>/api/v1/me
 
-# Report an issue
+# Add an issue-origin value (once), then report an issue using it
+curl -X POST https://<host>/api/v1/issue_origins \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"name": "AppSignal alert"}'
+
 curl -X POST https://<host>/api/v1/tech_ops_tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -101,6 +127,14 @@ Successful responses wrap the payload in `{"data": ...}`.
 | `resolve_tech_ops_task` | Complete a task: status → `resolved` + `resolution`  |
 | `list_requests`         | List your team's requests, optional `status` filter  |
 | `get_request`           | Fetch one request by `id` (team-scoped, read-only)   |
+| `list_reporters`        | List canonical reporter values                       |
+| `add_reporter`          | Add a reporter value (idempotent)                    |
+| `list_issue_origins`    | List canonical issue-origin values                   |
+| `add_issue_origin`      | Add an issue-origin value (idempotent)               |
+
+When reporting/updating a task, `reporter` and `issue_origin` must be existing
+values (see `list_*`); an unknown value returns an `isError` result naming close
+matches. Add a new value with `add_reporter` / `add_issue_origin` first.
 
 Tool results come back as an MCP text content block whose `text` is the
 JSON-encoded result. Handler failures set `isError: true`.

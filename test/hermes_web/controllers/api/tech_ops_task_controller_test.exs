@@ -116,12 +116,51 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
       dev_token: t,
       dev: dev
     } do
-      params = %{"reported_problem" => "Disk full", "issue_origin" => "alert"}
+      params = %{"reported_problem" => "Disk full"}
       conn = auth.(conn, t) |> post(~p"/api/v1/tech_ops_tasks", params)
       data = json_response(conn, 201)["data"]
       assert data["reported_problem"] == "Disk full"
       assert data["status"] == "open"
       assert data["responsible"]["id"] == dev.id
+    end
+
+    test "reports a task with a known issue_origin and reporter", %{
+      conn: conn,
+      auth: auth,
+      dev_token: t
+    } do
+      {:ok, _} = Hermes.TechOps.create_issue_origin("AppSignal alert")
+      {:ok, _} = Hermes.TechOps.create_reporter("On-call")
+
+      params = %{
+        "reported_problem" => "Disk full",
+        "issue_origin" => "appsignal alert",
+        "reporter" => "on-call"
+      }
+
+      data =
+        auth.(conn, t)
+        |> post(~p"/api/v1/tech_ops_tasks", params)
+        |> json_response(201)
+        |> Map.fetch!("data")
+
+      # Resolved to the canonical value regardless of input casing.
+      assert data["issue_origin"]["name"] == "AppSignal alert"
+      assert data["reporter"]["name"] == "On-call"
+    end
+
+    test "rejects an unknown issue_origin with suggestions", %{
+      conn: conn,
+      auth: auth,
+      dev_token: t
+    } do
+      {:ok, _} = Hermes.TechOps.create_issue_origin("AppSignal alert")
+
+      params = %{"reported_problem" => "x", "issue_origin" => "appsignal"}
+      body = auth.(conn, t) |> post(~p"/api/v1/tech_ops_tasks", params) |> json_response(422)
+
+      assert body["error"]["code"] == "unknown_issue_origin"
+      assert "AppSignal alert" in body["error"]["suggestions"]
     end
 
     test "422 on missing reported_problem", %{conn: conn, auth: auth, dev_token: t} do

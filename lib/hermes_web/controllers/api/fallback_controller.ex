@@ -21,6 +21,19 @@ defmodule HermesWeb.Api.FallbackController do
     error(conn, :bad_request, "invalid_request", message)
   end
 
+  def call(conn, {:error, {:unknown_value, field, suggestions}}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{
+      error: %{
+        code: "unknown_#{field}",
+        message:
+          "Unknown #{String.replace(field, "_", " ")}. Use an existing value or add it first.",
+        suggestions: suggestions
+      }
+    })
+  end
+
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
     |> put_status(:unprocessable_entity)

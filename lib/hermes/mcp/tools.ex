@@ -67,7 +67,16 @@ defmodule Hermes.MCP.Tools do
             issue_origin: %{
               type: "string",
               description:
-                "Where the issue came from (e.g. 'AppSignal alert', 'user report', 'deploy')."
+                "Where the issue came from. Must be an existing value from " <>
+                  "list_issue_origins; unknown values are rejected with suggestions. " <>
+                  "Add a new one with add_issue_origin first if needed."
+            },
+            reporter: %{
+              type: "string",
+              description:
+                "Who reported the issue. Must be an existing value from list_reporters; " <>
+                  "unknown values are rejected with suggestions. Add a new one with " <>
+                  "add_reporter first if needed."
             },
             recorded_on: %{
               type: "string",
@@ -97,7 +106,18 @@ defmodule Hermes.MCP.Tools do
               type: "string",
               description: "Notes on what was done / how it was resolved."
             },
-            issue_origin: %{type: "string", description: "Correct or set the issue origin."}
+            issue_origin: %{
+              type: "string",
+              description:
+                "Correct or set the issue origin. Must be an existing value " <>
+                  "(see list_issue_origins); unknown values are rejected with suggestions."
+            },
+            reporter: %{
+              type: "string",
+              description:
+                "Correct or set the reporter. Must be an existing value " <>
+                  "(see list_reporters); unknown values are rejected with suggestions."
+            }
           },
           required: ["id"],
           additionalProperties: false
@@ -150,6 +170,44 @@ defmodule Hermes.MCP.Tools do
           required: ["id"],
           additionalProperties: false
         }
+      },
+      %{
+        name: "list_reporters",
+        description:
+          "List the canonical reporter values. Use these when reporting a task; a " <>
+            "reporter not in this list is rejected unless you add it first.",
+        input_schema: %{type: "object", properties: %{}, additionalProperties: false}
+      },
+      %{
+        name: "add_reporter",
+        description:
+          "Add a new canonical reporter value (idempotent: returns the existing one " <>
+            "if it already exists, matched case/whitespace-insensitively).",
+        input_schema: %{
+          type: "object",
+          properties: %{name: %{type: "string", description: "The reporter name to add."}},
+          required: ["name"],
+          additionalProperties: false
+        }
+      },
+      %{
+        name: "list_issue_origins",
+        description:
+          "List the canonical issue-origin values. Use these when reporting a task; an " <>
+            "origin not in this list is rejected unless you add it first.",
+        input_schema: %{type: "object", properties: %{}, additionalProperties: false}
+      },
+      %{
+        name: "add_issue_origin",
+        description:
+          "Add a new canonical issue-origin value (idempotent: returns the existing one " <>
+            "if it already exists, matched case/whitespace-insensitively).",
+        input_schema: %{
+          type: "object",
+          properties: %{name: %{type: "string", description: "The issue origin name to add."}},
+          required: ["name"],
+          additionalProperties: false
+        }
       }
     ]
   end
@@ -191,30 +249,27 @@ defmodule Hermes.MCP.Tools do
   end
 
   def call("report_tech_ops_task", args, %User{} = user) do
-    attrs =
-      %{
-        "reported_problem" => Map.get(args, "reported_problem"),
-        "issue_origin" => Map.get(args, "issue_origin"),
-        "recorded_on" => Map.get(args, "recorded_on") || Date.utc_today(),
-        "status" => "open",
-        "responsible_id" => user.id
-      }
+    base = %{
+      "reported_problem" => Map.get(args, "reported_problem"),
+      "recorded_on" => Map.get(args, "recorded_on") || Date.utc_today(),
+      "status" => "open",
+      "responsible_id" => user.id
+    }
 
-    case TechOps.create_tech_ops_task(attrs) do
-      {:ok, task} -> {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
-      {:error, changeset} -> {:error, changeset}
+    with {:ok, lookups} <- resolve_lookups(args),
+         attrs = Map.merge(base, lookups),
+         {:ok, task} <- TechOps.create_tech_ops_task(attrs) do
+      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
     end
   end
 
   def call("update_tech_ops_task", %{"id" => id} = args, _user) do
-    attrs =
-      args
-      |> Map.take(["status", "resolution", "issue_origin"])
-      |> reject_nil()
+    base = args |> Map.take(["status", "resolution"]) |> reject_nil()
 
-    with {:ok, task} <- fetch_task(id),
-         {:ok, task} <- TechOps.update_tech_ops_task(task, attrs) do
-      {:ok, serialize(task)}
+    with {:ok, lookups} <- resolve_lookups(args),
+         {:ok, task} <- fetch_task(id),
+         {:ok, task} <- TechOps.update_tech_ops_task(task, Map.merge(base, lookups)) do
+      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
     end
   end
 
@@ -246,6 +301,28 @@ defmodule Hermes.MCP.Tools do
     end
   end
 
+  def call("list_reporters", _args, _user) do
+    {:ok, %{reporters: Enum.map(TechOps.list_reporters(), &serialize_lookup/1)}}
+  end
+
+  def call("add_reporter", %{"name" => name}, _user) do
+    case TechOps.create_reporter(name) do
+      {:ok, row} -> {:ok, serialize_lookup(row)}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  def call("list_issue_origins", _args, _user) do
+    {:ok, %{issue_origins: Enum.map(TechOps.list_issue_origins(), &serialize_lookup/1)}}
+  end
+
+  def call("add_issue_origin", %{"name" => name}, _user) do
+    case TechOps.create_issue_origin(name) do
+      {:ok, row} -> {:ok, serialize_lookup(row)}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
   def call(name, _args, _user) when is_binary(name) do
     if name in tool_names() do
       {:error, {:invalid, "Missing required arguments for #{name}"}}
@@ -259,7 +336,9 @@ defmodule Hermes.MCP.Tools do
     %{
       id: task.id,
       reported_problem: task.reported_problem,
-      issue_origin: task.issue_origin,
+      cause: task.cause,
+      issue_origin: serialize_lookup(task.issue_origin),
+      reporter: serialize_lookup(task.reporter),
       status: to_string(task.status),
       status_label: Task.status_label(task.status),
       resolution: task.resolution,
@@ -274,6 +353,52 @@ defmodule Hermes.MCP.Tools do
     do: %{id: user.id, name: User.display_name(user), email: user.email}
 
   defp serialize_user(_), do: nil
+
+  # A lookup row (reporter / issue origin) as {id, name}, or nil when unset or
+  # the association is not loaded.
+  defp serialize_lookup(%{id: id, name: name}), do: %{id: id, name: name}
+  defp serialize_lookup(_), do: nil
+
+  # Resolves the reporter/issue_origin NAMES in `args` to their lookup ids.
+  # A blank/absent value is skipped; an unknown value is rejected with
+  # suggestions rather than silently created — the controlled-vocabulary
+  # contract. Returns {:ok, %{"reporter_id" => id, "issue_origin_id" => id}}
+  # (only for keys that were provided) or {:error, {:unknown_value, field,
+  # suggestions}}.
+  defp resolve_lookups(args) do
+    with {:ok, acc} <- resolve_lookup(args, "issue_origin", "issue_origin_id", %{}) do
+      resolve_lookup(args, "reporter", "reporter_id", acc)
+    end
+  end
+
+  defp resolve_lookup(args, field, id_key, acc) do
+    case Map.get(args, field) do
+      nil ->
+        {:ok, acc}
+
+      "" ->
+        # Explicit clear.
+        {:ok, Map.put(acc, id_key, nil)}
+
+      name ->
+        case find_lookup(field, name) do
+          nil ->
+            {:error, {:unknown_value, field, suggest_lookup(field, name)}}
+
+          row ->
+            {:ok, Map.put(acc, id_key, row.id)}
+        end
+    end
+  end
+
+  defp find_lookup("issue_origin", name), do: TechOps.find_issue_origin(name)
+  defp find_lookup("reporter", name), do: TechOps.find_reporter(name)
+
+  defp suggest_lookup("issue_origin", name),
+    do: TechOps.suggest_issue_origins(name) |> Enum.map(& &1.name)
+
+  defp suggest_lookup("reporter", name),
+    do: TechOps.suggest_reporters(name) |> Enum.map(& &1.name)
 
   @doc "Serializes a request to a plain, JSON-safe map for the read API/MCP."
   def serialize_request(%Request{} = request) do

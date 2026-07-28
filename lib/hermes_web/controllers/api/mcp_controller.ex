@@ -134,6 +134,17 @@ defmodule HermesWeb.Api.MCPController do
   defp error_text(:unknown_tool), do: "Unknown tool"
   defp error_text({:invalid, message}), do: message
 
+  defp error_text({:unknown_value, field, suggestions}) do
+    base =
+      "Unknown #{String.replace(field, "_", " ")}. Use an existing value " <>
+        "(see list_#{field}s) or add it first."
+
+    case suggestions do
+      [] -> base
+      list -> base <> " Did you mean: " <> Enum.join(list, ", ") <> "?"
+    end
+  end
+
   defp error_text(%Ecto.Changeset{} = changeset) do
     errors =
       Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
