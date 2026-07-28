@@ -13,21 +13,32 @@ defmodule HermesWeb.Api.TechOpsTaskController do
     args = Map.take(params, ["status"])
 
     with {:ok, %{tasks: tasks}} <-
-           Tools.call("list_tasks", args, conn.assigns.current_user) do
+           Tools.call("list_tech_ops_tasks", args, conn.assigns.current_user) do
       json(conn, %{data: tasks})
     end
   end
 
   def show(conn, %{"id" => id}) do
-    with {:ok, task} <- Tools.call("get_task", %{"id" => id}, conn.assigns.current_user) do
+    with {:ok, task} <- Tools.call("get_tech_ops_task", %{"id" => id}, conn.assigns.current_user) do
       json(conn, %{data: task})
     end
   end
 
   def create(conn, params) do
-    args = Map.take(params, ["reported_problem", "issue_origin", "reporter", "recorded_on"])
+    args =
+      Map.take(params, [
+        "reported_problem",
+        "issue_origin",
+        "reporter",
+        "recorded_on",
+        "cause",
+        "team",
+        "responsible",
+        "status",
+        "resolution"
+      ])
 
-    with {:ok, task} <- Tools.call("report_task", args, conn.assigns.current_user) do
+    with {:ok, task} <- Tools.call("report_tech_ops_task", args, conn.assigns.current_user) do
       conn
       |> put_status(:created)
       |> json(%{data: task})
@@ -37,10 +48,18 @@ defmodule HermesWeb.Api.TechOpsTaskController do
   def update(conn, %{"id" => id} = params) do
     args =
       params
-      |> Map.take(["status", "resolution", "issue_origin", "reporter"])
+      |> Map.take([
+        "status",
+        "resolution",
+        "issue_origin",
+        "reporter",
+        "cause",
+        "team",
+        "responsible"
+      ])
       |> Map.put("id", id)
 
-    with {:ok, task} <- Tools.call("update_task", args, conn.assigns.current_user) do
+    with {:ok, task} <- Tools.call("update_tech_ops_task", args, conn.assigns.current_user) do
       json(conn, %{data: task})
     end
   end

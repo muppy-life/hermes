@@ -59,8 +59,8 @@ defmodule HermesWeb.Api.MCPControllerTest do
       tools = json_response(resp, 200)["result"]["tools"]
       names = Enum.map(tools, & &1["name"])
 
-      assert "report_task" in names
-      assert "resolve_task" in names
+      assert "report_tech_ops_task" in names
+      assert "resolve_tech_ops_task" in names
       assert "list_requests" in names
       assert "get_request" in names
       assert "list_reporters" in names
@@ -159,7 +159,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           id: 3,
           method: "tools/call",
           params: %{
-            name: "report_task",
+            name: "report_tech_ops_task",
             arguments: %{reported_problem: "API latency spike", issue_origin: "AppSignal"}
           }
         })
@@ -182,7 +182,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           id: 30,
           method: "tools/call",
           params: %{
-            name: "report_task",
+            name: "report_tech_ops_task",
             arguments: %{reported_problem: "x", issue_origin: "appsignal"}
           }
         })
@@ -234,7 +234,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           id: 4,
           method: "tools/call",
           params: %{
-            name: "resolve_task",
+            name: "resolve_tech_ops_task",
             arguments: %{id: task.id, resolution: "patched"}
           }
         })
@@ -255,7 +255,7 @@ defmodule HermesWeb.Api.MCPControllerTest do
           jsonrpc: "2.0",
           id: 5,
           method: "tools/call",
-          params: %{name: "get_task", arguments: %{id: 999_999}}
+          params: %{name: "get_tech_ops_task", arguments: %{id: 999_999}}
         })
 
       assert json_response(resp, 200)["result"]["isError"] == true
