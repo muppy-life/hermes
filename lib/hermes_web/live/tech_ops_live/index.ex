@@ -15,7 +15,7 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:selected_task, nil)
      |> assign(:form_mode, :new)
      |> assign(:form, to_form(%{}))
-     |> assign(:users, Accounts.list_tech_users())
+     |> assign(:users, Accounts.list_dev_team())
      |> assign(:teams, Accounts.list_teams())
      |> load_lookups()
      |> load_tasks()}
@@ -91,16 +91,6 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
-    # Resolve the free-typed reporter / issue-origin names to canonical lookup
-    # ids (creating them if new) before persisting the task.
-    {:ok, reporter} = TechOps.resolve_or_create_reporter(task_params["reporter_name"])
-    {:ok, origin} = TechOps.resolve_or_create_issue_origin(task_params["issue_origin_name"])
-
-    task_params =
-      task_params
-      |> Map.put("reporter_id", reporter && reporter.id)
-      |> Map.put("issue_origin_id", origin && origin.id)
-
     save_task(socket, socket.assigns.form_mode, task_params)
   end
 
@@ -130,6 +120,8 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   defp save_task(socket, :new, task_params) do
+    # Lookups (reporter / issue origin) are resolved atomically inside
+    # create_tech_ops_task/1, so a rejected insert leaves no orphaned values.
     case TechOps.create_tech_ops_task(task_params) do
       {:ok, _task} ->
         {:noreply,
@@ -145,9 +137,10 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   defp save_task(socket, :edit, task_params) do
-    task = socket.assigns.selected_task
-
-    case TechOps.update_tech_ops_task(task, task_params) do
+    # update_tech_ops_task/2 resolves lookups and updates in one transaction: if
+    # the task was concurrently deleted, StaleEntryError rolls the whole thing
+    # back (no orphaned lookups) and is handled below.
+    case TechOps.update_tech_ops_task(socket.assigns.selected_task, task_params) do
       {:ok, _task} ->
         {:noreply,
          socket

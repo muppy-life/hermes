@@ -237,5 +237,34 @@ defmodule HermesWeb.TechOpsLiveTest do
       assert render(lv) =~ "Tech Ops"
       refute render(lv) =~ "stale"
     end
+
+    test "stale edit does not create orphaned lookup values", %{conn: conn} do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "stale"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv
+      |> element("button[phx-click='open_edit_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # Another user deletes it while the edit modal is open.
+      TechOps.delete_tech_ops_task(task)
+
+      # Submit the edit with a brand-new issue-origin value.
+      lv
+      |> form("#tech-ops-task-form",
+        task: %{reported_problem: "stale", issue_origin_name: "Brand New Origin"}
+      )
+      |> render_submit()
+
+      # The rejected edit must not have persisted the new lookup value.
+      assert TechOps.list_issue_origins() == []
+      # The task edit itself was discarded (task remains deleted).
+      assert TechOps.list_tech_ops_tasks() == []
+    end
   end
 end

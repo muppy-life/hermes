@@ -62,10 +62,10 @@ defmodule Hermes.Accounts do
   end
 
   @doc """
-  Lists active users that belong to the tech team (dev_team role or admins).
-  Mirrors `is_dev_team?/1`. Used for the tech ops responsible picker.
+  Lists active dev-team users (dev_team role or admins). The set-form of
+  `is_dev_team?/1`. Used, e.g., for the tech ops responsible picker.
   """
-  def list_tech_users do
+  def list_dev_team do
     from(u in User,
       where:
         is_nil(u.deleted_at) and

@@ -4,8 +4,8 @@ defmodule Hermes.TechOps do
   the rotating tech ops role).
 
   Reporter and issue origin are managed lookup lists rather than free text, so
-  values stay canonical (deduplicated on a normalized key) across the UI and,
-  later, any API writers.
+  values stay canonical (deduplicated on a normalized key) across the UI and
+  the API/MCP writers.
   """
 
   import Ecto.Query, warn: false
@@ -26,9 +26,8 @@ defmodule Hermes.TechOps do
   def get_tech_ops_task!(id), do: Repo.get!(Task, id) |> Repo.preload(@task_preloads)
 
   @doc """
-  Fetches a task by id, returning `nil` when it does not exist or the id is not
-  a valid integer. Used by the LiveView (so a concurrently-deleted task does not
-  crash the process) and by the API/MCP layer.
+  Fetches a task by id, or nil if it does not exist. Used by the LiveView (so a
+  concurrently-deleted task does not crash the process) and by the API/MCP layer.
   """
   def get_tech_ops_task(id) do
     case Repo.get(Task, id) do
@@ -39,16 +38,79 @@ defmodule Hermes.TechOps do
     Ecto.Query.CastError -> nil
   end
 
+  @doc """
+  Creates a task. Free-typed `reporter_name` / `issue_origin_name` in `attrs`
+  are resolved to canonical lookup ids (created if new) inside the same
+  transaction as the insert, so a failed insert never leaves orphaned lookups.
+
+  API/MCP callers that have already resolved values pass `reporter_id` /
+  `issue_origin_id` directly; those attrs are left untouched.
+  """
   def create_tech_ops_task(attrs \\ %{}) do
-    %Task{}
-    |> Task.changeset(attrs)
-    |> Repo.insert()
+    write_task_txn(fn ->
+      %Task{}
+      |> Task.changeset(resolve_lookup_attrs(attrs))
+      |> Repo.insert()
+    end)
   end
 
+  @doc """
+  Updates a task, resolving lookups in the same transaction as the update. If
+  the task was concurrently deleted the update raises `Ecto.StaleEntryError`,
+  the transaction rolls back, and any lookups created for this edit are undone.
+  """
   def update_tech_ops_task(%Task{} = task, attrs) do
-    task
-    |> Task.changeset(attrs)
-    |> Repo.update()
+    write_task_txn(fn ->
+      task
+      |> Task.changeset(resolve_lookup_attrs(attrs))
+      |> Repo.update()
+    end)
+  end
+
+  # Runs `fun` (which returns {:ok, task} | {:error, changeset}) in a
+  # transaction, unwrapping the result and rolling back on error so lookup
+  # inserts performed inside `fun` are reverted together with the task write.
+  defp write_task_txn(fun) do
+    Repo.transaction(fn ->
+      case fun.() do
+        {:ok, task} -> task
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  # Resolve free-typed reporter / issue-origin names in the attrs to lookup ids.
+  # Accepts string or atom keys; leaves attrs untouched when the name keys are
+  # absent (e.g. API callers that pass ids directly).
+  defp resolve_lookup_attrs(attrs) do
+    {reporter_name, attrs} = pop_attr(attrs, "reporter_name", :reporter_name)
+    {origin_name, attrs} = pop_attr(attrs, "issue_origin_name", :issue_origin_name)
+
+    attrs
+    |> maybe_put_lookup_id("reporter_id", reporter_name, &resolve_lookup_row(Reporter, &1))
+    |> maybe_put_lookup_id("issue_origin_id", origin_name, &resolve_lookup_row(IssueOrigin, &1))
+  end
+
+  defp pop_attr(attrs, string_key, atom_key) do
+    cond do
+      Map.has_key?(attrs, string_key) -> Map.pop(attrs, string_key)
+      Map.has_key?(attrs, atom_key) -> Map.pop(attrs, atom_key)
+      true -> {:__absent__, attrs}
+    end
+  end
+
+  defp maybe_put_lookup_id(attrs, _id_key, :__absent__, _resolver), do: attrs
+
+  defp maybe_put_lookup_id(attrs, id_key, name, resolver) do
+    Map.put(attrs, id_key, resolver.(name) |> then(fn row -> row && row.id end))
+  end
+
+  # Resolve within the surrounding transaction (raises on unexpected failure so
+  # the transaction rolls back).
+  defp resolve_lookup_row(schema, name) do
+    case resolve_or_create(schema, name) do
+      {:ok, row} -> row
+    end
   end
 
   def delete_tech_ops_task(%Task{} = task) do
@@ -71,7 +133,7 @@ defmodule Hermes.TechOps do
   @doc "Finds a reporter by normalized name, or nil. Does not create."
   def find_reporter(name), do: find_lookup(Reporter, name)
 
-  @doc "Explicitly creates a canonical reporter (normalized upsert semantics)."
+  @doc "Explicitly creates a canonical reporter (idempotent normalized upsert)."
   def create_reporter(name), do: create_lookup(Reporter, name)
 
   @doc "Reporters whose name is close to `name` (for 'did you mean' suggestions)."
@@ -92,13 +154,38 @@ defmodule Hermes.TechOps do
   @doc "Finds an issue origin by normalized name, or nil. Does not create."
   def find_issue_origin(name), do: find_lookup(IssueOrigin, name)
 
-  @doc "Explicitly creates a canonical issue origin (normalized upsert semantics)."
+  @doc "Explicitly creates a canonical issue origin (idempotent normalized upsert)."
   def create_issue_origin(name), do: create_lookup(IssueOrigin, name)
 
   @doc "Issue origins whose name is close to `name` (for suggestions)."
   def suggest_issue_origins(name, limit \\ 5), do: suggest_lookup(IssueOrigin, name, limit)
 
+  # Shared resolve-or-create for the lookup schemas. Normalizes and upserts by
+  # the unique normalized key.
+  #
+  # The insert uses `on_conflict: :nothing` so a concurrent insert of the same
+  # normalized value is a silent no-op rather than a unique-violation *error*.
+  # This matters because resolve runs inside the task-write transaction: an
+  # errored statement would abort the whole PostgreSQL transaction, making the
+  # follow-up read fail too. With `on_conflict: :nothing` the transaction stays
+  # valid, so the subsequent `get_by` reliably returns the canonical row
+  # (whether we inserted it or the other writer did).
+  defp resolve_or_create(schema, name) do
+    key = schema.normalize(name)
+
+    if key == "" do
+      {:ok, nil}
+    else
+      struct(schema)
+      |> schema.changeset(%{"name" => name})
+      |> Repo.insert(on_conflict: :nothing, conflict_target: :normalized)
+
+      {:ok, Repo.get_by(schema, normalized: key)}
+    end
+  end
+
   # Look up an existing lookup row by normalized key; nil for blank/unknown.
+  # Used by the API layer to reject unknown values instead of creating them.
   defp find_lookup(schema, name) do
     case schema.normalize(name) do
       "" -> nil
@@ -106,21 +193,12 @@ defmodule Hermes.TechOps do
     end
   end
 
-  # Explicit create: returns {:ok, row} for a new or existing (idempotent)
-  # value, or {:error, changeset} for a blank name. Race-safe via the unique
-  # normalized index.
+  # Explicit create for the API: returns {:ok, row} for a new or existing
+  # (idempotent) value, or {:error, changeset} for a blank name.
   defp create_lookup(schema, name) do
     case schema.normalize(name) do
-      "" ->
-        # Surface a real validation error for a blank name rather than a
-        # silent no-op.
-        {:error, struct(schema) |> schema.changeset(%{"name" => name})}
-
-      key ->
-        case Repo.get_by(schema, normalized: key) do
-          nil -> insert_lookup(schema, name, key)
-          row -> {:ok, row}
-        end
+      "" -> {:error, struct(schema) |> schema.changeset(%{"name" => name})}
+      _key -> resolve_or_create(schema, name)
     end
   end
 
@@ -148,29 +226,5 @@ defmodule Hermes.TechOps do
     |> String.replace("\\", "\\\\")
     |> String.replace("%", "\\%")
     |> String.replace("_", "\\_")
-  end
-
-  # Shared resolve-or-create for the lookup schemas. Normalizes, looks up by the
-  # unique normalized key, and inserts if missing. On a concurrent insert the
-  # unique constraint fires and we re-read the winning row.
-  defp resolve_or_create(schema, name) do
-    key = schema.normalize(name)
-
-    if key == "" do
-      {:ok, nil}
-    else
-      case Repo.get_by(schema, normalized: key) do
-        nil -> insert_lookup(schema, name, key)
-        row -> {:ok, row}
-      end
-    end
-  end
-
-  defp insert_lookup(schema, name, key) do
-    case struct(schema) |> schema.changeset(%{"name" => name}) |> Repo.insert() do
-      {:ok, row} -> {:ok, row}
-      # Lost an insert race: the row now exists, fetch the canonical one.
-      {:error, _changeset} -> {:ok, Repo.get_by(schema, normalized: key)}
-    end
   end
 end
