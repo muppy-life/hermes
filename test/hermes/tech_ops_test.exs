@@ -206,6 +206,22 @@ defmodule Hermes.TechOpsTest do
       assert a.id == b.id
     end
 
+    test "insert-or-noop does not abort the surrounding transaction" do
+      # Pre-existing row: the resolve path takes the on_conflict :nothing branch,
+      # which must NOT abort the transaction (a follow-up read has to succeed).
+      {:ok, existing} = TechOps.resolve_or_create_issue_origin("Slack")
+
+      {:ok, result} =
+        Hermes.Repo.transaction(fn ->
+          {:ok, again} = TechOps.resolve_or_create_issue_origin("slack")
+          # A read after the conflicting insert must still work in this txn.
+          again.id
+        end)
+
+      assert result == existing.id
+      assert length(TechOps.list_issue_origins()) == 1
+    end
+
     test "blank input resolves to nil" do
       assert {:ok, nil} = TechOps.resolve_or_create_issue_origin("")
       assert {:ok, nil} = TechOps.resolve_or_create_issue_origin("   ")

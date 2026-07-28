@@ -139,27 +139,27 @@ defmodule Hermes.TechOps do
   """
   def resolve_or_create_issue_origin(name), do: resolve_or_create(IssueOrigin, name)
 
-  # Shared resolve-or-create for the lookup schemas. Normalizes, looks up by the
-  # unique normalized key, and inserts if missing. On a concurrent insert the
-  # unique constraint fires and we re-read the winning row.
+  # Shared resolve-or-create for the lookup schemas. Normalizes and upserts by
+  # the unique normalized key.
+  #
+  # The insert uses `on_conflict: :nothing` so a concurrent insert of the same
+  # normalized value is a silent no-op rather than a unique-violation *error*.
+  # This matters because resolve runs inside the task-write transaction: an
+  # errored statement would abort the whole PostgreSQL transaction, making the
+  # follow-up read fail too. With `on_conflict: :nothing` the transaction stays
+  # valid, so the subsequent `get_by` reliably returns the canonical row
+  # (whether we inserted it or the other writer did).
   defp resolve_or_create(schema, name) do
     key = schema.normalize(name)
 
     if key == "" do
       {:ok, nil}
     else
-      case Repo.get_by(schema, normalized: key) do
-        nil -> insert_lookup(schema, name, key)
-        row -> {:ok, row}
-      end
-    end
-  end
+      struct(schema)
+      |> schema.changeset(%{"name" => name})
+      |> Repo.insert(on_conflict: :nothing, conflict_target: :normalized)
 
-  defp insert_lookup(schema, name, key) do
-    case struct(schema) |> schema.changeset(%{"name" => name}) |> Repo.insert() do
-      {:ok, row} -> {:ok, row}
-      # Lost an insert race: the row now exists, fetch the canonical one.
-      {:error, _changeset} -> {:ok, Repo.get_by(schema, normalized: key)}
+      {:ok, Repo.get_by(schema, normalized: key)}
     end
   end
 end
