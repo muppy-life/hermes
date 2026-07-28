@@ -62,6 +62,21 @@ defmodule Hermes.Accounts do
   end
 
   @doc """
+  Lists active dev-team users (dev_team role or admins). The set-form of
+  `is_dev_team?/1`. Used, e.g., for the tech ops responsible picker.
+  """
+  def list_dev_team do
+    from(u in User,
+      where:
+        is_nil(u.deleted_at) and
+          (u.role in ["dev_team", "admin"] or u.is_admin == true),
+      order_by: [asc: u.name, asc: u.surname, asc: u.email]
+    )
+    |> Repo.all()
+    |> Repo.preload(:team)
+  end
+
+  @doc """
   Fetches a user by id regardless of soft-delete state.
 
   Used for resolving historical references (e.g. the author of a request that

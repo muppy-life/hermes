@@ -32,6 +32,38 @@ defmodule HermesWeb.Plugs.Auth do
     end
   end
 
+  def on_mount(:ensure_tech_team, _params, session, socket) do
+    socket = mount_current_user(socket, session)
+
+    cond do
+      is_nil(socket.assigns.current_user) ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
+          |> Phoenix.LiveView.redirect(to: "/")
+
+        {:halt, socket}
+
+      not Accounts.is_dev_team?(socket.assigns.current_user) ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(
+            :error,
+            "You must be part of the tech team to access this page."
+          )
+          |> Phoenix.LiveView.redirect(to: "/dashboard")
+
+        {:halt, socket}
+
+      true ->
+        if Phoenix.LiveView.connected?(socket) do
+          track_user_presence(socket)
+        end
+
+        {:cont, socket}
+    end
+  end
+
   def on_mount(:redirect_if_authenticated, _params, session, socket) do
     socket = mount_current_user(socket, session)
 
@@ -149,6 +181,7 @@ defmodule HermesWeb.Plugs.Auth do
       HermesWeb.Admin.DashboardLive.Index -> "Admin Dashboard"
       HermesWeb.Admin.UserLive.Index -> "User Management"
       HermesWeb.NotificationLive.Index -> "Notifications"
+      HermesWeb.TechOpsLive.Index -> "Tech Ops"
       _ -> "Unknown"
     end
   end
