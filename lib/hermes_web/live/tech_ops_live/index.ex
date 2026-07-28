@@ -120,7 +120,9 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   defp save_task(socket, :new, task_params) do
-    case TechOps.create_tech_ops_task(resolve_lookups(task_params)) do
+    # Lookups (reporter / issue origin) are resolved atomically inside
+    # create_tech_ops_task/1, so a rejected insert leaves no orphaned values.
+    case TechOps.create_tech_ops_task(task_params) do
       {:ok, _task} ->
         {:noreply,
          socket
@@ -135,28 +137,23 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   defp save_task(socket, :edit, task_params) do
-    # Confirm the task still exists before creating any lookups, so a stale edit
-    # (task deleted by another user) does not leave orphaned lookup values behind.
-    case TechOps.get_tech_ops_task(socket.assigns.selected_task.id) do
-      nil ->
-        {:noreply, handle_missing_task(socket)}
+    # update_tech_ops_task/2 resolves lookups and updates in one transaction: if
+    # the task was concurrently deleted, StaleEntryError rolls the whole thing
+    # back (no orphaned lookups) and is handled below.
+    case TechOps.update_tech_ops_task(socket.assigns.selected_task, task_params) do
+      {:ok, _task} ->
+        {:noreply,
+         socket
+         |> load_tasks()
+         |> load_lookups()
+         |> assign(:show_form_modal, false)
+         |> put_flash(:info, gettext("Task updated successfully"))}
 
-      task ->
-        case TechOps.update_tech_ops_task(task, resolve_lookups(task_params)) do
-          {:ok, _task} ->
-            {:noreply,
-             socket
-             |> load_tasks()
-             |> load_lookups()
-             |> assign(:show_form_modal, false)
-             |> put_flash(:info, gettext("Task updated successfully"))}
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
-        end
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
     end
   rescue
-    # Deleted in the narrow window between the existence check and the update.
+    # The task was deleted by another user after this modal was opened.
     Ecto.StaleEntryError -> {:noreply, handle_missing_task(socket)}
   end
 
@@ -172,18 +169,6 @@ defmodule HermesWeb.TechOpsLive.Index do
     socket
     |> assign(:reporters, TechOps.list_reporters())
     |> assign(:issue_origins, TechOps.list_issue_origins())
-  end
-
-  # Resolve the free-typed reporter / issue-origin names to canonical lookup ids,
-  # creating them if new. Called only once we're committed to writing the task,
-  # so a rejected write does not leave orphaned lookups behind.
-  defp resolve_lookups(task_params) do
-    {:ok, reporter} = TechOps.resolve_or_create_reporter(task_params["reporter_name"])
-    {:ok, origin} = TechOps.resolve_or_create_issue_origin(task_params["issue_origin_name"])
-
-    task_params
-    |> Map.put("reporter_id", reporter && reporter.id)
-    |> Map.put("issue_origin_id", origin && origin.id)
   end
 
   defp lookup_name(%{name: name}), do: name

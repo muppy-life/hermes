@@ -38,16 +38,76 @@ defmodule Hermes.TechOps do
     Ecto.Query.CastError -> nil
   end
 
+  @doc """
+  Creates a task. Free-typed `reporter_name` / `issue_origin_name` in `attrs`
+  are resolved to canonical lookup ids (created if new) inside the same
+  transaction as the insert, so a failed insert never leaves orphaned lookups.
+  """
   def create_tech_ops_task(attrs \\ %{}) do
-    %Task{}
-    |> Task.changeset(attrs)
-    |> Repo.insert()
+    write_task_txn(fn ->
+      %Task{}
+      |> Task.changeset(resolve_lookup_attrs(attrs))
+      |> Repo.insert()
+    end)
   end
 
+  @doc """
+  Updates a task, resolving lookups in the same transaction as the update. If
+  the task was concurrently deleted the update raises `Ecto.StaleEntryError`,
+  the transaction rolls back, and any lookups created for this edit are undone.
+  """
   def update_tech_ops_task(%Task{} = task, attrs) do
-    task
-    |> Task.changeset(attrs)
-    |> Repo.update()
+    write_task_txn(fn ->
+      task
+      |> Task.changeset(resolve_lookup_attrs(attrs))
+      |> Repo.update()
+    end)
+  end
+
+  # Runs `fun` (which returns {:ok, task} | {:error, changeset}) in a
+  # transaction, unwrapping the result and rolling back on error so lookup
+  # inserts performed inside `fun` are reverted together with the task write.
+  defp write_task_txn(fun) do
+    Repo.transaction(fn ->
+      case fun.() do
+        {:ok, task} -> task
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  # Resolve free-typed reporter / issue-origin names in the attrs to lookup ids.
+  # Accepts string or atom keys; leaves attrs untouched when the name keys are
+  # absent (e.g. API callers that pass ids directly).
+  defp resolve_lookup_attrs(attrs) do
+    {reporter_name, attrs} = pop_attr(attrs, "reporter_name", :reporter_name)
+    {origin_name, attrs} = pop_attr(attrs, "issue_origin_name", :issue_origin_name)
+
+    attrs
+    |> maybe_put_lookup_id("reporter_id", reporter_name, &resolve_lookup_row(Reporter, &1))
+    |> maybe_put_lookup_id("issue_origin_id", origin_name, &resolve_lookup_row(IssueOrigin, &1))
+  end
+
+  defp pop_attr(attrs, string_key, atom_key) do
+    cond do
+      Map.has_key?(attrs, string_key) -> Map.pop(attrs, string_key)
+      Map.has_key?(attrs, atom_key) -> Map.pop(attrs, atom_key)
+      true -> {:__absent__, attrs}
+    end
+  end
+
+  defp maybe_put_lookup_id(attrs, _id_key, :__absent__, _resolver), do: attrs
+
+  defp maybe_put_lookup_id(attrs, id_key, name, resolver) do
+    Map.put(attrs, id_key, resolver.(name) |> then(fn row -> row && row.id end))
+  end
+
+  # Resolve within the surrounding transaction (raises on unexpected failure so
+  # the transaction rolls back).
+  defp resolve_lookup_row(schema, name) do
+    case resolve_or_create(schema, name) do
+      {:ok, row} -> row
+    end
   end
 
   def delete_tech_ops_task(%Task{} = task) do

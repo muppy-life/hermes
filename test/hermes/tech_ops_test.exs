@@ -113,6 +113,38 @@ defmodule Hermes.TechOpsTest do
       assert updated.status == :resolved
       assert updated.resolution == "restarted the box"
     end
+
+    test "resolves free-typed lookup names atomically" do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x"
+        })
+
+      assert {:ok, _} =
+               TechOps.update_tech_ops_task(task, %{"issue_origin_name" => "Datadog"})
+
+      reloaded = TechOps.get_tech_ops_task(task.id)
+      assert reloaded.issue_origin.name == "Datadog"
+    end
+
+    test "rolls back lookup creation when the task was concurrently deleted" do
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x"
+        })
+
+      # Simulate a concurrent delete: the in-memory struct is now stale.
+      {:ok, _} = TechOps.delete_tech_ops_task(task)
+
+      assert_raise Ecto.StaleEntryError, fn ->
+        TechOps.update_tech_ops_task(task, %{"issue_origin_name" => "Orphan Origin"})
+      end
+
+      # The transaction rolled back, so no lookup value was persisted.
+      assert TechOps.list_issue_origins() == []
+    end
   end
 
   describe "delete_tech_ops_task/1" do
