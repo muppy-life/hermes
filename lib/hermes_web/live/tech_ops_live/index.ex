@@ -17,6 +17,7 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:form, to_form(%{}))
      |> assign(:users, Accounts.list_tech_users())
      |> assign(:teams, Accounts.list_teams())
+     |> load_lookups()
      |> load_tasks()}
   end
 
@@ -33,6 +34,8 @@ defmodule HermesWeb.TechOpsLive.Index do
      |> assign(:form_mode, :new)
      |> assign(:selected_task, nil)
      |> assign(:form, to_form(changeset))
+     |> assign(:reporter_name, "")
+     |> assign(:issue_origin_name, "")
      |> assign(:show_form_modal, true)}
   end
 
@@ -49,6 +52,8 @@ defmodule HermesWeb.TechOpsLive.Index do
          |> assign(:form_mode, :edit)
          |> assign(:selected_task, task)
          |> assign(:form, to_form(changeset))
+         |> assign(:reporter_name, lookup_name(task.reporter))
+         |> assign(:issue_origin_name, lookup_name(task.issue_origin))
          |> assign(:show_form_modal, true)}
     end
   end
@@ -77,10 +82,25 @@ defmodule HermesWeb.TechOpsLive.Index do
   def handle_event("validate", %{"task" => task_params}, socket) do
     task = socket.assigns.selected_task || %Task{}
     changeset = Task.changeset(task, task_params)
-    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+
+    {:noreply,
+     socket
+     |> assign(:form, to_form(changeset, action: :validate))
+     |> assign(:reporter_name, Map.get(task_params, "reporter_name", ""))
+     |> assign(:issue_origin_name, Map.get(task_params, "issue_origin_name", ""))}
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
+    # Resolve the free-typed reporter / issue-origin names to canonical lookup
+    # ids (creating them if new) before persisting the task.
+    {:ok, reporter} = TechOps.resolve_or_create_reporter(task_params["reporter_name"])
+    {:ok, origin} = TechOps.resolve_or_create_issue_origin(task_params["issue_origin_name"])
+
+    task_params =
+      task_params
+      |> Map.put("reporter_id", reporter && reporter.id)
+      |> Map.put("issue_origin_id", origin && origin.id)
+
     save_task(socket, socket.assigns.form_mode, task_params)
   end
 
@@ -115,6 +135,7 @@ defmodule HermesWeb.TechOpsLive.Index do
         {:noreply,
          socket
          |> load_tasks()
+         |> load_lookups()
          |> assign(:show_form_modal, false)
          |> put_flash(:info, gettext("Task created successfully"))}
 
@@ -131,6 +152,7 @@ defmodule HermesWeb.TechOpsLive.Index do
         {:noreply,
          socket
          |> load_tasks()
+         |> load_lookups()
          |> assign(:show_form_modal, false)
          |> put_flash(:info, gettext("Task updated successfully"))}
 
@@ -149,6 +171,15 @@ defmodule HermesWeb.TechOpsLive.Index do
     |> stream(:tasks, tasks, reset: true)
     |> assign(:task_count, length(tasks))
   end
+
+  defp load_lookups(socket) do
+    socket
+    |> assign(:reporters, TechOps.list_reporters())
+    |> assign(:issue_origins, TechOps.list_issue_origins())
+  end
+
+  defp lookup_name(%{name: name}), do: name
+  defp lookup_name(_), do: ""
 
   # A task referenced by a stale row no longer exists (deleted by another user).
   # Close any open modal, drop the stale row via a reload, and inform the user.
