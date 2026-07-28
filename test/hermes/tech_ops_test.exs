@@ -21,11 +21,14 @@ defmodule Hermes.TechOpsTest do
 
   describe "create_tech_ops_task/1" do
     test "creates a task with valid attributes", %{user: user, team: team} do
+      {:ok, reporter} = TechOps.resolve_or_create_reporter("Jane from support")
+      {:ok, origin} = TechOps.resolve_or_create_issue_origin("monitoring alert")
+
       attrs = %{
         "recorded_on" => Date.utc_today(),
         "reported_problem" => "Server is down",
-        "reporter" => "Jane from support",
-        "issue_origin" => "monitoring alert",
+        "reporter_id" => reporter.id,
+        "issue_origin_id" => origin.id,
         "status" => "open",
         "cause" => "disk full",
         "responsible_id" => user.id,
@@ -34,8 +37,8 @@ defmodule Hermes.TechOpsTest do
 
       assert {:ok, %Task{} = task} = TechOps.create_tech_ops_task(attrs)
       assert task.reported_problem == "Server is down"
-      assert task.reporter == "Jane from support"
-      assert task.issue_origin == "monitoring alert"
+      assert task.reporter_id == reporter.id
+      assert task.issue_origin_id == origin.id
       assert task.status == :open
       assert task.cause == "disk full"
       assert task.responsible_id == user.id
@@ -145,6 +148,43 @@ defmodule Hermes.TechOpsTest do
 
     test "returns nil for a non-integer id (no raise)" do
       assert TechOps.get_tech_ops_task("not-an-id") == nil
+    end
+  end
+
+  describe "resolve_or_create_issue_origin/1 (and reporter)" do
+    test "creates a new canonical value" do
+      assert {:ok, origin} = TechOps.resolve_or_create_issue_origin("Slack")
+      assert origin.name == "Slack"
+      assert origin.normalized == "slack"
+    end
+
+    test "reuses the existing row for case/whitespace variants" do
+      {:ok, first} = TechOps.resolve_or_create_issue_origin("Slack")
+      {:ok, second} = TechOps.resolve_or_create_issue_origin("  slack ")
+      {:ok, third} = TechOps.resolve_or_create_issue_origin("SLACK")
+
+      assert first.id == second.id
+      assert first.id == third.id
+      assert length(TechOps.list_issue_origins()) == 1
+    end
+
+    test "collapses internal whitespace" do
+      {:ok, a} = TechOps.resolve_or_create_issue_origin("Monitoring   alert")
+      {:ok, b} = TechOps.resolve_or_create_issue_origin("Monitoring alert")
+      assert a.id == b.id
+    end
+
+    test "blank input resolves to nil" do
+      assert {:ok, nil} = TechOps.resolve_or_create_issue_origin("")
+      assert {:ok, nil} = TechOps.resolve_or_create_issue_origin("   ")
+      assert {:ok, nil} = TechOps.resolve_or_create_issue_origin(nil)
+    end
+
+    test "reporters dedupe the same way" do
+      {:ok, r1} = TechOps.resolve_or_create_reporter("Jane Doe")
+      {:ok, r2} = TechOps.resolve_or_create_reporter("jane doe")
+      assert r1.id == r2.id
+      assert length(TechOps.list_reporters()) == 1
     end
   end
 end

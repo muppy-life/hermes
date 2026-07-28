@@ -77,10 +77,10 @@
               <div class="whitespace-pre-line" phx-no-format>{task.reported_problem}</div>
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[10rem]">
-              {if task.reporter in [nil, ""], do: "—", else: task.reporter}
+              {if task.reporter, do: task.reporter.name, else: "—"}
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[12rem]">
-              {if task.issue_origin in [nil, ""], do: "—", else: task.issue_origin}
+              {if task.issue_origin, do: task.issue_origin.name, else: "—"}
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap min-w-[10rem]">
               {if task.responsible,
@@ -157,18 +157,40 @@
             label={gettext("Reported problem")}
             required
           />
-          <.input
-            field={@form[:reporter]}
-            type="text"
-            label={gettext("Reporter")}
-            placeholder={gettext("Who reported the issue")}
-          />
-          <.input
-            field={@form[:issue_origin]}
-            type="text"
-            label={gettext("Issue origin")}
-            placeholder={gettext("e.g. a user, a place in the code or app")}
-          />
+          <div class="fieldset mb-2">
+            <label>
+              <span class="label mb-1">{gettext("Reporter")}</span>
+              <input
+                type="text"
+                name="task[reporter_name]"
+                value={@reporter_name}
+                list="tech-ops-reporters"
+                autocomplete="off"
+                placeholder={gettext("Pick or type a new one")}
+                class="w-full input"
+              />
+            </label>
+            <datalist id="tech-ops-reporters">
+              <option :for={r <- @reporters} value={r.name}></option>
+            </datalist>
+          </div>
+          <div class="fieldset mb-2">
+            <label>
+              <span class="label mb-1">{gettext("Issue origin")}</span>
+              <input
+                type="text"
+                name="task[issue_origin_name]"
+                value={@issue_origin_name}
+                list="tech-ops-issue-origins"
+                autocomplete="off"
+                placeholder={gettext("Pick or type a new one")}
+                class="w-full input"
+              />
+            </label>
+            <datalist id="tech-ops-issue-origins">
+              <option :for={o <- @issue_origins} value={o.name}></option>
+            </datalist>
+          </div>
           <.input
             field={@form[:responsible_id]}
             type="select"

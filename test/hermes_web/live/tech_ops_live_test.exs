@@ -77,8 +77,8 @@ defmodule HermesWeb.TechOpsLiveTest do
           task: %{
             recorded_on: "2026-07-24",
             reported_problem: "DB connection pool exhausted",
-            reporter: "on-call engineer",
-            issue_origin: "monitoring",
+            reporter_name: "on-call engineer",
+            issue_origin_name: "monitoring",
             status: "in_progress",
             cause: "traffic spike",
             responsible_id: dev.id,
@@ -95,10 +95,33 @@ defmodule HermesWeb.TechOpsLiveTest do
 
       assert [task] = TechOps.list_tech_ops_tasks()
       assert task.reported_problem == "DB connection pool exhausted"
-      assert task.reporter == "on-call engineer"
+      assert task.reporter.name == "on-call engineer"
+      assert task.issue_origin.name == "monitoring"
       assert task.status == :in_progress
       assert task.cause == "traffic spike"
       assert task.team_id == team.id
+    end
+
+    test "reuses an existing lookup value on case-variant input", %{conn: conn} do
+      {:ok, _} = TechOps.resolve_or_create_issue_origin("Slack")
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+      lv |> element("button", "Record task") |> render_click()
+
+      lv
+      |> form("#tech-ops-task-form",
+        task: %{
+          recorded_on: "2026-07-24",
+          reported_problem: "x",
+          issue_origin_name: "  slack "
+        }
+      )
+      |> render_submit()
+
+      # No duplicate lookup row was created.
+      assert length(TechOps.list_issue_origins()) == 1
+      assert [task] = TechOps.list_tech_ops_tasks()
+      assert task.issue_origin.name == "Slack"
     end
 
     test "defaults the responsible to the current user on a new task", %{conn: conn, dev: dev} do
