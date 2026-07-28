@@ -20,6 +20,43 @@ defmodule Hermes.MCP.ToolsTest do
     end
   end
 
+  describe "concurrent deletion during a write" do
+    setup do
+      {:ok, team} = Hermes.Accounts.create_team(%{name: "Platform", description: "d"})
+
+      {:ok, user} =
+        Hermes.Accounts.create_user(%{
+          email: "race@example.com",
+          hashed_password: :crypto.hash(:sha256, "x") |> Base.encode16(case: :lower),
+          role: "dev_team",
+          team_id: team.id
+        })
+
+      %{user: user}
+    end
+
+    # The write has committed, so the caller must get the task back rather than
+    # an internal error from serializing a nil re-fetch.
+    test "resolve still responds when the task is deleted after the update", %{user: user} do
+      {:ok, task} =
+        Hermes.TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x"
+        })
+
+      # Simulate the race by deleting the row, then serializing the stale struct
+      # the handler is holding.
+      Hermes.TechOps.delete_tech_ops_task(task)
+
+      assert %{id: id, status: "open"} = Tools.serialize(task)
+      assert id == task.id
+
+      # And the handler itself reports the task as gone rather than crashing.
+      assert Tools.call("resolve_tech_ops_task", %{"id" => task.id, "resolution" => "x"}, user) ==
+               {:error, :not_found}
+    end
+  end
+
   describe "lookup value types" do
     setup do
       {:ok, team} = Hermes.Accounts.create_team(%{name: "Platform", description: "d"})

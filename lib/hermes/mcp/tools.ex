@@ -308,7 +308,7 @@ defmodule Hermes.MCP.Tools do
     with {:ok, lookups} <- resolve_lookups(args),
          attrs = Map.merge(base, lookups),
          {:ok, task} <- TechOps.create_tech_ops_task(attrs) do
-      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
+      {:ok, serialize_reloaded(task)}
     end
   end
 
@@ -318,7 +318,7 @@ defmodule Hermes.MCP.Tools do
     with {:ok, lookups} <- resolve_lookups(args),
          {:ok, task} <- fetch_task(id),
          {:ok, task} <- TechOps.update_tech_ops_task(task, Map.merge(base, lookups)) do
-      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
+      {:ok, serialize_reloaded(task)}
     end
   end
 
@@ -327,8 +327,7 @@ defmodule Hermes.MCP.Tools do
 
     with {:ok, task} <- fetch_task(id),
          {:ok, task} <- TechOps.update_tech_ops_task(task, attrs) do
-      # Re-fetch so associations are preloaded; the update result is not.
-      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
+      {:ok, serialize_reloaded(task)}
     end
   end
 
@@ -386,6 +385,14 @@ defmodule Hermes.MCP.Tools do
     else
       {:error, :unknown_tool}
     end
+  end
+
+  # A write returns the task without preloads, so re-fetch before serializing.
+  # If it was deleted between the commit and the re-fetch, serialize what we
+  # hold: the write did happen, so reporting an error would be misleading. The
+  # association fields fall back to nil rather than raising.
+  defp serialize_reloaded(%Task{} = task) do
+    serialize(TechOps.get_tech_ops_task(task.id) || task)
   end
 
   @doc "Serializes a task to a plain, JSON-safe map for API/MCP responses."
