@@ -282,6 +282,10 @@ defmodule Hermes.MCP.Tools do
     end
   end
 
+  # A user with no team has no team-scoped visibility: return an empty list
+  # rather than relying on SQL NULL semantics to exclude unassigned requests.
+  def call("list_requests", _args, %User{team_id: nil}), do: {:ok, %{requests: []}}
+
   def call("list_requests", args, %User{} = user) do
     requests = Requests.list_requests_by_team(user.team_id)
 
@@ -294,6 +298,9 @@ defmodule Hermes.MCP.Tools do
 
     {:ok, %{requests: Enum.map(requests, &serialize_request/1)}}
   end
+
+  # No team → nothing is visible, including unassigned (nil-team) requests.
+  def call("get_request", _args, %User{team_id: nil}), do: {:error, :not_found}
 
   def call("get_request", %{"id" => id}, %User{} = user) do
     with {:ok, request} <- fetch_visible_request(id, user) do
@@ -380,7 +387,7 @@ defmodule Hermes.MCP.Tools do
         # Explicit clear.
         {:ok, Map.put(acc, id_key, nil)}
 
-      name ->
+      name when is_binary(name) ->
         case find_lookup(field, name) do
           nil ->
             {:error, {:unknown_value, field, suggest_lookup(field, name)}}
@@ -388,6 +395,9 @@ defmodule Hermes.MCP.Tools do
           row ->
             {:ok, Map.put(acc, id_key, row.id)}
         end
+
+      _non_string ->
+        {:error, {:invalid, "#{field} must be a string"}}
     end
   end
 

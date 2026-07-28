@@ -38,18 +38,15 @@ defmodule HermesWeb.Plugs.RateLimit do
     end
   end
 
-  # Prefer the bearer token (identifies the caller even without a valid account);
-  # fall back to remote IP for tokenless requests.
-  defp rate_key(conn) do
-    case get_req_header(conn, "authorization") do
-      ["Bearer " <> token | _] when byte_size(token) > 0 -> {:token, hash(String.trim(token))}
-      ["bearer " <> token | _] when byte_size(token) > 0 -> {:token, hash(String.trim(token))}
-      _ -> {:ip, ip(conn)}
-    end
-  end
-
-  # Hash the token so raw credentials never land in ETS keys.
-  defp hash(token), do: :crypto.hash(:sha256, token) |> Base.encode16(case: :lower)
+  # Key strictly by client IP. This plug runs *before* authentication, so the
+  # bearer value is attacker-controlled: keying by token would let a client
+  # rotate arbitrary Bearer strings to mint a fresh allowance per request and
+  # bypass the limit. IP is the only dimension an unauthenticated caller cannot
+  # cheaply vary, so it bounds token-guessing regardless of how many distinct
+  # (invalid) tokens are tried. Trade-off: clients sharing an egress IP share a
+  # bucket — acceptable for this internal API; an edge/LB limiter is the outer
+  # line of defense.
+  defp rate_key(conn), do: {:ip, ip(conn)}
 
   defp ip(conn) do
     conn.remote_ip |> :inet.ntoa() |> to_string()

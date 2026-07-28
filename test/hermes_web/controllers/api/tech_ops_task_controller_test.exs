@@ -167,6 +167,12 @@ defmodule HermesWeb.Api.TechOpsTaskControllerTest do
       conn = auth.(conn, t) |> post(~p"/api/v1/tech-ops/tasks", %{})
       assert json_response(conn, 422)["error"]["code"] == "validation_failed"
     end
+
+    test "400 when issue_origin is not a string", %{conn: conn, auth: auth, dev_token: t} do
+      params = %{"reported_problem" => "x", "issue_origin" => 123}
+      body = auth.(conn, t) |> post(~p"/api/v1/tech-ops/tasks", params) |> json_response(400)
+      assert body["error"]["code"] == "invalid_request"
+    end
   end
 
   describe "show / update" do

@@ -60,32 +60,17 @@ defmodule HermesWeb.Plugs.RateLimitTest do
     assert limited.status == 429
   end
 
-  test "different tokens have independent limits", %{conn: conn, token: token} do
-    {:ok, team} = Accounts.create_team(%{name: "T2", description: "d"})
+  test "rotating bearer tokens does not grant a fresh allowance (IP-keyed)", %{conn: conn} do
+    # The limiter keys by IP, before auth, so an attacker cannot mint new
+    # allowance by varying the Bearer value.
+    for i <- 1..3 do
+      conn |> put_req_header("authorization", "Bearer hermes_guess_#{i}") |> get(~p"/api/v1/me")
+    end
 
-    {:ok, dev2} =
-      Accounts.create_user(%{
-        email: "dev2@test.com",
-        hashed_password: "h",
-        role: "dev_team",
-        team_id: team.id
-      })
+    # A different (still invalid) token from the same IP is throttled, not reset.
+    limited =
+      conn |> put_req_header("authorization", "Bearer hermes_guess_4") |> get(~p"/api/v1/me")
 
-    {:ok, token2, _} = Accounts.create_api_token(dev2, "t2")
-
-    for _ <- 1..3,
-        do: conn |> put_req_header("authorization", "Bearer " <> token) |> get(~p"/api/v1/me")
-
-    # token1 is now exhausted
-    assert conn
-           |> put_req_header("authorization", "Bearer " <> token)
-           |> get(~p"/api/v1/me")
-           |> Map.get(:status) == 429
-
-    # token2 still has its own allowance
-    assert conn
-           |> put_req_header("authorization", "Bearer " <> token2)
-           |> get(~p"/api/v1/me")
-           |> json_response(200)
+    assert limited.status == 429
   end
 end
