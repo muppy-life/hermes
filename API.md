@@ -12,10 +12,15 @@ All API and MCP requests use a **personal API token** sent as a bearer header:
 Authorization: Bearer hermes_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-- Tokens are minted by admins at **Admin → API tokens** (`/admin/api-tokens`).
+- Each admin creates their **own** token at **Admin → API tokens**
+  (`/admin/api-tokens`) → **New token**. The token always belongs to the admin
+  who creates it; there is no "create on behalf of another user".
 - The raw token is shown **once** at creation; only its SHA256 hash is stored.
+  Copy it immediately — if lost, revoke it and create a new one.
 - A token acts as its owner. Writes are attributed to that user (e.g. the task's
   `responsible`).
+- All admins can see and revoke every token (a shared operations console). Only
+  metadata is shared — the raw secret is never displayed after creation.
 - Access is restricted to the **tech team** (`dev_team` role or admins). A token
   for any other user is rejected with `403`.
 

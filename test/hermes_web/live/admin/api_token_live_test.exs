@@ -62,52 +62,32 @@ defmodule HermesWeb.Admin.ApiTokenLiveTest do
       %{lv: lv}
     end
 
-    test "shows the raw token once for a tech-team user", %{lv: lv, dev: dev} do
+    test "creates a token owned by the current admin and shows it once", %{lv: lv, admin: admin} do
       html =
         lv
-        |> form("form[phx-submit=create_token]", %{"user_id" => dev.id, "name" => "Claude MCP"})
+        |> form("form[phx-submit=create_token]", %{"name" => "Claude MCP"})
         |> render_submit()
 
       # The raw token is displayed once, prefixed for identification, with the
       # "shown once" warning copy.
       assert html =~ "hermes_"
       assert html =~ "it will not be shown again"
-      # And it is now persisted for that user.
-      assert [%{name: "Claude MCP"}] = Accounts.list_api_tokens(dev)
+      # And it belongs to the admin who created it — not anyone else.
+      assert [%{name: "Claude MCP"}] = Accounts.list_api_tokens(admin)
     end
 
-    test "the form only offers tech-team users", %{lv: lv, dev: dev, admin: admin, member: member} do
+    test "the form has no user picker (owner is always self)", %{lv: lv, admin: admin} do
       html = render(lv)
-      # dev_team and admin are selectable; a plain team_member is not.
-      assert html =~ ~s(value="#{dev.id}")
-      assert html =~ ~s(value="#{admin.id}")
-      refute html =~ ~s(value="#{member.id}")
+      refute html =~ ~s(name="user_id")
+      assert html =~ admin.email
     end
 
-    test "server-side guard rejects a non-tech-team user id", %{lv: lv, member: member} do
-      # Bypass the select's option list to exercise the defense-in-depth check
-      # in create_token (e.g. a forged submission). No token is minted.
-      render_submit(lv, "create_token", %{"user_id" => to_string(member.id), "name" => "x"})
-
-      assert Accounts.list_api_tokens(member) == []
-    end
-
-    test "requires a name", %{lv: lv, dev: dev} do
+    test "requires a name", %{lv: lv, admin: admin} do
       lv
-      |> form("form[phx-submit=create_token]", %{"user_id" => dev.id, "name" => ""})
+      |> form("form[phx-submit=create_token]", %{"name" => ""})
       |> render_submit()
 
-      assert Accounts.list_api_tokens(dev) == []
-    end
-
-    test "requires a user selection", %{lv: lv, dev: dev, member: member} do
-      lv
-      |> form("form[phx-submit=create_token]", %{"user_id" => "", "name" => "x"})
-      |> render_submit()
-
-      # No token minted for anyone when no user is chosen.
-      assert Accounts.list_api_tokens(dev) == []
-      assert Accounts.list_api_tokens(member) == []
+      assert Accounts.list_api_tokens(admin) == []
     end
   end
 

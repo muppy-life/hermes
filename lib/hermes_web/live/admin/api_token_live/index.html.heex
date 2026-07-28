@@ -123,22 +123,9 @@
         </div>
       <% else %>
         <form phx-submit="create_token" class="space-y-4">
-          <div>
-            <label class="block text-[12px] font-semibold text-base-content/70 mb-1.5">
-              {gettext("User (tech team)")}
-            </label>
-            <select
-              name="user_id"
-              class="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-[13px] text-base-content"
-            >
-              <option value="">{gettext("Select a user…")}</option>
-              <%= for user <- @tech_users do %>
-                <option value={user.id}>
-                  {Hermes.Accounts.User.display_name(user)} ({user.email})
-                </option>
-              <% end %>
-            </select>
-          </div>
+          <p class="text-[12.5px] text-base-content/60">
+            {gettext("This token will belong to you")} ({@current_user.email}).
+          </p>
           <div>
             <label class="block text-[12px] font-semibold text-base-content/70 mb-1.5">
               {gettext("Token name")}
