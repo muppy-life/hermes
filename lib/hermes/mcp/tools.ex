@@ -327,7 +327,8 @@ defmodule Hermes.MCP.Tools do
 
     with {:ok, task} <- fetch_task(id),
          {:ok, task} <- TechOps.update_tech_ops_task(task, attrs) do
-      {:ok, serialize(task)}
+      # Re-fetch so associations are preloaded; the update result is not.
+      {:ok, serialize(TechOps.get_tech_ops_task(task.id))}
     end
   end
 

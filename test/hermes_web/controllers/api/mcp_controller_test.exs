@@ -222,10 +222,13 @@ defmodule HermesWeb.Api.MCPControllerTest do
     end
 
     test "resolve_task completes a task", %{conn: conn} do
+      {:ok, _} = TechOps.resolve_or_create_reporter("Alejandra")
+
       {:ok, task} =
         TechOps.create_tech_ops_task(%{
           "recorded_on" => Date.utc_today(),
-          "reported_problem" => "x"
+          "reported_problem" => "x",
+          "reporter_name" => "Alejandra"
         })
 
       resp =
@@ -247,6 +250,8 @@ defmodule HermesWeb.Api.MCPControllerTest do
 
       assert payload["status"] == "resolved"
       assert payload["resolution"] == "patched"
+      # Associations must survive the resolve response, not come back as null.
+      assert payload["reporter"]["name"] == "Alejandra"
     end
 
     test "returns isError for a missing task", %{conn: conn} do

@@ -195,6 +195,34 @@ defmodule HermesWeb.TechOpsLiveTest do
       assert render(lv) =~ ~s(<option value="Alejandra" selected="">)
     end
 
+    test "toggling a lookup mode twice keeps the saved value", %{conn: conn} do
+      {:ok, _} = TechOps.resolve_or_create_reporter("Alejandra")
+
+      {:ok, task} =
+        TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x",
+          "reporter_name" => "Alejandra"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/tech-ops")
+
+      lv
+      |> element("button[phx-click='open_edit_modal'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # Switch to free text and straight back without typing anything.
+      lv |> element("button[phx-value-field='reporter']") |> render_click()
+      lv |> element("button[phx-value-field='reporter']") |> render_click()
+
+      lv
+      |> form("#tech-ops-task-form", task: %{reported_problem: "x"})
+      |> render_submit()
+
+      # The association survived the round trip.
+      assert TechOps.get_tech_ops_task(task.id).reporter.name == "Alejandra"
+    end
+
     test "shows validation errors on an incomplete form", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/tech-ops")
 

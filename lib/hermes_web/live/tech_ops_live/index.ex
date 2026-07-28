@@ -104,19 +104,22 @@ defmodule HermesWeb.TechOpsLive.Index do
   end
 
   # Swaps a lookup field between picking an existing value and typing a new one.
-  # Clears the field so the value left behind in the other input is not submitted.
   def handle_event("toggle_new_lookup", %{"field" => "reporter"}, socket) do
+    new? = !socket.assigns.new_reporter
+
     {:noreply,
      socket
-     |> assign(:new_reporter, !socket.assigns.new_reporter)
-     |> assign(:reporter_name, "")}
+     |> assign(:new_reporter, new?)
+     |> assign(:reporter_name, toggled_lookup_name(socket, new?, & &1.reporter))}
   end
 
   def handle_event("toggle_new_lookup", %{"field" => "issue_origin"}, socket) do
+    new? = !socket.assigns.new_issue_origin
+
     {:noreply,
      socket
-     |> assign(:new_issue_origin, !socket.assigns.new_issue_origin)
-     |> assign(:issue_origin_name, "")}
+     |> assign(:new_issue_origin, new?)
+     |> assign(:issue_origin_name, toggled_lookup_name(socket, new?, & &1.issue_origin))}
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
@@ -202,6 +205,18 @@ defmodule HermesWeb.TechOpsLive.Index do
 
   defp lookup_name(%{name: name}), do: name
   defp lookup_name(_), do: ""
+
+  # Switching to free text starts blank, so a value picked from the dropdown is
+  # not resubmitted as a new one. Switching back restores the task's saved value
+  # rather than submitting a blank, which would drop the association.
+  defp toggled_lookup_name(_socket, true, _getter), do: ""
+
+  defp toggled_lookup_name(socket, false, getter) do
+    case socket.assigns.selected_task do
+      nil -> ""
+      task -> lookup_name(getter.(task))
+    end
+  end
 
   # True when the task holds a lookup value that is absent from the current
   # options, so the <select> could not represent it.
