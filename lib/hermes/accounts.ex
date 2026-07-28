@@ -4,7 +4,7 @@ defmodule Hermes.Accounts do
   """
 
   import Ecto.Query, warn: false
-  alias Hermes.Accounts.{Team, User}
+  alias Hermes.Accounts.{ApiToken, Team, User}
   alias Hermes.Repo
 
   ## Team functions
@@ -183,4 +183,71 @@ defmodule Hermes.Accounts do
   def can_access_team?(%User{is_admin: true}, _), do: true
   def can_access_team?(%User{team_id: team_id}, team_id), do: true
   def can_access_team?(_, _), do: false
+
+  ## API token functions
+
+  @doc """
+  Creates an API token for `user`. Returns `{:ok, raw_token, api_token}` where
+  `raw_token` is the plaintext token to display once (never stored) and
+  `api_token` is the persisted record holding only its hash.
+  """
+  def create_api_token(%User{} = user, name) do
+    {raw, changeset} = ApiToken.build(user, %{name: name})
+
+    case Repo.insert(changeset) do
+      {:ok, token} -> {:ok, raw, token}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Resolves an active user from a raw API token, or returns `nil`.
+
+  Touches `last_used_at` on a successful match. A soft-deleted user's tokens
+  stop working, mirroring session auth.
+  """
+  def get_user_by_api_token(raw) when is_binary(raw) do
+    hash = ApiToken.hash_token(raw)
+
+    query =
+      from t in ApiToken,
+        join: u in User,
+        on: u.id == t.user_id,
+        where: t.token_hash == ^hash and is_nil(u.deleted_at),
+        select: t
+
+    case Repo.one(query) do
+      nil ->
+        nil
+
+      token ->
+        touch_api_token(token)
+        get_active_user(token.user_id)
+    end
+  end
+
+  def get_user_by_api_token(_), do: nil
+
+  defp touch_api_token(%ApiToken{} = token) do
+    token
+    |> Ecto.Changeset.change(%{last_used_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+    |> Repo.update()
+  end
+
+  @doc "Lists a user's API tokens (most recent first). Raw tokens are never returned."
+  def list_api_tokens(%User{} = user) do
+    from(t in ApiToken, where: t.user_id == ^user.id, order_by: [desc: t.inserted_at])
+    |> Repo.all()
+  end
+
+  @doc "Lists all API tokens across users with their owner preloaded (admin view)."
+  def list_all_api_tokens do
+    from(t in ApiToken, order_by: [desc: t.inserted_at], preload: [:user])
+    |> Repo.all()
+  end
+
+  def get_api_token!(id), do: Repo.get!(ApiToken, id)
+
+  @doc "Revokes (deletes) an API token."
+  def revoke_api_token(%ApiToken{} = token), do: Repo.delete(token)
 end

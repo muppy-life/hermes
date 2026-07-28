@@ -4,8 +4,8 @@ defmodule Hermes.TechOps do
   the rotating tech ops role).
 
   Reporter and issue origin are managed lookup lists rather than free text, so
-  values stay canonical (deduplicated on a normalized key) across the UI and,
-  later, any API writers.
+  values stay canonical (deduplicated on a normalized key) across the UI and
+  the API/MCP writers.
   """
 
   import Ecto.Query, warn: false
@@ -26,8 +26,8 @@ defmodule Hermes.TechOps do
   def get_tech_ops_task!(id), do: Repo.get!(Task, id) |> Repo.preload(@task_preloads)
 
   @doc """
-  Fetches a task by id, or nil if it does not exist. Used by the LiveView so a
-  concurrently-deleted task (stale row) does not crash the process.
+  Fetches a task by id, or nil if it does not exist. Used by the LiveView (so a
+  concurrently-deleted task does not crash the process) and by the API/MCP layer.
   """
   def get_tech_ops_task(id) do
     case Repo.get(Task, id) do
@@ -42,6 +42,9 @@ defmodule Hermes.TechOps do
   Creates a task. Free-typed `reporter_name` / `issue_origin_name` in `attrs`
   are resolved to canonical lookup ids (created if new) inside the same
   transaction as the insert, so a failed insert never leaves orphaned lookups.
+
+  API/MCP callers that have already resolved values pass `reporter_id` /
+  `issue_origin_id` directly; those attrs are left untouched.
   """
   def create_tech_ops_task(attrs \\ %{}) do
     write_task_txn(fn ->
@@ -127,6 +130,15 @@ defmodule Hermes.TechOps do
   """
   def resolve_or_create_reporter(name), do: resolve_or_create(Reporter, name)
 
+  @doc "Finds a reporter by normalized name, or nil. Does not create."
+  def find_reporter(name), do: find_lookup(Reporter, name)
+
+  @doc "Explicitly creates a canonical reporter (idempotent normalized upsert)."
+  def create_reporter(name), do: create_lookup(Reporter, name)
+
+  @doc "Reporters whose name is close to `name` (for 'did you mean' suggestions)."
+  def suggest_reporters(name, limit \\ 5), do: suggest_lookup(Reporter, name, limit)
+
   ## Issue origins (lookup)
 
   def list_issue_origins do
@@ -138,6 +150,15 @@ defmodule Hermes.TechOps do
   creating it if none exists. Blank input returns `{:ok, nil}`.
   """
   def resolve_or_create_issue_origin(name), do: resolve_or_create(IssueOrigin, name)
+
+  @doc "Finds an issue origin by normalized name, or nil. Does not create."
+  def find_issue_origin(name), do: find_lookup(IssueOrigin, name)
+
+  @doc "Explicitly creates a canonical issue origin (idempotent normalized upsert)."
+  def create_issue_origin(name), do: create_lookup(IssueOrigin, name)
+
+  @doc "Issue origins whose name is close to `name` (for suggestions)."
+  def suggest_issue_origins(name, limit \\ 5), do: suggest_lookup(IssueOrigin, name, limit)
 
   # Shared resolve-or-create for the lookup schemas. Normalizes and upserts by
   # the unique normalized key.
@@ -161,5 +182,49 @@ defmodule Hermes.TechOps do
 
       {:ok, Repo.get_by(schema, normalized: key)}
     end
+  end
+
+  # Look up an existing lookup row by normalized key; nil for blank/unknown.
+  # Used by the API layer to reject unknown values instead of creating them.
+  defp find_lookup(schema, name) do
+    case schema.normalize(name) do
+      "" -> nil
+      key -> Repo.get_by(schema, normalized: key)
+    end
+  end
+
+  # Explicit create for the API: returns {:ok, row} for a new or existing
+  # (idempotent) value, or {:error, changeset} for a blank name.
+  defp create_lookup(schema, name) do
+    case schema.normalize(name) do
+      "" -> {:error, struct(schema) |> schema.changeset(%{"name" => name})}
+      _key -> resolve_or_create(schema, name)
+    end
+  end
+
+  # Suggestions: rows whose normalized key contains the (normalized) query as a
+  # substring. Empty query yields no suggestions.
+  defp suggest_lookup(schema, name, limit) do
+    case schema.normalize(name) do
+      "" ->
+        []
+
+      key ->
+        pattern = "%#{escape_like(key)}%"
+
+        from(r in schema,
+          where: like(r.normalized, ^pattern),
+          order_by: [asc: r.name],
+          limit: ^limit
+        )
+        |> Repo.all()
+    end
+  end
+
+  defp escape_like(term) do
+    term
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
   end
 end

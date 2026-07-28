@@ -11,6 +11,13 @@ config :hermes,
   ecto_repos: [Hermes.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Rate limiting for the token-authenticated API/MCP surface.
+# 60 requests per minute per token (or per IP for tokenless requests).
+config :hermes, HermesWeb.Plugs.RateLimit,
+  enabled: true,
+  limit: 60,
+  window_ms: 60_000
+
 # AppSignal: compile-time defaults. Activation happens in runtime.exs
 # when APPSIGNAL_PUSH_API_KEY is set.
 config :appsignal, :config,
