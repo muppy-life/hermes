@@ -387,12 +387,11 @@ defmodule Hermes.MCP.Tools do
     end
   end
 
-  # A write returns the task without preloads, so re-fetch before serializing.
-  # If it was deleted between the commit and the re-fetch, serialize what we
-  # hold: the write did happen, so reporting an error would be misleading. The
-  # association fields fall back to nil rather than raising.
+  # A write returns the task without preloads. Load them onto that struct rather
+  # than re-fetching by id: associations resolve by foreign key, so the response
+  # is complete even if another process deletes the task's own row first.
   defp serialize_reloaded(%Task{} = task) do
-    serialize(TechOps.get_tech_ops_task(task.id) || task)
+    serialize(TechOps.preload_task(task))
   end
 
   @doc "Serializes a task to a plain, JSON-safe map for API/MCP responses."

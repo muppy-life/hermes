@@ -35,23 +35,37 @@ defmodule Hermes.MCP.ToolsTest do
       %{user: user}
     end
 
-    # The write has committed, so the caller must get the task back rather than
-    # an internal error from serializing a nil re-fetch.
-    test "resolve still responds when the task is deleted after the update", %{user: user} do
+    # Preloading the struct in hand (rather than re-fetching by id) keeps the
+    # response complete even once the task's own row is gone.
+    test "associations still serialize after the task row is deleted", %{user: user} do
+      {:ok, _} = Hermes.TechOps.resolve_or_create_reporter("Alejandra")
+
+      {:ok, task} =
+        Hermes.TechOps.create_tech_ops_task(%{
+          "recorded_on" => Date.utc_today(),
+          "reported_problem" => "x",
+          "reporter_name" => "Alejandra",
+          "responsible_id" => user.id
+        })
+
+      Hermes.TechOps.delete_tech_ops_task(task)
+
+      payload = Tools.serialize(Hermes.TechOps.preload_task(task))
+
+      assert payload.id == task.id
+      assert payload.reporter.name == "Alejandra"
+      assert payload.responsible.email == "race@example.com"
+    end
+
+    test "resolve reports an already-deleted task as not found", %{user: user} do
       {:ok, task} =
         Hermes.TechOps.create_tech_ops_task(%{
           "recorded_on" => Date.utc_today(),
           "reported_problem" => "x"
         })
 
-      # Simulate the race by deleting the row, then serializing the stale struct
-      # the handler is holding.
       Hermes.TechOps.delete_tech_ops_task(task)
 
-      assert %{id: id, status: "open"} = Tools.serialize(task)
-      assert id == task.id
-
-      # And the handler itself reports the task as gone rather than crashing.
       assert Tools.call("resolve_tech_ops_task", %{"id" => task.id, "resolution" => "x"}, user) ==
                {:error, :not_found}
     end
