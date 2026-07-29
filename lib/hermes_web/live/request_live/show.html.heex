@@ -295,11 +295,18 @@ aging = aging_days(@request) %>
             <div class="grid grid-cols-3 gap-3 mb-4">
               <%= for image <- @images do %>
                 <div class="relative group">
-                  <img
-                    src={Hermes.Requests.image_url(image)}
-                    alt={image.filename}
-                    class="w-full h-32 object-cover rounded-lg border border-base-300"
-                  />
+                  <a
+                    href={Hermes.Requests.image_url(image)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={gettext("Open %{filename} in a new tab", filename: image.filename)}
+                  >
+                    <img
+                      src={Hermes.Requests.image_url(image)}
+                      alt={image.filename}
+                      class="w-full h-32 object-cover rounded-lg border border-base-300 cursor-zoom-in"
+                    />
+                  </a>
                   <button
                     phx-click="delete_image"
                     phx-value-id={image.id}
