@@ -324,6 +324,89 @@ const Hooks = {
       })
     }
   },
+  // Infinite scroll for a single kanban column: when the "N more tasks" sentinel
+  // scrolls into view inside the column, ask the server for the next page.
+  KanbanColumnPager: {
+    mounted() {
+      // A page is only ever fetched in response to fresh user intent (a scroll or a
+      // click). Without this, the observer re-arming on a sentinel that is still in
+      // view after a patch would chain load_more until the whole column rendered —
+      // which happens whenever a page is shorter than the visible area.
+      this.armed = false
+      this.pending = false
+
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            this.requestMore()
+          }
+        },
+        // No rootMargin: the sentinel sits just past the last card, so any margin
+        // would count it as visible at rest and page before the user scrolls.
+        {root: this.el}
+      )
+
+      // Scroll arms the observer path. Wheel and touch also count, so a list that is
+      // not tall enough to scroll can still page.
+      for (const event of ['scroll', 'wheel', 'touchmove']) {
+        this.el.addEventListener(
+          event,
+          () => {
+            this.armed = true
+            this.requestMore()
+          },
+          {passive: true}
+        )
+      }
+
+      // Explicit click always pages, regardless of arming or sentinel position.
+      this.el.addEventListener('click', (e) => {
+        if (e.target.closest('.kanban-col-sentinel')) {
+          e.stopPropagation()
+          this.requestMore({force: true})
+        }
+      })
+
+      this.observeSentinel()
+    },
+    updated() {
+      this.pending = false
+      // The sentinel node is replaced on each patch, so re-observe the new one.
+      this.observeSentinel()
+    },
+    sentinel() {
+      return this.el.querySelector('.kanban-col-sentinel')
+    },
+    // Requires both fresh user intent and no request already in flight, so neither a
+    // re-observed sentinel nor a click racing the observer can advance two pages.
+    requestMore({force = false} = {}) {
+      if (this.pending) return
+      if (!force && !this.armed) return
+      const sentinel = this.sentinel()
+      if (!sentinel) return
+      // Only page when the sentinel is genuinely within the scrolled viewport; an
+      // explicit click skips this, since the intent is unambiguous.
+      if (!force) {
+        const visible =
+          sentinel.getBoundingClientRect().top < this.el.getBoundingClientRect().bottom
+        if (!visible) return
+      }
+
+      this.armed = false
+      this.pending = true
+      this.pushEvent('load_more', {column_id: this.el.dataset.columnId})
+    },
+    observeSentinel() {
+      this.observer.disconnect()
+      const sentinel = this.sentinel()
+      if (sentinel) {
+        this.observer.observe(sentinel)
+      }
+    },
+    destroyed() {
+      this.observer.disconnect()
+    }
+  },
   MentionInput: {
     mounted() {
       this.users = JSON.parse(this.el.dataset.users || '[]')

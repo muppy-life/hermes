@@ -81,20 +81,24 @@
       phx-hook="KanbanScroll"
     >
       <%= for column <- @board.columns do %>
+        <% limit = Map.get(@limits, column.id, page_size())
+        total = length(column.cards)
+        visible_cards = Enum.take(column.cards, limit) %>
         <div class="kanban-col" data-column-status={column.status}>
           <div class="kanban-col-h">
             <span class="kanban-col-dot" style={"background:#{kanban_dot_color(column.status)}"}>
             </span>
             <span class="kanban-col-name">{column.name}</span>
-            <span class="kanban-col-count">{length(column.cards)}</span>
+            <span class="kanban-col-count">{total}</span>
           </div>
           <div
             id={"kanban-column-#{column.id}"}
             class="kanban-cards kanban-cards-area"
             data-column-id={column.id}
             data-column-status={column.status}
+            phx-hook="KanbanColumnPager"
           >
-            <%= for card <- column.cards do %>
+            <%= for card <- visible_cards do %>
               <%= if card.request do %>
                 <% req = card.request
                 {prio_class, prio_label} = priority_tag(req.priority)
@@ -135,6 +139,13 @@
                   </div>
                 </div>
               <% end %>
+            <% end %>
+            <%= if total > limit do %>
+              <div class="kanban-col-sentinel" data-column-id={column.id}>
+                {ngettext("%{count} more task", "%{count} more tasks", total - limit,
+                  count: total - limit
+                )}
+              </div>
             <% end %>
           </div>
         </div>
