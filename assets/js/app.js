@@ -324,6 +324,43 @@ const Hooks = {
       })
     }
   },
+  // Infinite scroll for a single kanban column: when the "N more tasks" sentinel
+  // scrolls into view inside the column, ask the server for the next page.
+  KanbanColumnPager: {
+    mounted() {
+      this.pending = false
+
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries.some((entry) => entry.isIntersecting)
+          if (visible && !this.pending) {
+            this.pending = true
+            this.pushEvent('load_more', {column_id: this.el.dataset.columnId})
+          }
+        },
+        // No rootMargin: the column is exactly 10 cards tall, so any margin would
+        // catch the sentinel sitting just past card 10 and load page 2 before any scroll.
+        {root: this.el}
+      )
+
+      this.observeSentinel()
+    },
+    updated() {
+      // The sentinel node is replaced on each patch, so re-observe the new one.
+      this.pending = false
+      this.observeSentinel()
+    },
+    observeSentinel() {
+      this.observer.disconnect()
+      const sentinel = this.el.querySelector('.kanban-col-sentinel')
+      if (sentinel) {
+        this.observer.observe(sentinel)
+      }
+    },
+    destroyed() {
+      this.observer.disconnect()
+    }
+  },
   MentionInput: {
     mounted() {
       this.users = JSON.parse(this.el.dataset.users || '[]')

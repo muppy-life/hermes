@@ -6,6 +6,11 @@ defmodule HermesWeb.KanbanLive.Board do
   alias Hermes.Requests
   alias HermesWeb.NavigationHistory
 
+  @page_size 10
+
+  @doc "Number of cards rendered per column before scroll pagination kicks in."
+  def page_size, do: @page_size
+
   @doc "Status dot color for a kanban column header."
   def kanban_dot_color("new"), do: "#94a3b8"
   def kanban_dot_color("need_requirement"), do: "#94a3b8"
@@ -113,7 +118,14 @@ defmodule HermesWeb.KanbanLive.Board do
      |> assign(:filter_perspective, filter_perspective)
      |> assign(:filter_priority, filter_priority)
      |> assign(:filter_team, filter_team)
-     |> assign(:total_count, total_count)}
+     |> assign(:total_count, total_count)
+     |> reset_limits(filtered_board)}
+  end
+
+  # One visible-card limit per column, so scrolling one column doesn't expand the others.
+  defp reset_limits(socket, board) do
+    limits = Map.new(board.columns, &{&1.id, @page_size})
+    assign(socket, :limits, limits)
   end
 
   defp safe_to_atom(nil, default), do: default
@@ -186,6 +198,15 @@ defmodule HermesWeb.KanbanLive.Board do
        to:
          ~p"/boards/#{socket.assigns.raw_board_id}?perspective=#{socket.assigns.filter_perspective}"
      )}
+  end
+
+  def handle_event("load_more", %{"column_id" => column_id}, socket) do
+    column_id = String.to_integer(column_id)
+
+    limits =
+      Map.update(socket.assigns.limits, column_id, @page_size * 2, &(&1 + @page_size))
+
+    {:noreply, assign(socket, :limits, limits)}
   end
 
   def handle_event("show_new_request", _params, socket) do

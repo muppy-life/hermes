@@ -1645,9 +1645,34 @@
   flex-direction: column;
   gap: 8px;
   min-height: 60px;
+  /* Cap the column at ~10 cards tall and scroll the cards instead of the column,
+     so every column keeps the same height regardless of how many cards it holds. */
+  --kanban-card-h: 105px;
+  /* 10 cards + their gaps + top padding, minus a sliver so the 10th card is
+     visibly clipped — that hints the list scrolls and keeps the sentinel hidden. */
+  --kanban-10-cards: calc(10 * var(--kanban-card-h) + 9 * 8px + 12px - 28px);
+  /* Space actually left below the column header: viewport minus everything above
+     the card area (nav + title row + column header) and the fixed footer. */
+  --kanban-fits-screen: calc(100dvh - 255px - 31px - 16px);
+  /* Whichever is smaller, so tall columns never run off the bottom of the screen. */
+  max-height: min(var(--kanban-10-cards), var(--kanban-fits-screen));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .kanban-cards-area.drag-over {
   background: color-mix(in oklch, var(--color-success) 12%, transparent);
+}
+.kanban-col-sentinel {
+  flex: 0 0 auto;
+  padding: 8px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: color-mix(in oklch, var(--color-base-content), transparent 45%);
+  cursor: pointer;
+}
+.kanban-col-sentinel:hover {
+  color: var(--color-primary);
 }
 
 .k-card {
