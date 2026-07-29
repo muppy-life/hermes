@@ -141,12 +141,7 @@
               <% end %>
             <% end %>
             <%= if total > limit do %>
-              <div
-                class="kanban-col-sentinel"
-                data-column-id={column.id}
-                phx-click="load_more"
-                phx-value-column_id={column.id}
-              >
+              <div class="kanban-col-sentinel" data-column-id={column.id}>
                 {ngettext("%{count} more task", "%{count} more tasks", total - limit,
                   count: total - limit
                 )}

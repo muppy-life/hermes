@@ -328,14 +328,14 @@ const Hooks = {
   // scrolls into view inside the column, ask the server for the next page.
   KanbanColumnPager: {
     mounted() {
-      this.pending = false
+      // Card count at the time of the last request, so the in-flight guard is
+      // released by the page actually arriving rather than by any patch.
+      this.requestedAt = null
 
       this.observer = new IntersectionObserver(
         (entries) => {
-          const visible = entries.some((entry) => entry.isIntersecting)
-          if (visible && !this.pending) {
-            this.pending = true
-            this.pushEvent('load_more', {column_id: this.el.dataset.columnId})
+          if (entries.some((entry) => entry.isIntersecting)) {
+            this.requestMore()
           }
         },
         // No rootMargin: the column is exactly 10 cards tall, so any margin would
@@ -343,12 +343,35 @@ const Hooks = {
         {root: this.el}
       )
 
+      // Click fallback for when the observer does not fire; shares the guard above
+      // so a click racing the observer still only advances one page.
+      this.el.addEventListener('click', (e) => {
+        if (e.target.closest('.kanban-col-sentinel')) {
+          e.stopPropagation()
+          this.requestMore()
+        }
+      })
+
       this.observeSentinel()
     },
     updated() {
+      // Release the guard only once the requested page has actually rendered, so a
+      // re-observed still-visible sentinel cannot drain every remaining page.
+      if (this.requestedAt !== null && this.cardCount() > this.requestedAt) {
+        this.requestedAt = null
+      }
       // The sentinel node is replaced on each patch, so re-observe the new one.
-      this.pending = false
       this.observeSentinel()
+    },
+    cardCount() {
+      return this.el.querySelectorAll('.k-card').length
+    },
+    // Single in-flight request per column: guards both the observer re-firing and a
+    // sentinel click racing it, either of which would otherwise advance by two pages.
+    requestMore() {
+      if (this.requestedAt !== null) return
+      this.requestedAt = this.cardCount()
+      this.pushEvent('load_more', {column_id: this.el.dataset.columnId})
     },
     observeSentinel() {
       this.observer.disconnect()

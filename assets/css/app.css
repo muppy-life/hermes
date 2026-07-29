@@ -1653,7 +1653,9 @@
   --kanban-10-cards: calc(10 * var(--kanban-card-h) + 9 * 8px + 12px - 28px);
   /* Space actually left below the column header: viewport minus everything above
      the card area (nav + title row + column header) and the fixed footer. */
-  --kanban-fits-screen: calc(100dvh - 255px - 31px - 16px);
+  /* Floored at 2 cards: on a very short viewport the subtraction would otherwise go
+     negative and invalidate max-height, dropping the bound altogether. */
+  --kanban-fits-screen: max(218px, calc(100dvh - 255px - 31px - 16px));
   /* Whichever is smaller, so tall columns never run off the bottom of the screen. */
   max-height: min(var(--kanban-10-cards), var(--kanban-fits-screen));
   overflow-y: auto;
