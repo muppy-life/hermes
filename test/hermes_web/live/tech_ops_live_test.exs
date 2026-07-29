@@ -134,9 +134,11 @@ defmodule HermesWeb.TechOpsLiveTest do
     test "defaults the responsible to the current user on a new task", %{conn: conn, dev: dev} do
       {:ok, lv, _html} = live(conn, ~p"/tech-ops")
 
-      html = lv |> element("button", "Record task") |> render_click()
+      lv |> element("button", "Record task") |> render_click()
 
-      assert html =~ ~s(<option selected="" value="#{dev.id}">)
+      options = lv |> element(~s(select[name="task[responsible_id]"])) |> render()
+
+      assert options =~ ~s(<option selected="" value="#{dev.id}">)
     end
 
     test "responsible dropdown only lists tech users", %{conn: conn, team: team, dev: dev} do
@@ -144,10 +146,16 @@ defmodule HermesWeb.TechOpsLiveTest do
       member = create_user("team_member", "member@example.com", team.id)
 
       {:ok, lv, _html} = live(conn, ~p"/tech-ops")
-      html = lv |> element("button", "Record task") |> render_click()
+      lv |> element("button", "Record task") |> render_click()
 
-      assert html =~ ~s(value="#{dev.id}")
-      refute html =~ ~s(value="#{member.id}")
+      # Scope to the responsible select. Matching against the whole page is
+      # flaky: the form also renders a team select, and users and teams draw
+      # ids from separate sequences, so a page-wide refute fails whenever a
+      # user id collides with a team id.
+      options = lv |> element(~s(select[name="task[responsible_id]"])) |> render()
+
+      assert options =~ ~s(value="#{dev.id}")
+      refute options =~ ~s(value="#{member.id}")
     end
 
     test "lookup fields are dropdowns of existing values by default", %{conn: conn} do
