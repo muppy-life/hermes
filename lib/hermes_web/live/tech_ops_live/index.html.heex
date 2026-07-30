@@ -59,7 +59,7 @@
           </th>
         </tr>
       </thead>
-      <tbody id="tech-ops-tasks" phx-update="stream">
+      <tbody id="tech-ops-tasks" phx-update="stream" phx-hook="TechOpsRowExpand">
         <tr id="tech-ops-tasks-empty" class="only:table-row hidden">
           <td colspan="10" class="px-[22px] py-10 text-center text-[12.5px] text-base-content/50">
             {gettext("No tasks recorded yet.")}
@@ -68,13 +68,29 @@
         <%= for {dom_id, task} <- @streams.tasks do %>
           <tr
             id={dom_id}
-            class="group border-b border-base-300 last:border-0 hover:bg-base-300 transition-colors align-middle"
+            class="tops-row group border-b border-base-300 last:border-0 hover:bg-base-300 transition-colors align-top"
           >
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap min-w-[7rem]">
+              <%!-- Row expansion is CSS-only (see .tops-row rules in app.css): the
+              checkbox state drives the clamp, so toggling costs no round-trip and
+              cannot be lost when a stream patch re-renders the row. It lives here,
+              in the first cell, only because it has to sit somewhere in the row; the
+              arrows that toggle it are the ones in the free-text cells. --%>
+              <input
+                type="checkbox"
+                id={"#{dom_id}-expand"}
+                class="tops-expand sr-only"
+                aria-label={gettext("Show full text")}
+              />
               {Calendar.strftime(task.recorded_on, "%Y-%m-%d")}
             </td>
             <td class="px-[22px] py-4 text-[12.5px] font-medium text-base-content min-w-[18rem]">
-              <div class="whitespace-pre-line" phx-no-format>{task.reported_problem}</div>
+              <div class="tops-cell">
+                <label for={"#{dom_id}-expand"} class="tops-toggle" aria-hidden="true">
+                  <.icon name="hero-chevron-right" class="tops-chevron" />
+                </label>
+                <div class="tops-clamp whitespace-pre-line" phx-no-format>{task.reported_problem}</div>
+              </div>
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[10rem]">
               {if task.reporter, do: task.reporter.name, else: "—"}
@@ -96,18 +112,24 @@
               </span>
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[18rem]">
-              <div
-                :if={task.resolution not in [nil, ""]}
-                class="whitespace-pre-line"
-                phx-no-format
-              >{task.resolution}</div>
+              <div :if={task.resolution not in [nil, ""]} class="tops-cell">
+                <label for={"#{dom_id}-expand"} class="tops-toggle" aria-hidden="true">
+                  <.icon name="hero-chevron-right" class="tops-chevron" />
+                </label>
+                <div class="tops-clamp whitespace-pre-line" phx-no-format>{task.resolution}</div>
+              </div>
               <span :if={task.resolution in [nil, ""]}>—</span>
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 whitespace-nowrap min-w-[10rem]">
               {if task.team, do: task.team.name, else: "—"}
             </td>
             <td class="px-[22px] py-4 text-[12.5px] text-base-content/70 min-w-[16rem]">
-              <div :if={task.cause not in [nil, ""]} class="whitespace-pre-line" phx-no-format>{task.cause}</div>
+              <div :if={task.cause not in [nil, ""]} class="tops-cell">
+                <label for={"#{dom_id}-expand"} class="tops-toggle" aria-hidden="true">
+                  <.icon name="hero-chevron-right" class="tops-chevron" />
+                </label>
+                <div class="tops-clamp whitespace-pre-line" phx-no-format>{task.cause}</div>
+              </div>
               <span :if={task.cause in [nil, ""]}>—</span>
             </td>
             <td class="sticky right-0 z-10 bg-base-200 group-hover:bg-base-300 px-[22px] py-4 text-right whitespace-nowrap border-l border-base-300 shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.25)] transition-colors">

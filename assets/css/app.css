@@ -3686,3 +3686,97 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* === Tech Ops table (row expand) === */
+
+/* The free-text columns (reported problem, resolution, cause) hold arbitrarily
+   long text, which broke the table two ways: rows grew tall enough to lose the
+   overview, and - because the table is `min-w-max` with `table-layout: auto`, so
+   every column grows to fit its longest cell on ONE line - the text never wrapped
+   at all. A few paragraphs widened the table past 7000px and pushed the columns
+   after it off screen. Capping the text width below fixes the second problem and
+   is what lets the line clamp engage at all for the first.
+
+   Collapsed rows clamp those cells to three lines; one checkbox per row expands
+   all of them together, so cells in a row never disagree about their height.
+   Each clipped cell carries a chevron that is a <label> for that same checkbox -
+   repeated affordances for one row-level toggle, so a control stays reachable no
+   matter how far the table is scrolled horizontally. Clicking the row background
+   does the same thing via the TechOpsRowExpand hook in app.js.
+
+   Kept in CSS rather than a phx-click so toggling costs no round-trip and cannot
+   be dropped when a stream patch re-renders the row. `:has()` is required because
+   the checkbox lives in a different <td> than the cells being clamped, which
+   Tailwind's `peer-*` variants cannot reach. */
+.tops-clamp {
+  width: 28rem;
+  max-width: 28rem;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tops-row:has(.tops-expand:checked) .tops-clamp {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+/* Arrow beside the text rather than above it, so the clamped text keeps its full
+   three lines and the row height is unchanged by the extra control. */
+.tops-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+/* Padding nudges the arrow down so it optically centres on the first line of text. */
+.tops-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding-top: 0.125rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tops-chevron {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: color-mix(in oklab, currentColor 40%, transparent);
+  transition: transform 150ms ease;
+}
+
+.tops-toggle:hover .tops-chevron {
+  color: currentColor;
+}
+
+.tops-row:has(.tops-expand:checked) .tops-chevron {
+  transform: rotate(90deg);
+}
+
+/* An arrow shows only on a cell whose own text is actually cut off, so it never
+   appears next to text that is already fully visible. The flag is set from the
+   rendered layout by the TechOpsRowExpand hook. `visibility` rather than `display`
+   keeps the text of every cell in a column aligned whether its arrow shows. */
+.tops-row:not(:has(.tops-expand:checked))
+  .tops-cell:not(.tops-cell-clamped)
+  .tops-chevron {
+  visibility: hidden;
+}
+
+/* The whole row is clickable, so make that discoverable. */
+.tops-row-clamped,
+.tops-row:has(.tops-expand:checked) {
+  cursor: pointer;
+}
+
+/* Keyboard focus lands on the visually hidden checkbox, which sits in a different
+   cell than the arrows, so surface the ring on the arrows the user actually sees. */
+.tops-row:has(.tops-expand:focus-visible) .tops-toggle {
+  outline: 2px solid var(--color-primary, currentColor);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

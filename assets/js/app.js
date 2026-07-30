@@ -28,6 +28,65 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 const Hooks = {
+  // Makes a whole tech ops row toggle its own expand checkbox, so the long free-text
+  // cells can be un-clamped by clicking anywhere in the row rather than only the
+  // chevrons. Delegated from the <tbody> so it survives stream patches and needs no
+  // per-row listener. The chevron <label>s are left to the browser's own label
+  // behaviour; handling them here too would toggle twice and appear to do nothing.
+  // Also flags which cells are actually clipped, since that drives whether each
+  // cell shows an arrow at all - see flagClampedCells below.
+  TechOpsRowExpand: {
+    mounted() {
+      this.el.addEventListener("click", (event) => {
+        const row = event.target.closest(".tops-row")
+        if (!row || !row.classList.contains("tops-row-clamped")) return
+        // Action buttons, links and inputs keep their own behaviour; a label already
+        // toggles the checkbox natively.
+        if (event.target.closest("button, a, input, label, select, textarea")) return
+        // Don't fight a text selection the user is making inside the cell.
+        const selection = window.getSelection()
+        if (selection && !selection.isCollapsed && row.contains(selection.anchorNode)) return
+        const checkbox = row.querySelector(".tops-expand")
+        if (checkbox) checkbox.checked = !checkbox.checked
+      })
+
+      // A label toggling the checkbox natively bypasses the click handler above, so
+      // re-measure on the checkbox's own change event to cover both paths.
+      this.el.addEventListener("change", (event) => {
+        if (event.target.classList.contains("tops-expand")) this.flagClampedCells()
+      })
+
+      // Whether text overflows three lines is only knowable from the rendered
+      // layout, so the arrows are hidden here rather than in the template -
+      // otherwise cells with short text show an arrow that visibly does nothing.
+      this._flag = () => this.flagClampedCells()
+      this._observer = new ResizeObserver(this._flag)
+      this._observer.observe(this.el)
+      this.flagClampedCells()
+    },
+    updated() {
+      this.flagClampedCells()
+    },
+    destroyed() {
+      this._observer.disconnect()
+    },
+    // Flags each cell whose own text is cut off, plus the row if any cell is, so an
+    // arrow only appears on the cells that actually have more text to show.
+    flagClampedCells() {
+      for (const row of this.el.querySelectorAll(".tops-row")) {
+        // Measuring an expanded row would find nothing clipped and drop every flag,
+        // so leave the flags set while it is open and re-measure when it collapses.
+        if (row.querySelector(".tops-expand")?.checked) continue
+        let any = false
+        for (const cell of row.querySelectorAll(".tops-clamp")) {
+          const overflows = cell.scrollHeight > cell.clientHeight + 1
+          cell.closest(".tops-cell")?.classList.toggle("tops-cell-clamped", overflows)
+          if (overflows) any = true
+        }
+        row.classList.toggle("tops-row-clamped", any)
+      }
+    }
+  },
   // Keeps a user-resized textarea's height across LiveView patches. Without this,
   // phx-change="validate" re-renders the textarea on every keystroke and morphdom
   // strips the inline height the user set by dragging, snapping it back to default.
