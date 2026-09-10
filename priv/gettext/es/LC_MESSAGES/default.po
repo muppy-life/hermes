@@ -761,11 +761,6 @@ msgstr "Imágenes"
 msgid "Images uploaded"
 msgstr "Imágenes subidas"
 
-#: lib/hermes_web/live/request_live/show.html.heex:334
-#, elixir-autogen, elixir-format
-msgid "JPG, PNG — max 14 MB"
-msgstr "JPG, PNG — máx. 14 MB"
-
 #: lib/hermes_web/components/layouts.ex:87
 #: lib/hermes_web/live/kanban_live/index.html.heex:48
 #: lib/hermes_web/live/kanban_live/metrics.html.heex:4
@@ -1478,8 +1473,8 @@ msgstr "Resumen del PM"
 
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:974
 #, elixir-autogen, elixir-format
-msgid "PNG, JPG, PDF, XLSX, DOCX · max. 15 MB"
-msgstr "PNG, JPG, PDF, XLSX, DOCX · máx. 15 MB"
+msgid "PNG, JPG, PDF, CSV, XLSX, DOCX · max. 15 MB"
+msgstr "PNG, JPG, PDF, CSV, XLSX, DOCX · máx. 15 MB"
 
 #: lib/hermes_web/live/request_live/show.ex:866
 #, elixir-autogen, elixir-format

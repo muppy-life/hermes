@@ -7,7 +7,7 @@ defmodule HermesWeb.RequestLive.Show do
   alias Hermes.Requests
   alias HermesWeb.RequestLive.UploadErrors
 
-  @max_image_size 14 * 1_024 * 1_024
+  @max_image_size 15 * 1_024 * 1_024
 
   @doc "GitHub logo mark."
   attr :class, :string, default: "size-4"
@@ -93,7 +93,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:github_subtask_selected, MapSet.new())
      |> assign(:form, to_form(Requests.change_request(request)))
      |> allow_upload(:images,
-       accept: ~w(.jpg .jpeg .png),
+       accept: ~w(.jpg .jpeg .png .pdf .doc .docx .xls .xlsx .csv),
        max_entries: 10,
        max_file_size: @max_image_size,
        auto_upload: true
