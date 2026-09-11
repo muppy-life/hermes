@@ -114,3 +114,13 @@ variable "appsignal_push_api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "aws_region" {
+  description = "AWS region, used for the ECR login at instance boot"
+  type        = string
+}
+
+variable "ecr_registry" {
+  description = "ECR registry host (<account_id>.dkr.ecr.<region>.amazonaws.com)"
+  type        = string
+}

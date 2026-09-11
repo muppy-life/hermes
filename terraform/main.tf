@@ -61,6 +61,8 @@ module "ec2" {
   target_group_arn      = module.alb.target_group_arn
   alb_security_group_id = module.alb.alb_security_group_id
 
+  aws_region        = var.aws_region
+  ecr_registry      = split("/", aws_ecr_repository.hermes.repository_url)[0]
   instance_type     = var.instance_type
   instance_count    = var.instance_count
   key_name          = var.key_name

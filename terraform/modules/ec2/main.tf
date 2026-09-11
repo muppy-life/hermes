@@ -164,6 +164,8 @@ resource "aws_launch_template" "app" {
   vpc_security_group_ids = [aws_security_group.app.id]
 
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+    aws_region                    = var.aws_region
+    ecr_registry                  = var.ecr_registry
     database_url                  = var.database_url
     secret_key_base               = var.secret_key_base
     anthropic_api_key             = var.anthropic_api_key
