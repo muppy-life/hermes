@@ -1672,6 +1672,29 @@
   overscroll-behavior-y: contain;
   overscroll-behavior-x: auto;
 }
+/* The arrow spans the full board edge so its gradient can fade the columns out,
+   but a 48px-wide interactive strip would intercept wheel, dragover and drop
+   events meant for the column beneath it. Only the glyph itself takes pointer
+   events; the hook toggles this class's `auto` on the inner element. */
+.kanban-scroll-arrow {
+  background-color: transparent;
+  border: 0;
+  pointer-events: none !important;
+}
+.kanban-scroll-arrow-hit {
+  pointer-events: inherit;
+  padding: 8px;
+  border-radius: 999px;
+}
+.kanban-scroll-arrow:not([disabled]) .kanban-scroll-arrow-hit {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.kanban-scroll-arrow:not([disabled]) .kanban-scroll-arrow-hit:hover {
+  opacity: 0.85;
+  background: color-mix(in oklch, var(--color-base-300), transparent 40%);
+}
+
 .kanban-cards-area.drag-over {
   background: color-mix(in oklch, var(--color-success) 12%, transparent);
 }
@@ -1772,6 +1795,9 @@
   font-weight: 500;
   line-height: 1.4;
   letter-spacing: -0.005em;
+  /* The column no longer scrolls horizontally, so an unbroken URL or identifier
+     would be clipped with no way to reveal it. Break it instead. */
+  overflow-wrap: anywhere;
 }
 .k-card-tags {
   display: flex;
@@ -1791,6 +1817,11 @@
   line-height: 1.5;
   border: 1px solid transparent;
   white-space: nowrap;
+  /* Pills sit in a clipped column: keep them on one line, but truncate rather
+     than spill when a team name is longer than the card. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tag-p0 {
   background: #fee2e2;

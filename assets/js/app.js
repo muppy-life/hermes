@@ -304,11 +304,12 @@ const Hooks = {
         const rightIndicator = document.getElementById('scroll-indicator-right')
         if (!leftIndicator || !rightIndicator) return
 
+        // `disabled` drives the hit area: the gradient strip is always
+        // pointer-events:none so it cannot intercept wheel or drop events, and
+        // only the glyph inside an enabled arrow becomes clickable.
         if (!this.canScroll()) {
-          // Nothing to scroll: hide both arrows and stop them swallowing clicks.
           for (const indicator of [leftIndicator, rightIndicator]) {
             indicator.style.opacity = '0'
-            indicator.style.pointerEvents = 'none'
             indicator.disabled = true
           }
           return
@@ -320,7 +321,6 @@ const Hooks = {
 
         for (const [indicator, hidden] of [[leftIndicator, isAtStart], [rightIndicator, isAtEnd]]) {
           indicator.style.opacity = hidden ? '0' : '1'
-          indicator.style.pointerEvents = hidden ? 'none' : 'auto'
           indicator.disabled = hidden
         }
       }
@@ -353,11 +353,21 @@ const Hooks = {
       // over it. Translate a wheel gesture into board panning whenever the column
       // underneath cannot use it: either the gesture is mostly horizontal, or it is
       // vertical and that list is already at the end it is being pushed toward.
+      // deltaMode 1 reports lines and 2 reports pages; treating either as pixels
+      // would pan the board a few px per notch while preventDefault() cancels the
+      // native scroll, so convert to pixels first.
+      const LINE_HEIGHT = 16
+      this.wheelPixels = (value, mode) => {
+        if (mode === 1) return value * LINE_HEIGHT
+        if (mode === 2) return value * this.el.clientWidth
+        return value
+      }
+
       this.onWheel = (e) => {
         if (!this.canScroll() || e.ctrlKey) return
 
         const horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY)
-        const delta = horizontal ? e.deltaX : e.deltaY
+        const delta = this.wheelPixels(horizontal ? e.deltaX : e.deltaY, e.deltaMode)
 
         if (!horizontal) {
           const list = e.target.closest('.kanban-cards-area')
