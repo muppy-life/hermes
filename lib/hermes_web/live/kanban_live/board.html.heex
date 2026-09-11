@@ -28,6 +28,23 @@
     </button>
   </div>
 
+  <%!-- Search bar --%>
+  <form phx-change="apply_filters" class="flex gap-2 items-center flex-wrap mb-4">
+    <input type="hidden" name="priority" value={@filter_priority} />
+    <input type="hidden" name="team" value={@filter_team} />
+    <label class="flex-1 min-w-[220px] max-w-[340px] flex items-center gap-2 h-[38px] px-3.5 bg-base-200 border border-base-300 rounded-full shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+      <.icon name="hero-magnifying-glass" class="size-3.5 text-base-content/40 shrink-0" />
+      <input
+        type="text"
+        name="search"
+        value={@filter_search}
+        phx-debounce="300"
+        placeholder={gettext("Search by title, description or ID…")}
+        class="flex-1 bg-transparent text-[12.5px] text-base-content placeholder:text-base-content/40 outline-none"
+      />
+    </label>
+  </form>
+
   <div class="kanban-board relative pb-6">
     <!-- Scroll indicator on left edge -->
     <div

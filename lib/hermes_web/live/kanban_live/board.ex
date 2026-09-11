@@ -96,6 +96,7 @@ defmodule HermesWeb.KanbanLive.Board do
     filter_perspective = safe_to_atom(params["perspective"], :all)
     filter_priority = params["priority"] || "all"
     filter_team = params["team"] || "all"
+    filter_search = params["search"] || ""
 
     current_user = socket.assigns[:current_user]
     board_id = socket.assigns[:raw_board_id]
@@ -107,6 +108,7 @@ defmodule HermesWeb.KanbanLive.Board do
         filter_perspective,
         filter_priority,
         filter_team,
+        filter_search,
         current_user.team_id
       )
 
@@ -118,6 +120,7 @@ defmodule HermesWeb.KanbanLive.Board do
      |> assign(:filter_perspective, filter_perspective)
      |> assign(:filter_priority, filter_priority)
      |> assign(:filter_team, filter_team)
+     |> assign(:filter_search, filter_search)
      |> assign(:total_count, total_count)
      |> reset_limits(filtered_board)}
   end
@@ -166,6 +169,7 @@ defmodule HermesWeb.KanbanLive.Board do
             socket.assigns.filter_perspective,
             socket.assigns.filter_priority,
             socket.assigns.filter_team,
+            socket.assigns.filter_search,
             current_user.team_id
           )
 
@@ -184,11 +188,13 @@ defmodule HermesWeb.KanbanLive.Board do
      )}
   end
 
-  def handle_event("apply_filters", %{"priority" => priority, "team" => team}, socket) do
+  def handle_event("apply_filters", %{"priority" => priority, "team" => team} = params, socket) do
+    search = Map.get(params, "search", socket.assigns.filter_search)
+
     {:noreply,
      push_patch(socket,
        to:
-         ~p"/boards/#{socket.assigns.raw_board_id}?#{build_params(socket, priority: priority, team: team)}"
+         ~p"/boards/#{socket.assigns.raw_board_id}?#{build_params(socket, priority: priority, team: team, search: search)}"
      )}
   end
 
@@ -229,6 +235,7 @@ defmodule HermesWeb.KanbanLive.Board do
         socket.assigns.filter_perspective,
         socket.assigns.filter_priority,
         socket.assigns.filter_team,
+        socket.assigns.filter_search,
         current_user.team_id
       )
 
@@ -249,10 +256,11 @@ defmodule HermesWeb.KanbanLive.Board do
     %{
       "perspective" => Atom.to_string(socket.assigns.filter_perspective),
       "priority" => socket.assigns.filter_priority,
-      "team" => socket.assigns.filter_team
+      "team" => socket.assigns.filter_team,
+      "search" => socket.assigns.filter_search
     }
     |> Map.merge(updates_map)
-    |> Enum.filter(fn {_k, v} -> v != "all" end)
+    |> Enum.reject(fn {_k, v} -> v in ["all", ""] end)
     |> Enum.into(%{})
   end
 
@@ -266,6 +274,7 @@ defmodule HermesWeb.KanbanLive.Board do
          filter_perspective,
          filter_priority,
          filter_team,
+         filter_search,
          current_user_team_id
        ) do
     filtered_columns =
@@ -275,6 +284,7 @@ defmodule HermesWeb.KanbanLive.Board do
           |> filter_by_perspective(filter_perspective, current_user_team_id)
           |> filter_by_priority(filter_priority)
           |> filter_by_team(filter_team)
+          |> filter_by_search(filter_search)
 
         Map.put(column, :cards, filtered_cards)
       end)
@@ -314,6 +324,20 @@ defmodule HermesWeb.KanbanLive.Board do
 
     Enum.filter(cards, fn card ->
       card.request.requesting_team_id == team_int or card.request.assigned_to_team_id == team_int
+    end)
+  end
+
+  defp filter_by_search(cards, ""), do: cards
+
+  defp filter_by_search(cards, search) do
+    q = String.downcase(search)
+
+    Enum.filter(cards, fn card ->
+      req = card.request
+
+      String.contains?(String.downcase(req.title || ""), q) or
+        String.contains?(String.downcase(req.description || ""), q) or
+        String.contains?("##{req.id}", q)
     end)
   end
 
