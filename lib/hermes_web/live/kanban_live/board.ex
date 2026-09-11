@@ -121,6 +121,14 @@ defmodule HermesWeb.KanbanLive.Board do
      |> assign(:filter_priority, filter_priority)
      |> assign(:filter_team, filter_team)
      |> assign(:filter_search, filter_search)
+     |> assign(
+       :search_form,
+       to_form(%{
+         "search" => filter_search,
+         "priority" => filter_priority,
+         "team" => filter_team
+       })
+     )
      |> assign(:total_count, total_count)
      |> reset_limits(filtered_board)}
   end
@@ -330,15 +338,7 @@ defmodule HermesWeb.KanbanLive.Board do
   defp filter_by_search(cards, ""), do: cards
 
   defp filter_by_search(cards, search) do
-    q = String.downcase(search)
-
-    Enum.filter(cards, fn card ->
-      req = card.request
-
-      String.contains?(String.downcase(req.title || ""), q) or
-        String.contains?(String.downcase(req.description || ""), q) or
-        String.contains?("##{req.id}", q)
-    end)
+    Enum.filter(cards, &Requests.matches_search?(&1.request, search))
   end
 
   defp count_all_cards(board) do

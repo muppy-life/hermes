@@ -171,13 +171,7 @@ defmodule HermesWeb.RequestLive.Index do
   defp filter_by_search(requests, ""), do: requests
 
   defp filter_by_search(requests, search) do
-    q = String.downcase(search)
-
-    Enum.filter(requests, fn r ->
-      String.contains?(String.downcase(r.title || ""), q) or
-        String.contains?(String.downcase(r.description || ""), q) or
-        String.contains?("##{r.id}", q)
-    end)
+    Enum.filter(requests, &Requests.matches_search?(&1, search))
   end
 
   defp filter_by_status(requests, "all"), do: requests

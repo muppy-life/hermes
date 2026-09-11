@@ -14,7 +14,7 @@
         <h1 class="text-[28px] font-bold text-primary tracking-tight leading-tight">
           {@board.name}
         </h1>
-        <p class="text-[13px] text-base-content/50 font-medium mt-1.5">
+        <p id="board-task-count" class="text-[13px] text-base-content/50 font-medium mt-1.5">
           {ngettext("%{count} task", "%{count} tasks", @total_count, count: @total_count)}
         </p>
       </div>
@@ -29,21 +29,29 @@
   </div>
 
   <%!-- Search bar --%>
-  <form phx-change="apply_filters" class="flex gap-2 items-center flex-wrap mb-4">
+  <.form
+    for={@search_form}
+    id="board-search-form"
+    phx-change="apply_filters"
+    class="flex gap-2 items-center flex-wrap mb-4"
+  >
     <input type="hidden" name="priority" value={@filter_priority} />
     <input type="hidden" name="team" value={@filter_team} />
-    <label class="flex-1 min-w-[220px] max-w-[340px] flex items-center gap-2 h-[38px] px-3.5 bg-base-200 border border-base-300 rounded-full shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+    <%!-- A div, not a label: `<.input>` renders its own label and labels cannot nest. --%>
+    <div class="flex-1 min-w-[220px] max-w-[340px] flex items-center gap-2 h-[38px] px-3.5 bg-base-200 border border-base-300 rounded-full shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all [&>.fieldset]:flex-1 [&>.fieldset]:min-w-0 [&>.fieldset]:mb-0">
       <.icon name="hero-magnifying-glass" class="size-3.5 text-base-content/40 shrink-0" />
-      <input
+      <%!-- `<.input>` wraps the field in a `fieldset mb-2` div; the pill stretches
+      that wrapper and drops its margin so the field fills the pill and stays centred. --%>
+      <.input
+        field={@search_form[:search]}
+        id="board-search-input"
         type="text"
-        name="search"
-        value={@filter_search}
         phx-debounce="300"
         placeholder={gettext("Search by title, description or ID…")}
-        class="flex-1 bg-transparent text-[12.5px] text-base-content placeholder:text-base-content/40 outline-none"
+        class="w-full bg-transparent text-[12.5px] text-base-content placeholder:text-base-content/40 outline-none"
       />
-    </label>
-  </form>
+    </div>
+  </.form>
 
   <div class="kanban-board relative pb-6">
     <!-- Scroll indicator on left edge -->
@@ -121,6 +129,7 @@
                 {prio_class, prio_label} = priority_tag(req.priority)
                 dl_class = deadline_class(req.deadline) %>
                 <div
+                  id={"kanban-card-#{req.id}"}
                   draggable="true"
                   class={["kanban-card k-card", req.status == "discarded" && "discarded"]}
                   data-card-id={card.id}

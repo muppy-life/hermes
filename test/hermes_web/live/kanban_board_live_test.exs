@@ -49,6 +49,14 @@ defmodule HermesWeb.KanbanBoardLiveTest do
 
   defp board_path(team), do: ~p"/boards/#{"#{team.id}_#{team.id}"}"
 
+  defp search(view, term) do
+    view
+    |> element("#board-search-form")
+    |> render_change(%{"search" => term, "priority" => "all", "team" => "all"})
+
+    view
+  end
+
   describe "search" do
     test "filters cards by title", %{
       conn: conn,
@@ -56,74 +64,79 @@ defmodule HermesWeb.KanbanBoardLiveTest do
       payments: payments,
       onboarding: onboarding
     } do
-      {:ok, view, html} = live(conn, board_path(team))
+      {:ok, view, _html} = live(conn, board_path(team))
 
-      assert html =~ "Fix payments bug"
-      assert html =~ "Onboarding revamp"
+      assert has_element?(view, "#kanban-card-#{payments.id}")
+      assert has_element?(view, "#kanban-card-#{onboarding.id}")
 
-      html =
-        view
-        |> form("form[phx-change='apply_filters']", %{"search" => "payments"})
-        |> render_change()
+      view = search(view, "payments")
 
-      assert html =~ "Fix payments bug"
-      refute html =~ "Onboarding revamp"
-
+      assert has_element?(view, "#kanban-card-#{payments.id}")
+      refute has_element?(view, "#kanban-card-#{onboarding.id}")
       assert_patched(view, board_path(team) <> "?search=payments")
-
-      assert render(view) =~ "hermes ##{payments.id}"
-      refute render(view) =~ "hermes ##{onboarding.id}"
     end
 
-    test "matches description and request id", %{conn: conn, team: team, onboarding: onboarding} do
+    test "matches description and request id", %{
+      conn: conn,
+      team: team,
+      payments: payments,
+      onboarding: onboarding
+    } do
       {:ok, view, _html} = live(conn, board_path(team))
 
       html =
         view
-        |> form("form[phx-change='apply_filters']", %{"search" => "welcome flow"})
-        |> render_change()
+        |> element("#board-search-form")
+        |> render_change(%{"search" => "welcome flow", "priority" => "all", "team" => "all"})
 
-      assert html =~ "Onboarding revamp"
-      refute html =~ "Fix payments bug"
+      view = search(view, "welcome flow")
 
-      html =
-        view
-        |> form("form[phx-change='apply_filters']", %{"search" => "##{onboarding.id}"})
-        |> render_change()
+      assert has_element?(view, "#kanban-card-#{onboarding.id}")
+      refute has_element?(view, "#kanban-card-#{payments.id}")
 
-      assert html =~ "Onboarding revamp"
-      refute html =~ "Fix payments bug"
+      view = search(view, "##{payments.id}")
+
+      assert has_element?(view, "#kanban-card-#{payments.id}")
+      refute has_element?(view, "#kanban-card-#{onboarding.id}")
     end
 
-    test "search is case insensitive and survives a page load from params", %{
+    test "search is case insensitive and restores from the url", %{
       conn: conn,
-      team: team
+      team: team,
+      payments: payments,
+      onboarding: onboarding
     } do
-      {:ok, _view, html} = live(conn, board_path(team) <> "?search=PAYMENTS")
+      {:ok, view, _html} = live(conn, board_path(team) <> "?search=PAYMENTS")
 
-      assert html =~ "Fix payments bug"
-      refute html =~ "Onboarding revamp"
+      assert has_element?(view, "#kanban-card-#{payments.id}")
+      refute has_element?(view, "#kanban-card-#{onboarding.id}")
+
+      assert has_element?(view, "#board-search-input[value='PAYMENTS']")
     end
 
-    test "clearing the search restores every card", %{conn: conn, team: team} do
+    test "clearing the search restores every card", %{
+      conn: conn,
+      team: team,
+      payments: payments,
+      onboarding: onboarding
+    } do
       {:ok, view, _html} = live(conn, board_path(team) <> "?search=payments")
 
-      html =
-        view
-        |> form("form[phx-change='apply_filters']", %{"search" => ""})
-        |> render_change()
+      refute has_element?(view, "#kanban-card-#{onboarding.id}")
 
-      assert html =~ "Fix payments bug"
-      assert html =~ "Onboarding revamp"
+      view = search(view, "")
+
+      assert has_element?(view, "#kanban-card-#{payments.id}")
+      assert has_element?(view, "#kanban-card-#{onboarding.id}")
       assert_patched(view, board_path(team))
     end
 
     test "task count reflects the search", %{conn: conn, team: team} do
-      {:ok, _view, html} = live(conn, board_path(team))
-      assert html =~ "2 tasks"
+      {:ok, view, _html} = live(conn, board_path(team))
+      assert view |> element("#board-task-count") |> render() =~ "2 tasks"
 
-      {:ok, _view, html} = live(conn, board_path(team) <> "?search=payments")
-      assert html =~ "1 task"
+      {:ok, view, _html} = live(conn, board_path(team) <> "?search=payments")
+      assert view |> element("#board-task-count") |> render() =~ "1 task"
     end
   end
 end

@@ -1747,5 +1747,24 @@ defmodule Hermes.Requests do
 
   def image_url(%RequestImage{key: key}), do: Storage.public_url(key)
 
+  @doc """
+  Returns true when a request matches a free-text search term.
+
+  Matches the title, the description or the `#id` reference,
+  case-insensitively. A blank term matches everything.
+
+  Shared by the backlog list and the kanban board so both agree on what
+  counts as a match.
+  """
+  def matches_search?(_request, term) when term in [nil, ""], do: true
+
+  def matches_search?(request, term) do
+    q = String.downcase(term)
+
+    String.contains?(String.downcase(request.title || ""), q) or
+      String.contains?(String.downcase(request.description || ""), q) or
+      String.contains?("##{request.id}", q)
+  end
+
   defp env, do: Application.get_env(:hermes, :env, :prod)
 end
