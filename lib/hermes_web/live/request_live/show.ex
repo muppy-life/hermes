@@ -7,7 +7,7 @@ defmodule HermesWeb.RequestLive.Show do
   alias Hermes.Requests
   alias HermesWeb.RequestLive.UploadErrors
 
-  @max_image_size 14 * 1_024 * 1_024
+  @max_image_size 15 * 1_024 * 1_024
 
   @doc "GitHub logo mark."
   attr :class, :string, default: "size-4"
@@ -93,7 +93,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:github_subtask_selected, MapSet.new())
      |> assign(:form, to_form(Requests.change_request(request)))
      |> allow_upload(:images,
-       accept: ~w(.jpg .jpeg .png),
+       accept: ~w(.jpg .jpeg .png .pdf .doc .docx .xls .xlsx .csv),
        max_entries: 10,
        max_file_size: @max_image_size,
        auto_upload: true
@@ -800,8 +800,30 @@ defmodule HermesWeb.RequestLive.Show do
     Phoenix.HTML.raw(html)
   end
 
-  defp upload_error_to_string(:too_large), do: gettext("File exceeds 14 MB limit")
-  defp upload_error_to_string(:not_accepted), do: gettext("Only JPG and PNG files are allowed")
+  defp image_attachment?(content_type) when is_binary(content_type),
+    do: String.starts_with?(content_type, "image/")
+
+  defp image_attachment?(_), do: false
+
+  defp attachment_icon(filename) when is_binary(filename) do
+    filename
+    |> Path.extname()
+    |> String.downcase()
+    |> case do
+      ".pdf" -> "hero-document-text"
+      ext when ext in [".csv", ".xls", ".xlsx"] -> "hero-table-cells"
+      ext when ext in [".doc", ".docx"] -> "hero-document"
+      _ -> "hero-paper-clip"
+    end
+  end
+
+  defp attachment_icon(_), do: "hero-paper-clip"
+
+  defp upload_error_to_string(:too_large), do: gettext("File is too large (max 15 MB)")
+
+  defp upload_error_to_string(:not_accepted),
+    do: gettext("Only PNG, JPG, PDF, CSV, XLS(X), DOC(X) files are allowed")
+
   defp upload_error_to_string(:too_many_files), do: gettext("Too many files selected")
   defp upload_error_to_string(_), do: gettext("Upload failed")
 
