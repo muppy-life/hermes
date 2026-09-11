@@ -1659,7 +1659,18 @@
   /* Whichever is smaller, so tall columns never run off the bottom of the screen. */
   max-height: min(var(--kanban-10-cards), var(--kanban-fits-screen));
   overflow-y: auto;
-  overscroll-behavior: contain;
+  /* The card list only ever scrolls vertically. Leaving this at the initial
+     `visible` makes the browser compute it as `auto` (one axis cannot stay
+     visible while the other scrolls), which gave every column a horizontal
+     scrollbar that had nothing to scroll and ate sideways trackpad gestures
+     meant for the board. */
+  overflow-x: hidden;
+  /* Contain the vertical axis only: reaching the end of a card list should not
+     start scrolling the page behind it. The horizontal axis must stay `auto` so
+     a sideways gesture over a card chains out to the board container — the
+     shorthand `contain` blocks both axes and traps that gesture in the column. */
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: auto;
 }
 .kanban-cards-area.drag-over {
   background: color-mix(in oklch, var(--color-success) 12%, transparent);
@@ -1687,6 +1698,9 @@
   display: flex;
   flex-direction: column;
   gap: 9px;
+  /* Flex items default to min-width:auto, so a long unbreakable word would push
+     the card wider than the column instead of wrapping. */
+  min-width: 0;
 }
 .k-card:hover {
   border-color: color-mix(in oklch, var(--color-base-300), var(--color-base-content) 18%);

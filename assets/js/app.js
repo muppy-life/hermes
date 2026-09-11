@@ -290,49 +290,126 @@ const Hooks = {
   },
   KanbanScroll: {
     mounted() {
+      // A column is only "scrollable" when the content genuinely overflows the
+      // container. Below that threshold the browser still reports a 1-2px
+      // scrollWidth excess from sub-pixel layout, which used to light up the
+      // indicators and let the container consume wheel/trackpad gestures that
+      // should have scrolled the page instead.
+      const OVERFLOW_SLOP = 4
+
+      this.canScroll = () => this.el.scrollWidth - this.el.clientWidth > OVERFLOW_SLOP
+
       this.updateIndicators = () => {
         const leftIndicator = document.getElementById('scroll-indicator-left')
         const rightIndicator = document.getElementById('scroll-indicator-right')
+        if (!leftIndicator || !rightIndicator) return
 
-        if (leftIndicator && rightIndicator) {
-          const isAtStart = this.el.scrollLeft <= 5
-          const isAtEnd = this.el.scrollLeft + this.el.clientWidth >= this.el.scrollWidth - 5
-
-          leftIndicator.style.opacity = isAtStart ? '0' : '1'
-          rightIndicator.style.opacity = isAtEnd ? '0' : '1'
+        if (!this.canScroll()) {
+          // Nothing to scroll: hide both arrows and stop them swallowing clicks.
+          for (const indicator of [leftIndicator, rightIndicator]) {
+            indicator.style.opacity = '0'
+            indicator.style.pointerEvents = 'none'
+            indicator.disabled = true
+          }
+          return
         }
+
+        const maxScroll = this.el.scrollWidth - this.el.clientWidth
+        const isAtStart = this.el.scrollLeft <= 5
+        const isAtEnd = this.el.scrollLeft >= maxScroll - 5
+
+        for (const [indicator, hidden] of [[leftIndicator, isAtStart], [rightIndicator, isAtEnd]]) {
+          indicator.style.opacity = hidden ? '0' : '1'
+          indicator.style.pointerEvents = hidden ? 'none' : 'auto'
+          indicator.disabled = hidden
+        }
+      }
+
+      // Clicking an arrow scrolls by most of a viewport, leaving one column of
+      // overlap so the user keeps their place.
+      this.scrollByPage = (direction) => {
+        if (!this.canScroll()) return
+        const column = this.el.querySelector('.kanban-col')
+        const columnWidth = column ? column.offsetWidth + 16 : 296
+        const step = Math.max(columnWidth, this.el.clientWidth - columnWidth)
+        this.el.scrollBy({left: direction * step, behavior: 'smooth'})
+      }
+
+      this.arrowHandlers = []
+      for (const [id, direction] of [['scroll-indicator-left', -1], ['scroll-indicator-right', 1]]) {
+        const indicator = document.getElementById(id)
+        if (!indicator) continue
+        const handler = (e) => {
+          e.preventDefault()
+          this.scrollByPage(direction)
+        }
+        indicator.addEventListener('click', handler)
+        this.arrowHandlers.push([indicator, handler])
       }
 
       this.el.addEventListener('scroll', this.updateIndicators)
 
-      // Set initial scroll position to show previews of both "New" and "Completed" columns
-      // This creates visual hints that users can scroll in both directions
+      // A card list that scrolls vertically swallows the wheel when the pointer is
+      // over it. Translate a wheel gesture into board panning whenever the column
+      // underneath cannot use it: either the gesture is mostly horizontal, or it is
+      // vertical and that list is already at the end it is being pushed toward.
+      this.onWheel = (e) => {
+        if (!this.canScroll() || e.ctrlKey) return
+
+        const horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY)
+        const delta = horizontal ? e.deltaX : e.deltaY
+
+        if (!horizontal) {
+          const list = e.target.closest('.kanban-cards-area')
+          if (list && list.scrollHeight - list.clientHeight > 4) {
+            const atTop = list.scrollTop <= 0
+            const atBottom = list.scrollTop >= list.scrollHeight - list.clientHeight - 1
+            // The column can still absorb this gesture, so leave it alone.
+            if (!((delta < 0 && atTop) || (delta > 0 && atBottom))) return
+          }
+        }
+
+        if (delta === 0) return
+        e.preventDefault()
+        this.el.scrollLeft += delta
+      }
+      this.el.addEventListener('wheel', this.onWheel, {passive: false})
+
+      // Re-evaluate when the board or the viewport resizes: adding a column, or
+      // narrowing the window, flips whether there is anything to scroll at all.
+      this.resizeObserver = new ResizeObserver(() => this.updateIndicators())
+      this.resizeObserver.observe(this.el)
+
+      // Only offset the initial scroll position when the board actually overflows;
+      // on a board that fits, nudging scrollLeft produced a phantom scroll state.
       const newColumn = this.el.querySelector('[data-column-status="new"]')
-      const completedColumn = this.el.querySelector('[data-column-status="completed"]')
-
-      if (newColumn && completedColumn) {
-        const previewWidth = 60 // Amount to show as preview on each side
-
-        // Calculate the ideal scroll position:
-        // Show preview of New column on left, and ensure Completed column preview on right
-        const containerWidth = this.el.clientWidth
-        const totalScrollWidth = this.el.scrollWidth
-
-        // Position to show New preview on left
-        const scrollPosition = newColumn.offsetWidth - previewWidth + 32 // 32px for gap and margin
-
-        // Check if this position would also show the Completed column preview
-        const maxScroll = totalScrollWidth - containerWidth
-        const finalScrollPosition = Math.min(scrollPosition, maxScroll - previewWidth)
-
-        this.el.scrollLeft = finalScrollPosition
+      if (newColumn && this.canScroll()) {
+        const previewWidth = 60 // Amount of the first column left visible as a hint
+        const maxScroll = this.el.scrollWidth - this.el.clientWidth
+        const desired = newColumn.offsetWidth - previewWidth + 32 // 32px for gap and margin
+        this.el.scrollLeft = Math.max(0, Math.min(desired, maxScroll))
       }
 
-      // Initial check for indicators after setting scroll position
       this.updateIndicators()
 
       // Drag and drop functionality
       let draggedCard = null
+
+      // A drag that ends over a card would otherwise be followed by a click on
+      // that card, navigating away from the board right after a drop. Record when
+      // a drag happened and swallow the click it generates.
+      this.lastDragEndAt = 0
+
+      this.el.addEventListener(
+        'click',
+        (e) => {
+          if (Date.now() - this.lastDragEndAt < 300) {
+            e.stopPropagation()
+            e.preventDefault()
+          }
+        },
+        true
+      )
 
       // Handle drag start
       this.el.addEventListener('dragstart', (e) => {
@@ -351,6 +428,7 @@ const Hooks = {
           card.style.opacity = '1'
           draggedCard = null
         }
+        this.lastDragEndAt = Date.now()
       })
 
       // Handle drag over (allow drop)
@@ -365,6 +443,7 @@ const Hooks = {
       // Handle drop
       this.el.addEventListener('drop', (e) => {
         e.preventDefault()
+        this.lastDragEndAt = Date.now()
 
         const targetColumn = e.target.closest('.kanban-cards')
         if (targetColumn && draggedCard) {
@@ -381,6 +460,18 @@ const Hooks = {
           })
         }
       })
+    },
+    updated() {
+      // Columns gaining or losing cards can change whether the board overflows.
+      this.updateIndicators()
+    },
+    destroyed() {
+      this.el.removeEventListener('scroll', this.updateIndicators)
+      this.el.removeEventListener('wheel', this.onWheel)
+      if (this.resizeObserver) this.resizeObserver.disconnect()
+      for (const [indicator, handler] of this.arrowHandlers || []) {
+        indicator.removeEventListener('click', handler)
+      }
     }
   },
   // Infinite scroll for a single kanban column: when the "N more tasks" sentinel

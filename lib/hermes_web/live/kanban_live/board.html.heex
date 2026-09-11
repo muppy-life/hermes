@@ -30,11 +30,14 @@
 
   <div class="kanban-board relative pb-6">
     <!-- Scroll indicator on left edge -->
-    <div
+    <button
+      type="button"
       id="scroll-indicator-left"
-      class="absolute left-0 top-0 bottom-0 w-12 pointer-events-none z-10 flex items-center justify-center bg-gradient-to-r from-base-100 to-transparent transition-opacity duration-300 opacity-0"
+      disabled
+      aria-label={gettext("Scroll columns left")}
+      class="absolute left-0 top-0 bottom-0 w-12 z-10 flex items-center justify-center bg-gradient-to-r from-base-100 to-transparent transition-opacity duration-300 opacity-0 pointer-events-none cursor-pointer"
     >
-      <div class="opacity-40 animate-pulse">
+      <div class="opacity-40">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -50,14 +53,17 @@
           />
         </svg>
       </div>
-    </div>
+    </button>
     
 <!-- Scroll indicator on right edge -->
-    <div
+    <button
+      type="button"
       id="scroll-indicator-right"
-      class="absolute right-0 top-0 bottom-0 w-12 pointer-events-none z-10 flex items-center justify-center bg-gradient-to-l from-base-100 to-transparent transition-opacity duration-300"
+      disabled
+      aria-label={gettext("Scroll columns right")}
+      class="absolute right-0 top-0 bottom-0 w-12 z-10 flex items-center justify-center bg-gradient-to-l from-base-100 to-transparent transition-opacity duration-300 opacity-0 pointer-events-none cursor-pointer"
     >
-      <div class="opacity-40 animate-pulse">
+      <div class="opacity-40">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -73,7 +79,7 @@
           />
         </svg>
       </div>
-    </div>
+    </button>
 
     <div
       id="kanban-scroll-container"
