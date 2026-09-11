@@ -822,7 +822,7 @@ defmodule HermesWeb.RequestLive.Show do
   defp upload_error_to_string(:too_large), do: gettext("File is too large (max 15 MB)")
 
   defp upload_error_to_string(:not_accepted),
-    do: gettext("Only PNG, JPG, PDF, CSV, XLSX and DOCX files are allowed")
+    do: gettext("Only PNG, JPG, PDF, CSV, XLS(X), DOC(X) files are allowed")
 
   defp upload_error_to_string(:too_many_files), do: gettext("Too many files selected")
   defp upload_error_to_string(_), do: gettext("Upload failed")

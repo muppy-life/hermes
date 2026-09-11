@@ -3151,12 +3151,12 @@ msgid_plural "%{count} more tasks"
 msgstr[0] "%{count} more task"
 msgstr[1] "%{count} more tasks"
 
-#: lib/hermes_web/live/request_live/show.ex:825
-#, elixir-autogen, elixir-format
-msgid "Only PNG, JPG, PDF, CSV, XLSX and DOCX files are allowed"
-msgstr ""
-
 #: lib/hermes_web/live/tech_ops_live/index.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "Show full text"
+msgstr ""
+
+#: lib/hermes_web/live/request_live/show.ex:825
+#, elixir-autogen, elixir-format
+msgid "Only PNG, JPG, PDF, CSV, XLS(X), DOC(X) files are allowed"
 msgstr ""
