@@ -63,6 +63,16 @@ module "ec2" {
 
   aws_region        = var.aws_region
   ecr_registry      = split("/", aws_ecr_repository.hermes.repository_url)[0]
+  static_url        = module.s3_assets.assets_url
+  app_image_tag     = var.app_image_tag
+
+  aws_s3_bucket            = var.aws_s3_bucket
+  aws_s3_host              = var.aws_s3_host
+  aws_s3_region            = var.aws_s3_region
+  aws_s3_access_key_id     = var.aws_s3_access_key_id
+  aws_s3_secret_access_key = var.aws_s3_secret_access_key
+  aws_access_key_id        = var.aws_access_key_id
+  aws_secret_access_key    = var.aws_secret_access_key
   instance_type     = var.instance_type
   instance_count    = var.instance_count
   key_name          = var.key_name
