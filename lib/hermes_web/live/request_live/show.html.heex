@@ -301,11 +301,20 @@ aging = aging_days(@request) %>
                     rel="noopener noreferrer"
                     title={gettext("Open %{filename} in a new tab", filename: image.filename)}
                   >
-                    <img
-                      src={Hermes.Requests.image_url(image)}
-                      alt={image.filename}
-                      class="w-full h-32 object-cover rounded-lg border border-base-300 cursor-zoom-in"
-                    />
+                    <%= if image_attachment?(image.content_type) do %>
+                      <img
+                        src={Hermes.Requests.image_url(image)}
+                        alt={image.filename}
+                        class="w-full h-32 object-cover rounded-lg border border-base-300 cursor-zoom-in"
+                      />
+                    <% else %>
+                      <div class="w-full h-32 flex flex-col items-center justify-center gap-2 rounded-lg border border-base-300 bg-base-200 cursor-pointer">
+                        <.icon name={attachment_icon(image.filename)} class="h-8 w-8 opacity-50" />
+                        <span class="text-[10px] uppercase opacity-60">
+                          {image.filename |> Path.extname() |> String.trim_leading(".")}
+                        </span>
+                      </div>
+                    <% end %>
                   </a>
                   <button
                     phx-click="delete_image"
@@ -329,7 +338,7 @@ aging = aging_days(@request) %>
             >
               <label for={@uploads.images.ref} class="cursor-pointer">
                 <div class="flex flex-col items-center gap-1">
-                  <.icon name="hero-photo" class="h-7 w-7 opacity-40" />
+                  <.icon name="hero-paper-clip" class="h-7 w-7 opacity-40" />
                   <span class="text-xs opacity-60">{gettext("Drop or click to upload")}</span>
                   <span class="text-xs opacity-40">
                     {gettext("PNG, JPG, PDF, CSV, XLSX, DOCX · max. 15 MB")}
@@ -342,7 +351,11 @@ aging = aging_days(@request) %>
             <%= for entry <- @uploads.images.entries do %>
               <div class="flex items-center justify-between mt-2 p-2 bg-base-100 rounded-lg">
                 <div class="flex items-center gap-2">
-                  <.live_img_preview entry={entry} class="h-8 w-8 object-cover rounded" />
+                  <%= if image_attachment?(entry.client_type) do %>
+                    <.live_img_preview entry={entry} class="h-8 w-8 object-cover rounded" />
+                  <% else %>
+                    <.icon name={attachment_icon(entry.client_name)} class="h-5 w-5 opacity-60" />
+                  <% end %>
                   <p class="text-xs truncate max-w-[140px]">{entry.client_name}</p>
                 </div>
                 <div class="flex items-center gap-1">
