@@ -503,14 +503,14 @@ git push origin main
 ### Optimized Configuration (Current Setup - Rolling Deployment)
 
 Monthly costs in Madrid region (eu-south-2):
-- **EC2 (2x t4g.small ARM)**: ~$24/month ($0.0168/hour × 2 × 730 hours)
+- **EC2 (2x t4g.micro ARM)**: ~$12/month ($0.0084/hour × 2 × 730 hours)
 - **Application Load Balancer**: ~$23/month ($16 fixed + ~$7 LCU charges)
 - **NAT Gateway (1x)**: ~$32/month ($0.045/hour × 730 hours)
 - **Data Transfer**: ~$5-10/month (first 100GB free, then $0.09/GB)
 - **CloudWatch Logs**: ~$2-5/month
 - **S3 + DynamoDB (Terraform state)**: <$1/month (minimal usage)
 
-**Total: ~$86-95/month** (excluding external database)
+**Total: ~$74-83/month** (excluding external database)
 
 Note: With rolling deployments you still get zero-downtime deploys with 2 instances, but you no longer need 4 instances (2 blue + 2 green) like blue-green deployment required. This saves ~$24/month compared to blue-green.
 
@@ -518,32 +518,34 @@ Note: With rolling deployments you still get zero-downtime deploys with 2 instan
 
 | Service | Monthly Cost | Notes |
 |---------|--------------|-------|
-| **AWS Madrid (Current)** | **$86-94** | **Lowest latency for Spain users (~1-5ms)** |
+| **AWS Madrid (Current)** | **$74-83** | **Lowest latency for Spain users (~1-5ms)** |
 | Fly.io Frankfurt | $12-20 | Higher latency (~20-30ms to Madrid) |
 | Fly.io Paris | $12-20 | Higher latency (~15-25ms to Madrid) |
 
-**Value proposition**: Extra $66-74/month for **15-25ms better latency** - worth it for interactive applications with Spain-based users.
+**Value proposition**: Extra $54-63/month for **15-25ms better latency** - worth it for interactive applications with Spain-based users.
 
 ### Further Cost Optimization Options
 
 1. **Use Reserved Instances** (1-year commitment):
-   - Save 30-40% on EC2: ~$24/month → ~$16/month
-   - **New total: ~$78-86/month**
+   - Save 30-40% on EC2: ~$12/month → ~$8/month
+   - **New total: ~$70-79/month**
 
 2. **Use Compute Savings Plans** (flexible):
-   - Save 20-30% on EC2: ~$24/month → ~$18/month
+   - Save 20-30% on EC2: ~$12/month → ~$9/month
    - Can change instance types/sizes
-   - **New total: ~$80-88/month**
+   - **New total: ~$71-80/month**
 
 3. **Start with 1 instance** (for low traffic):
-   - EC2: ~$24 → ~$12/month
-   - Risk: No redundancy
-   - **New total: ~$74-82/month**
+   - EC2: ~$12 → ~$6/month
+   - Risk: No redundancy, and rolling deploys lose their spare target
+   - **New total: ~$68-77/month**
 
-4. **Use t4g.micro** initially (512MB RAM):
+4. **t4g.micro (1GB RAM)** — already applied:
    - EC2: ~$24 → ~$12/month (2x t4g.micro)
-   - Test if this is sufficient for your load
-   - **New total: ~$74-82/month**
+   - Chosen on 14 days of CloudWatch data: CPU averaged <1% and the
+     credit balance never left its 576/576 ceiling
+   - Headroom depends on the ML summarization model staying disabled
+     (ML_MODEL_LOADING_ENABLED)
 
 ### Why AWS Madrid vs Fly.io?
 

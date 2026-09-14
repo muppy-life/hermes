@@ -199,8 +199,8 @@ Check your DNS provider has the validation records. It can take up to 30 minutes
 
 ## Cost Estimate
 
-Your infrastructure will cost approximately **$86-95/month**:
-- EC2 (2x t4g.small): ~$24/month
+Your infrastructure will cost approximately **$74-83/month**:
+- EC2 (2x t4g.micro): ~$12/month
 - ALB: ~$23/month
 - NAT Gateway: ~$32/month
 - Data Transfer: ~$5-10/month

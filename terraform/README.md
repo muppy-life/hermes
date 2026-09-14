@@ -325,7 +325,7 @@ terraform destroy
 - Use Savings Plans or Reserved Instances for EC2
 - Consider smaller instance types if load is low
 - Use CloudWatch for monitoring and cost allocation tags
-- Already optimized: Single NAT Gateway and ARM instances (t4g.small)
+- Already optimized: Single NAT Gateway and ARM instances (t4g.micro)
 
 ## Monitoring and Alerting
 
