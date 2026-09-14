@@ -105,7 +105,7 @@ availability_zones = ["eu-south-2a", "eu-south-2b", "eu-south-2c"]
 
 # EC2 Configuration
 instance_type      = "t3.small"
-instance_count     = 2
+instance_count     = 1
 key_name           = "hermes-production"
 
 # SSL Certificate

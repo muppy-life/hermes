@@ -196,7 +196,7 @@ vpc_cidr           = "10.0.0.0/16"
 availability_zones = ["eu-south-2a", "eu-south-2b", "eu-south-2c"]
 
 instance_type      = "t3.small"
-instance_count     = 2
+instance_count     = 1
 key_name           = "hermes-production"
 
 certificate_arn    = "arn:aws:acm:eu-south-2:ACCOUNT_ID:certificate/CERT_ID"
@@ -503,26 +503,26 @@ git push origin main
 ### Optimized Configuration (Current Setup - Rolling Deployment)
 
 Monthly costs in Madrid region (eu-south-2):
-- **EC2 (2x t4g.micro ARM)**: ~$12/month ($0.0084/hour × 2 × 730 hours)
+- **EC2 (1x t4g.micro ARM)**: ~$6/month ($0.0084/hour × 1 × 730 hours)
 - **Application Load Balancer**: ~$23/month ($16 fixed + ~$7 LCU charges)
 - **NAT Gateway (1x)**: ~$32/month ($0.045/hour × 730 hours)
 - **Data Transfer**: ~$5-10/month (first 100GB free, then $0.09/GB)
 - **CloudWatch Logs**: ~$2-5/month
 - **S3 + DynamoDB (Terraform state)**: <$1/month (minimal usage)
 
-**Total: ~$74-83/month** (excluding external database)
+**Total: ~$68-77/month** (excluding external database)
 
-Note: With rolling deployments you still get zero-downtime deploys with 2 instances, but you no longer need 4 instances (2 blue + 2 green) like blue-green deployment required. This saves ~$24/month compared to blue-green.
+Note: At `instance_count = 1` deploys are NOT zero-downtime. The rolling deploy skips deregistration when there is a single instance and swaps the container in place, so expect a short window (~20-30s) where the ALB has no healthy target. Raising `instance_count` to 2 restores zero-downtime deploys at roughly double the EC2 cost.
 
 ### Cost Comparison vs Alternatives
 
 | Service | Monthly Cost | Notes |
 |---------|--------------|-------|
-| **AWS Madrid (Current)** | **$74-83** | **Lowest latency for Spain users (~1-5ms)** |
+| **AWS Madrid (Current)** | **$68-77** | **Lowest latency for Spain users (~1-5ms)** |
 | Fly.io Frankfurt | $12-20 | Higher latency (~20-30ms to Madrid) |
 | Fly.io Paris | $12-20 | Higher latency (~15-25ms to Madrid) |
 
-**Value proposition**: Extra $54-63/month for **15-25ms better latency** - worth it for interactive applications with Spain-based users.
+**Value proposition**: Extra $48-57/month for **15-25ms better latency** - worth it for interactive applications with Spain-based users.
 
 ### Further Cost Optimization Options
 
@@ -535,13 +535,14 @@ Note: With rolling deployments you still get zero-downtime deploys with 2 instan
    - Can change instance types/sizes
    - **New total: ~$71-80/month**
 
-3. **Start with 1 instance** (for low traffic):
+3. **1 instance** — already applied:
    - EC2: ~$12 → ~$6/month
-   - Risk: No redundancy, and rolling deploys lose their spare target
-   - **New total: ~$68-77/month**
+   - Trade-off: no redundancy, and each deploy has a ~20-30s outage
+     window because there is no spare target to drain to
+   - Recovery from a failed instance is manual; there is no ASG
 
 4. **t4g.micro (1GB RAM)** — already applied:
-   - EC2: ~$24 → ~$12/month (2x t4g.micro)
+   - EC2: ~$24 → ~$12/month at 2 instances, ~$6 at 1
    - Chosen on 14 days of CloudWatch data: CPU averaged <1% and the
      credit balance never left its 576/576 ceiling
    - Headroom depends on the ML summarization model staying disabled
