@@ -33,23 +33,40 @@ defmodule Hermes.Accounts do
 
   @doc """
   Returns a map of `%{team_id => member_count}` computed with a single
-  aggregate query (no rows loaded).
+  aggregate query (no rows loaded). Members include users that have the team
+  as an extra team.
   """
   def count_users_by_team do
-    from(u in User,
-      where: is_nil(u.deleted_at),
-      group_by: u.team_id,
-      select: {u.team_id, count(u.id)}
+    primary =
+      from(u in User,
+        where: is_nil(u.deleted_at),
+        select: %{team_id: u.team_id, user_id: u.id}
+      )
+
+    extra =
+      from(ut in "user_teams",
+        join: u in User,
+        on: u.id == ut.user_id,
+        where: is_nil(u.deleted_at),
+        select: %{team_id: ut.team_id, user_id: ut.user_id}
+      )
+
+    from(m in subquery(union(primary, ^extra)),
+      group_by: m.team_id,
+      select: {m.team_id, count(m.user_id)}
     )
     |> Repo.all()
     |> Map.new()
   end
 
   @doc """
-  Returns the current number of members in the given team.
+  Returns the current number of members in the given team, including users
+  that have it as an extra team.
   """
   def count_team_members(team_id) do
-    from(u in User, where: u.team_id == ^team_id and is_nil(u.deleted_at), select: count(u.id))
+    team_id
+    |> team_members_query()
+    |> select([u], count(u.id))
     |> Repo.one()
   end
 
@@ -197,13 +214,18 @@ defmodule Hermes.Accounts do
   Lists active members of a team, including users that have it as an extra team.
   """
   def list_users_by_team(team_id) do
+    team_id
+    |> team_members_query()
+    |> Repo.all()
+  end
+
+  defp team_members_query(team_id) do
     extra_member_ids = from(ut in "user_teams", where: ut.team_id == ^team_id, select: ut.user_id)
 
     from(u in User,
       where:
         (u.team_id == ^team_id or u.id in subquery(extra_member_ids)) and is_nil(u.deleted_at)
     )
-    |> Repo.all()
   end
 
   def get_dev_team do

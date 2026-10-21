@@ -216,6 +216,82 @@ defmodule HermesWeb.RequestLiveTest do
       refute html =~ "request[created_by_id]"
     end
 
+    test "a member with an extra team picks the requesting team but not the user", %{
+      conn: conn,
+      user: user,
+      other_team: other_team
+    } do
+      {:ok, _} = Accounts.update_user(user, %{extra_team_ids: [other_team.id]})
+      {:ok, view, _html} = live(conn, ~p"/backlog")
+
+      view |> element(~s|button[phx-click="show_new_request"]|) |> render_click()
+
+      assert has_element?(view, "#requesting-team-select option[value='#{user.team_id}']")
+      assert has_element?(view, "#requesting-team-select option[value='#{other_team.id}']")
+      refute has_element?(view, "#requesting-user-select")
+
+      view
+      |> form("#step-1-form", request: %{requesting_team_id: to_string(other_team.id)})
+      |> render_change()
+
+      view
+      |> element(~s|button[phx-value-field="kind"][phx-value-pick="problema"]|)
+      |> render_click()
+
+      view |> element(~s|button[phx-value-priority="normal"]|) |> render_click()
+
+      view
+      |> element(~s|button[phx-value-field="target_user_type"][phx-value-pick="internal"]|)
+      |> render_click()
+
+      view |> form("#step-1-form", request: %{title: "Extra team request"}) |> render_submit()
+
+      view
+      |> form("#step-2-form", request: %{current_situation: "bad", goal_description: "good"})
+      |> render_submit()
+
+      view |> element(~s|button[phx-value-area="eficiencia"]|) |> render_click()
+      view |> element(~s|button[phx-value-level="medio"]|) |> render_click()
+
+      view |> form("#step-3-form") |> render_submit()
+
+      request = Hermes.Repo.get_by!(Request, title: "Extra team request")
+
+      assert request.requesting_team_id == other_team.id
+      assert request.created_by_id == user.id
+    end
+
+    test "a member with an extra team cannot forge an unrelated team or creator", %{
+      conn: conn,
+      user: user,
+      other_team: other_team,
+      member: member
+    } do
+      {:ok, unrelated} = Accounts.create_team(%{name: "Unrelated", description: "d"})
+      {:ok, _} = Accounts.update_user(user, %{extra_team_ids: [other_team.id]})
+      {:ok, view, _html} = live(conn, ~p"/backlog")
+
+      view |> element(~s|button[phx-click="show_new_request"]|) |> render_click()
+
+      view
+      |> with_target("#new-request-form")
+      |> render_submit("submit", %{
+        "request" => %{
+          "title" => "Extra team forged request",
+          "priority" => "2",
+          "requesting_team_id" => to_string(unrelated.id),
+          "created_by_id" => to_string(member.id),
+          "impact_area" => "eficiencia",
+          "impact_level" => "medio"
+        }
+      })
+
+      request = Hermes.Repo.get_by!(Request, title: "Extra team forged request")
+
+      assert request.requesting_team_id == user.team_id
+      assert request.created_by_id == user.id
+    end
+
     test "a regular member forging team and user ids is locked to their own", %{
       conn: conn,
       user: user,

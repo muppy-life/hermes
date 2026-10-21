@@ -17,7 +17,11 @@
     done = board.stats.completed
     open = total - done
     pct = if total > 0, do: round(done / total * 100), else: 0 %>
-    <div class="dept-card" phx-click={JS.navigate(~p"/boards/#{board_id}")}>
+    <div
+      id={"board-card-#{board_id}"}
+      class="dept-card"
+      phx-click={JS.navigate(~p"/boards/#{board_id}")}
+    >
       <div class="dept-card-top">
         <div class="dept-card-icon">
           <.icon name="hero-view-columns" class="size-5" />

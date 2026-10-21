@@ -96,6 +96,17 @@ defmodule Hermes.Accounts.ExtraTeamsTest do
       assert Accounts.can_access_team?(agent, ctx.ops.id)
     end
 
+    test "member counts include extra members", ctx do
+      assert Accounts.count_team_members(ctx.ops.id) == 0
+      refute Map.has_key?(Accounts.count_users_by_team(), ctx.ops.id)
+
+      add_extra_teams(ctx.agent, [ctx.ops])
+
+      assert Accounts.count_team_members(ctx.ops.id) == 1
+      assert Accounts.count_users_by_team()[ctx.ops.id] == 1
+      assert Accounts.count_users_by_team()[ctx.tech.id] == 1
+    end
+
     test "list_users_by_team/1 includes extra members", ctx do
       refute ctx.agent.id in Enum.map(Accounts.list_users_by_team(ctx.ops.id), & &1.id)
 

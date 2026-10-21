@@ -575,7 +575,11 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                     <label class="form-label">
                       {gettext("Requesting team")}<span class="req">*</span>
                     </label>
-                    <select name="request[requesting_team_id]" class="form-input">
+                    <select
+                      id="requesting-team-select"
+                      name="request[requesting_team_id]"
+                      class="form-input"
+                    >
                       <option
                         :for={team <- @teams}
                         value={team.id}
@@ -589,7 +593,11 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                       <label class="form-label" style="margin-top:14px">
                         {gettext("Requesting user")}<span class="req">*</span>
                       </label>
-                      <select name="request[created_by_id]" class="form-input">
+                      <select
+                        id="requesting-user-select"
+                        name="request[created_by_id]"
+                        class="form-input"
+                      >
                         <option
                           :for={user <- @team_users}
                           value={user.id}

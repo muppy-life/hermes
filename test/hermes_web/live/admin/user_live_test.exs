@@ -59,7 +59,7 @@ defmodule HermesWeb.Admin.UserLiveTest do
     save(view, to_string(ctx.ops.id))
 
     assert Accounts.team_ids(ctx.agent) == [ctx.tech.id, ctx.ops.id]
-    assert render(view) =~ "+ Ops"
+    assert has_element?(view, "#user-#{ctx.agent.id}-extra-team-#{ctx.ops.id}", "+ Ops")
 
     # An existing extra team shows the select straight away, preselected
     edit(view, ctx.agent)

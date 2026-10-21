@@ -92,6 +92,7 @@
             <% end %>
             <span
               :for={team <- user.extra_teams}
+              id={"user-#{user.id}-extra-team-#{team.id}"}
               class="dept opacity-70"
               title={gettext("Extra team")}
             >
