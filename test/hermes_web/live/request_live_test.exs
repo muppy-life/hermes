@@ -7,6 +7,12 @@ defmodule HermesWeb.RequestLiveTest do
   alias Hermes.Requests.Request
 
   setup %{conn: conn} do
+    # Oban runs inline in tests, so notification emails are delivered from the
+    # LiveView process; route them to the test process instead of the LiveView,
+    # which has no handler for them and would crash mid-test.
+    Application.put_env(:swoosh, :shared_test_process, self())
+    on_exit(fn -> Application.delete_env(:swoosh, :shared_test_process) end)
+
     {:ok, team} = Accounts.create_team(%{name: "Team", description: "d"})
 
     {:ok, user} =
