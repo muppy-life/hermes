@@ -1,6 +1,7 @@
 defmodule HermesWeb.KanbanLive.Index do
   use HermesWeb, :live_view
 
+  alias Hermes.Accounts
   alias Hermes.Kanbans
   alias Hermes.Requests
 
@@ -14,10 +15,11 @@ defmodule HermesWeb.KanbanLive.Index do
 
   defp list_boards_with_stats(socket) do
     current_user = socket.assigns[:current_user]
-    boards = Kanbans.list_boards_by_team(current_user.team_id)
+    team_ids = Accounts.team_ids(current_user)
+    boards = Kanbans.list_boards_by_teams(team_ids)
 
     # Get all requests once
-    all_requests = Requests.list_requests_by_team(current_user.team_id)
+    all_requests = Requests.list_requests_by_teams(team_ids)
 
     Enum.map(boards, fn board ->
       stats = calculate_board_stats(board, all_requests)

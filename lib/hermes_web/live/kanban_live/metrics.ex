@@ -1,6 +1,7 @@
 defmodule HermesWeb.KanbanLive.Metrics do
   use HermesWeb, :live_view
 
+  alias Hermes.Accounts
   alias Hermes.Repo
   alias Hermes.Requests.Request
   import Ecto.Query
@@ -8,15 +9,23 @@ defmodule HermesWeb.KanbanLive.Metrics do
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
     current_user = socket.assigns[:current_user]
-    board = Hermes.Kanbans.get_board!(board_id, current_user.team_id)
+    board = Hermes.Kanbans.get_board!(board_id, Accounts.team_ids(current_user))
 
-    {:ok,
-     socket
-     |> assign(:page_title, "#{board.name} - Metrics")
-     |> assign(:current_user, current_user)
-     |> assign(:board, board)
-     |> assign(:board_id, board_id)
-     |> load_metrics()}
+    if Accounts.can_access_team?(current_user, board.team_id) or
+         Accounts.can_access_team?(current_user, board.team_b_id) do
+      {:ok,
+       socket
+       |> assign(:page_title, "#{board.name} - Metrics")
+       |> assign(:current_user, current_user)
+       |> assign(:board, board)
+       |> assign(:board_id, board_id)
+       |> load_metrics()}
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "You don't have permission to access this board")
+       |> push_navigate(to: ~p"/dashboard")}
+    end
   end
 
   @impl true

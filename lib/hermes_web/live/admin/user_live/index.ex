@@ -15,6 +15,8 @@ defmodule HermesWeb.Admin.UserLive.Index do
      |> assign(:show_delete_modal, false)
      |> assign(:selected_user, nil)
      |> assign(:form_mode, :new)
+     |> assign(:show_extra_team, false)
+     |> assign(:selected_extra_team_id, nil)
      |> assign(:form, to_form(%{}))}
   end
 
@@ -26,6 +28,8 @@ defmodule HermesWeb.Admin.UserLive.Index do
      socket
      |> assign(:form_mode, :new)
      |> assign(:selected_user, nil)
+     |> assign(:show_extra_team, false)
+     |> assign(:selected_extra_team_id, nil)
      |> assign(:form, to_form(changeset))
      |> assign(:show_form_modal, true)}
   end
@@ -38,8 +42,14 @@ defmodule HermesWeb.Admin.UserLive.Index do
      socket
      |> assign(:form_mode, :edit)
      |> assign(:selected_user, user)
+     |> assign(:show_extra_team, user.extra_teams != [])
+     |> assign(:selected_extra_team_id, extra_team_id(user))
      |> assign(:form, to_form(changeset))
      |> assign(:show_form_modal, true)}
+  end
+
+  def handle_event("show_extra_team", _params, socket) do
+    {:noreply, assign(socket, :show_extra_team, true)}
   end
 
   def handle_event("close_form_modal", _params, socket) do
@@ -62,7 +72,11 @@ defmodule HermesWeb.Admin.UserLive.Index do
   def handle_event("validate", %{"user" => user_params}, socket) do
     user = socket.assigns.selected_user || %User{}
     changeset = User.changeset(user, user_params)
-    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+
+    {:noreply,
+     socket
+     |> assign(:selected_extra_team_id, extra_team_id(user_params))
+     |> assign(:form, to_form(changeset, action: :validate))}
   end
 
   def handle_event("save", %{"user" => user_params}, socket) do
@@ -138,6 +152,18 @@ defmodule HermesWeb.Admin.UserLive.Index do
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
     end
+  end
+
+  # The form allows a single extra team: the select submits it as a one-item
+  # `extra_team_ids` list, replacing any previous one ("" clears it).
+  defp extra_team_id(%User{extra_teams: [team | _]}), do: to_string(team.id)
+  defp extra_team_id(%User{}), do: nil
+
+  defp extra_team_id(user_params) do
+    user_params
+    |> Map.get("extra_team_ids", [])
+    |> List.wrap()
+    |> Enum.find(&(&1 != ""))
   end
 
   defp hash_password(user_params) do

@@ -11,35 +11,34 @@ defmodule Hermes.Kanbans do
   Get a list of available board views for a team.
   Each board represents a team-pair relationship.
   """
-  def list_boards_by_team(team_id) do
-    # Get all teams that have requests with the given team
-    team = Accounts.get_team!(team_id)
-    requests = Requests.list_requests_by_team(team_id)
+  def list_boards_by_team(team_id), do: list_boards_by_teams([team_id])
+
+  @doc """
+  Get the board views for every team in `team_ids` (e.g. a user's primary and
+  extra teams). A pair shared by two of the teams is listed once, oriented
+  towards whichever team comes first in `team_ids`.
+  """
+  def list_boards_by_teams(team_ids) do
+    requests = Requests.list_requests_by_teams(team_ids)
+    teams = Map.new(Accounts.list_teams(), &{&1.id, &1})
 
     # Find all unique team pairs
     # For same-team requests (requesting_team_id == assigned_to_team_id), the "other" team is the
     # same team, generating a same-team board for internal tasks
-    team_pairs =
+    team_ids
+    |> Enum.flat_map(fn team_id ->
       requests
-      |> Enum.flat_map(fn request ->
-        other_team_id =
-          cond do
-            request.requesting_team_id == team_id -> request.assigned_to_team_id
-            request.assigned_to_team_id == team_id -> request.requesting_team_id
-            true -> nil
-          end
-
-        if other_team_id, do: [other_team_id], else: []
-      end)
-      |> Enum.uniq()
-      |> Enum.filter(&(&1 != nil))
-
-    # Create board view for each team pair
-    Enum.map(team_pairs, fn other_team_id ->
-      other_team = Accounts.get_team!(other_team_id)
+      |> Enum.map(&other_team_id(&1, team_id))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(&{team_id, &1})
+    end)
+    |> Enum.uniq_by(fn {team_id, other_team_id} -> board_id(team_id, other_team_id) end)
+    |> Enum.map(fn {team_id, other_team_id} ->
+      team = Map.fetch!(teams, team_id)
+      other_team = Map.fetch!(teams, other_team_id)
 
       %{
-        id: "#{min(team_id, other_team_id)}_#{max(team_id, other_team_id)}",
+        id: board_id(team_id, other_team_id),
         name: "#{team.name} ↔ #{other_team.name}",
         team_id: team_id,
         team_b_id: other_team_id,
@@ -49,11 +48,25 @@ defmodule Hermes.Kanbans do
     end)
   end
 
+  defp other_team_id(request, team_id) do
+    cond do
+      request.requesting_team_id == team_id -> request.assigned_to_team_id
+      request.assigned_to_team_id == team_id -> request.requesting_team_id
+      true -> nil
+    end
+  end
+
+  defp board_id(team_id, other_team_id),
+    do: "#{min(team_id, other_team_id)}_#{max(team_id, other_team_id)}"
+
   @doc """
   Get a board view for a specific team pair.
   Returns a structured view with columns and requests organized by status.
+
+  `viewer_team_ids` (the viewer's teams, preferred first) only decides the
+  orientation: the board's `team` is the first of them that is part of the pair.
   """
-  def get_board!(board_id, current_user_team_id) do
+  def get_board!(board_id, viewer_team_ids) do
     # Parse team IDs from board_id (format: "teamA_teamB")
     [team_a_str, team_b_str] = String.split(board_id, "_")
     team_a_id = String.to_integer(team_a_str)
@@ -62,12 +75,12 @@ defmodule Hermes.Kanbans do
     team_a = Accounts.get_team!(team_a_id)
     team_b = Accounts.get_team!(team_b_id)
 
-    # Determine which team is current user's team
+    # Determine which team is the viewer's team
     {team, team_b} =
-      if team_a_id == current_user_team_id do
-        {team_a, team_b}
-      else
+      if Enum.find(List.wrap(viewer_team_ids), &(&1 in [team_a_id, team_b_id])) == team_b_id do
         {team_b, team_a}
+      else
+        {team_a, team_b}
       end
 
     # Get all requests between these two teams
@@ -75,7 +88,7 @@ defmodule Hermes.Kanbans do
     cross_team_board? = team_a_id != team_b_id
 
     requests =
-      Requests.list_requests_by_team(current_user_team_id)
+      Requests.list_requests_by_team(team_a_id)
       |> Enum.filter(fn request ->
         request.requesting_team_id in [team_a_id, team_b_id] and
           request.assigned_to_team_id in [team_a_id, team_b_id] and

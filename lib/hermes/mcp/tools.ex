@@ -336,7 +336,7 @@ defmodule Hermes.MCP.Tools do
   def call("list_requests", _args, %User{team_id: nil}), do: {:ok, %{requests: []}}
 
   def call("list_requests", args, %User{} = user) do
-    requests = Requests.list_requests_by_team(user.team_id)
+    requests = Requests.list_requests_by_teams(Accounts.team_ids(user))
 
     requests =
       case Map.get(args, "status") do
@@ -525,22 +525,23 @@ defmodule Hermes.MCP.Tools do
   defp serialize_team(%{id: id, name: name}), do: %{id: id, name: name}
   defp serialize_team(_), do: nil
 
-  # Fetches a request only if the user's team is its requesting or assigned team.
-  # Anything outside that scope is reported as :not_found so the API never
-  # reveals the existence of requests the user could not otherwise see.
-  defp fetch_visible_request(id, %User{team_id: team_id}) do
+  # Fetches a request only if one of the user's teams is its requesting or
+  # assigned team. Anything outside that scope is reported as :not_found so the
+  # API never reveals the existence of requests the user could not otherwise see.
+  defp fetch_visible_request(id, %User{} = user) do
     case parse_id(id) do
-      :error ->
-        {:error, {:invalid, "id must be an integer"}}
-
-      {:ok, int} ->
-        case Requests.get_request(int) do
-          %Request{requesting_team_id: ^team_id} = request -> {:ok, request}
-          %Request{assigned_to_team_id: ^team_id} = request -> {:ok, request}
-          _ -> {:error, :not_found}
-        end
+      :error -> {:error, {:invalid, "id must be an integer"}}
+      {:ok, int} -> int |> Requests.get_request() |> visible_to(Accounts.team_ids(user))
     end
   end
+
+  defp visible_to(%Request{} = request, team_ids) do
+    if request.requesting_team_id in team_ids or request.assigned_to_team_id in team_ids,
+      do: {:ok, request},
+      else: {:error, :not_found}
+  end
+
+  defp visible_to(_request, _team_ids), do: {:error, :not_found}
 
   defp fetch_task(id) do
     case parse_id(id) do

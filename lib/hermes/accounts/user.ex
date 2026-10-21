@@ -13,6 +13,13 @@ defmodule Hermes.Accounts.User do
     field :deleted_at, :utc_datetime
 
     belongs_to :team, Hermes.Accounts.Team
+
+    # Teams the user is involved in besides their primary `team`. They grant the
+    # same visibility (boards, requests, notifications) as the primary team.
+    many_to_many :extra_teams, Hermes.Accounts.Team,
+      join_through: "user_teams",
+      on_replace: :delete
+
     has_many :created_requests, Hermes.Requests.Request, foreign_key: :created_by_id
 
     timestamps(type: :utc_datetime)

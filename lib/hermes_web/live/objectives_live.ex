@@ -240,7 +240,7 @@ defmodule HermesWeb.ObjectivesLive do
     active = socket.assigns.range
 
     requests =
-      Hermes.Requests.list_requests_by_team(user.team_id)
+      Hermes.Requests.list_requests_by_teams(Hermes.Accounts.team_ids(user))
       |> Enum.reject(&(&1.status == "discarded"))
 
     # Total / in-progress are bucketed by the period the request was created in.

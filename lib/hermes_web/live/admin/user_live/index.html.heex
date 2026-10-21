@@ -90,6 +90,14 @@
             <% else %>
               <span class="opacity-60">{gettext("Unassigned")}</span>
             <% end %>
+            <span
+              :for={team <- user.extra_teams}
+              id={"user-#{user.id}-extra-team-#{team.id}"}
+              class="dept opacity-70"
+              title={gettext("Extra team")}
+            >
+              + {team.name}
+            </span>
           </td>
           <td class="px-[22px] py-4 text-[12.5px] text-base-content/70">
             {role_label(user.role)}
@@ -175,6 +183,31 @@
             prompt={gettext("Choose a team")}
             options={Enum.map(@teams, &{&1.name, &1.id})}
             required
+          />
+
+          <button
+            :if={!@show_extra_team}
+            type="button"
+            id="show-extra-team"
+            phx-click="show_extra_team"
+            class="-mt-3 text-[11.5px] font-medium text-base-content/50 hover:text-base-content/70 hover:underline"
+          >
+            {gettext("+ Add an extra team")}
+          </button>
+
+          <.input
+            :if={@show_extra_team}
+            id="user_extra_team_id"
+            name="user[extra_team_ids][]"
+            type="select"
+            label={gettext("Extra team")}
+            prompt={gettext("No extra team")}
+            options={
+              for team <- @teams,
+                  to_string(team.id) != to_string(@form[:team_id].value),
+                  do: {team.name, team.id}
+            }
+            value={@selected_extra_team_id}
           />
 
           <.input

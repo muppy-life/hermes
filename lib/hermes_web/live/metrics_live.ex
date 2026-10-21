@@ -112,7 +112,7 @@ defmodule HermesWeb.MetricsLive do
     user = socket.assigns.current_user
 
     requests =
-      Hermes.Requests.list_requests_by_team(user.team_id)
+      Hermes.Requests.list_requests_by_teams(Hermes.Accounts.team_ids(user))
       |> Enum.reject(&(&1.status == "discarded"))
       |> apply_filters(socket.assigns.status_filter, socket.assigns.priority_filter)
 
