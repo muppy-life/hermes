@@ -73,12 +73,14 @@ defmodule HermesWeb.KanbanLive.Board do
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
     current_user = socket.assigns[:current_user]
-    board = Kanbans.get_board!(board_id, current_user.team_id)
+    team_ids = Accounts.team_ids(current_user)
+    board = Kanbans.get_board!(board_id, team_ids)
 
     if can_access_board?(current_user, board) do
       {:ok,
        socket
        |> NavigationHistory.assign_return_path(default: ~p"/boards")
+       |> assign(:team_ids, team_ids)
        |> assign(:raw_board_id, board_id)
        |> assign(:page_title, board.name)
        |> assign(:teams, Accounts.list_teams())
@@ -98,9 +100,8 @@ defmodule HermesWeb.KanbanLive.Board do
     filter_team = params["team"] || "all"
     filter_search = params["search"] || ""
 
-    current_user = socket.assigns[:current_user]
     board_id = socket.assigns[:raw_board_id]
-    board = Kanbans.get_board!(board_id, current_user.team_id)
+    board = Kanbans.get_board!(board_id, socket.assigns.team_ids)
 
     filtered_board =
       apply_all_filters(
@@ -108,8 +109,7 @@ defmodule HermesWeb.KanbanLive.Board do
         filter_perspective,
         filter_priority,
         filter_team,
-        filter_search,
-        current_user.team_id
+        filter_search
       )
 
     total_count = count_all_cards(filtered_board)
@@ -169,7 +169,7 @@ defmodule HermesWeb.KanbanLive.Board do
     case Requests.update_request(request, %{status: new_status}, current_user.id) do
       {:ok, _updated_request} ->
         # Reload the board with updated data
-        board = Kanbans.get_board!(socket.assigns.raw_board_id, current_user.team_id)
+        board = Kanbans.get_board!(socket.assigns.raw_board_id, socket.assigns.team_ids)
 
         filtered_board =
           apply_all_filters(
@@ -177,8 +177,7 @@ defmodule HermesWeb.KanbanLive.Board do
             socket.assigns.filter_perspective,
             socket.assigns.filter_priority,
             socket.assigns.filter_team,
-            socket.assigns.filter_search,
-            current_user.team_id
+            socket.assigns.filter_search
           )
 
         total_count = count_all_cards(filtered_board)
@@ -234,8 +233,7 @@ defmodule HermesWeb.KanbanLive.Board do
 
   def handle_info({:new_request_created, _request}, socket) do
     board_id = socket.assigns.raw_board_id
-    current_user = socket.assigns[:current_user]
-    board = Kanbans.get_board!(board_id, current_user.team_id)
+    board = Kanbans.get_board!(board_id, socket.assigns.team_ids)
 
     filtered_board =
       apply_all_filters(
@@ -243,8 +241,7 @@ defmodule HermesWeb.KanbanLive.Board do
         socket.assigns.filter_perspective,
         socket.assigns.filter_priority,
         socket.assigns.filter_team,
-        socket.assigns.filter_search,
-        current_user.team_id
+        socket.assigns.filter_search
       )
 
     {:noreply,
@@ -282,14 +279,13 @@ defmodule HermesWeb.KanbanLive.Board do
          filter_perspective,
          filter_priority,
          filter_team,
-         filter_search,
-         current_user_team_id
+         filter_search
        ) do
     filtered_columns =
       Enum.map(board.columns, fn column ->
         filtered_cards =
           column.cards
-          |> filter_by_perspective(filter_perspective, current_user_team_id)
+          |> filter_by_perspective(filter_perspective, board.team_id)
           |> filter_by_priority(filter_priority)
           |> filter_by_team(filter_team)
           |> filter_by_search(filter_search)
@@ -300,17 +296,18 @@ defmodule HermesWeb.KanbanLive.Board do
     Map.put(board, :columns, filtered_columns)
   end
 
-  defp filter_by_perspective(cards, filter_perspective, current_user_team_id) do
+  # "Us" is the board's own-side team, i.e. the viewer's team within the pair.
+  defp filter_by_perspective(cards, filter_perspective, our_team_id) do
     Enum.filter(cards, fn card ->
       case filter_perspective do
         :all ->
           true
 
         :created_by_us ->
-          card.request.requesting_team_id == current_user_team_id
+          card.request.requesting_team_id == our_team_id
 
         :assigned_to_us ->
-          card.request.assigned_to_team_id == current_user_team_id
+          card.request.assigned_to_team_id == our_team_id
 
         _ ->
           true

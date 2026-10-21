@@ -50,7 +50,7 @@ defmodule HermesWeb.RequestLive.Show do
     end
 
     current_user = socket.assigns[:current_user]
-    can_set_deadline = request.assigned_to_team_id == current_user.team_id
+    can_set_deadline = request.assigned_to_team_id in Accounts.team_ids(current_user)
 
     relevant_team_ids =
       [request.requesting_team_id, request.assigned_to_team_id]
@@ -59,7 +59,10 @@ defmodule HermesWeb.RequestLive.Show do
 
     mentionable_users =
       Accounts.list_users()
-      |> Enum.filter(fn u -> u.team_id in relevant_team_ids end)
+      |> Enum.filter(fn u ->
+        u.team_id in relevant_team_ids or
+          Enum.any?(u.extra_teams, &(&1.id in relevant_team_ids))
+      end)
       |> Enum.map(fn u ->
         %{id: u.id, username: u.email |> String.split("@") |> List.first()}
       end)
@@ -201,7 +204,7 @@ defmodule HermesWeb.RequestLive.Show do
     current_user = socket.assigns[:current_user]
 
     # Verify user is from assigned team
-    if request.assigned_to_team_id != current_user.team_id do
+    if request.assigned_to_team_id not in Accounts.team_ids(current_user) do
       {:noreply,
        socket
        |> assign(:show_deadline_modal, false)

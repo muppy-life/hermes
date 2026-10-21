@@ -25,9 +25,14 @@ defmodule Hermes.Requests do
     |> annotate_epics()
   end
 
-  def list_requests_by_team(team_id) do
+  def list_requests_by_team(team_id), do: list_requests_by_teams([team_id])
+
+  @doc """
+  Lists requests where any of `team_ids` is the requesting or assigned team.
+  """
+  def list_requests_by_teams(team_ids) when is_list(team_ids) do
     from(r in Request,
-      where: r.requesting_team_id == ^team_id or r.assigned_to_team_id == ^team_id,
+      where: r.requesting_team_id in ^team_ids or r.assigned_to_team_id in ^team_ids,
       order_by: [desc: r.updated_at]
     )
     |> Repo.all()

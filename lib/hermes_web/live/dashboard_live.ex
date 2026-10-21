@@ -1,6 +1,7 @@
 defmodule HermesWeb.DashboardLive do
   use HermesWeb, :live_view
 
+  alias Hermes.Accounts
   alias Hermes.Kanbans
   alias Hermes.Requests
 
@@ -92,16 +93,17 @@ defmodule HermesWeb.DashboardLive do
   end
 
   defp get_recent_requests(user) do
-    Requests.list_requests_by_team(user.team_id) |> Enum.take(5)
+    Requests.list_requests_by_teams(Accounts.team_ids(user)) |> Enum.take(5)
   end
 
   defp get_boards(user) do
-    boards = Kanbans.list_boards_by_team(user.team_id)
+    team_ids = Accounts.team_ids(user)
+    boards = Kanbans.list_boards_by_teams(team_ids)
 
     # Add stats for each board
     Enum.map(boards, fn board ->
       # Get the board with all its requests to calculate stats
-      full_board = Kanbans.get_board!(board.id, user.team_id)
+      full_board = Kanbans.get_board!(board.id, team_ids)
 
       # Extract all requests from all columns
       requests =
@@ -130,7 +132,7 @@ defmodule HermesWeb.DashboardLive do
 
   defp get_stats(user) do
     requests =
-      Requests.list_requests_by_team(user.team_id)
+      Requests.list_requests_by_teams(Accounts.team_ids(user))
       |> Enum.reject(&(&1.status == "discarded"))
 
     %{
@@ -153,7 +155,7 @@ defmodule HermesWeb.DashboardLive do
 
   defp get_sprint_data(user) do
     requests =
-      Requests.list_requests_by_team(user.team_id)
+      Requests.list_requests_by_teams(Accounts.team_ids(user))
       |> Enum.filter(&(&1.status in @sprint_statuses))
 
     by_status = Enum.group_by(requests, & &1.status)
@@ -179,7 +181,7 @@ defmodule HermesWeb.DashboardLive do
     window_end = window_start |> Date.shift(month: window - 1) |> Date.end_of_month()
 
     # Get all team requests with deadlines inside the visible window.
-    requests = Requests.list_requests_by_team(user.team_id)
+    requests = Requests.list_requests_by_teams(Accounts.team_ids(user))
 
     requests_with_deadlines =
       requests

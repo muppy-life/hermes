@@ -58,7 +58,7 @@ defmodule Hermes.Accounts do
   def list_users do
     from(u in User, where: is_nil(u.deleted_at))
     |> Repo.all()
-    |> Repo.preload(:team)
+    |> Repo.preload([:team, :extra_teams])
   end
 
   @doc """
@@ -84,7 +84,7 @@ defmodule Hermes.Accounts do
   active-user listings — use `get_active_user/1` / `get_user_by_email/1` there.
   """
   def get_user!(id) do
-    Repo.get!(User, id) |> Repo.preload(:team)
+    Repo.get!(User, id) |> Repo.preload([:team, :extra_teams])
   end
 
   @doc """
@@ -104,15 +104,74 @@ defmodule Hermes.Accounts do
   end
 
   def create_user(attrs \\ %{}) do
-    %User{}
+    %User{extra_teams: []}
     |> User.changeset(attrs)
+    |> put_extra_teams(attrs)
     |> Repo.insert()
   end
 
   def update_user(%User{} = user, attrs) do
     user
+    |> Repo.preload(:extra_teams)
     |> User.changeset(attrs)
+    |> put_extra_teams(attrs)
     |> Repo.update()
+  end
+
+  # Extra teams are only touched when `extra_team_ids` is passed, so partial
+  # updates (e.g. toggling is_admin) keep the memberships. The primary team is
+  # dropped from the list since `team_id` already implies it.
+  defp put_extra_teams(changeset, attrs) do
+    case fetch_attr(attrs, :extra_team_ids) do
+      :error ->
+        changeset
+
+      {:ok, ids} ->
+        primary_team_id = Ecto.Changeset.get_field(changeset, :team_id)
+
+        ids =
+          ids
+          |> List.wrap()
+          |> Enum.map(&to_team_id/1)
+          |> Enum.reject(&(&1 in [nil, primary_team_id]))
+          |> Enum.uniq()
+
+        teams = Repo.all(from t in Team, where: t.id in ^ids)
+        Ecto.Changeset.put_assoc(changeset, :extra_teams, teams)
+    end
+  end
+
+  defp fetch_attr(attrs, key) do
+    case Map.fetch(attrs, key) do
+      {:ok, value} -> {:ok, value}
+      :error -> Map.fetch(attrs, Atom.to_string(key))
+    end
+  end
+
+  defp to_team_id(id) when is_integer(id), do: id
+
+  defp to_team_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int, ""} -> int
+      _ -> nil
+    end
+  end
+
+  defp to_team_id(_), do: nil
+
+  @doc """
+  Returns every team id the user belongs to: the primary team first, followed
+  by their extra teams. Empty for a user without any team.
+  """
+  def team_ids(%User{id: user_id, team_id: team_id}) do
+    extra_ids =
+      from(ut in "user_teams", where: ut.user_id == ^user_id, select: ut.team_id)
+      |> Repo.all()
+      |> Enum.sort()
+
+    [team_id | extra_ids]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
   end
 
   @doc """
@@ -134,8 +193,16 @@ defmodule Hermes.Accounts do
     |> Repo.update()
   end
 
+  @doc """
+  Lists active members of a team, including users that have it as an extra team.
+  """
   def list_users_by_team(team_id) do
-    from(u in User, where: u.team_id == ^team_id and is_nil(u.deleted_at))
+    extra_member_ids = from(ut in "user_teams", where: ut.team_id == ^team_id, select: ut.user_id)
+
+    from(u in User,
+      where:
+        (u.team_id == ^team_id or u.id in subquery(extra_member_ids)) and is_nil(u.deleted_at)
+    )
     |> Repo.all()
   end
 
@@ -182,6 +249,7 @@ defmodule Hermes.Accounts do
 
   def can_access_team?(%User{is_admin: true}, _), do: true
   def can_access_team?(%User{team_id: team_id}, team_id), do: true
+  def can_access_team?(%User{} = user, team_id), do: team_id in team_ids(user)
   def can_access_team?(_, _), do: false
 
   ## API token functions

@@ -151,7 +151,7 @@ defmodule HermesWeb.RequestLive.Index do
     current_user = socket.assigns[:current_user]
 
     requests =
-      Requests.list_requests_by_team(current_user.team_id)
+      Requests.list_requests_by_teams(Accounts.team_ids(current_user))
       |> apply_filters(socket.assigns)
       |> apply_sorting(socket.assigns.sort_by, socket.assigns.sort_order)
 
