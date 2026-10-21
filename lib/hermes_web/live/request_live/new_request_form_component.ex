@@ -575,37 +575,27 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                     <label class="form-label">
                       {gettext("Requesting team")}<span class="req">*</span>
                     </label>
-                    <select
+                    <.input
                       id="requesting-team-select"
                       name="request[requesting_team_id]"
+                      type="select"
                       class="form-input"
-                    >
-                      <option
-                        :for={team <- @teams}
-                        value={team.id}
-                        selected={to_string(@form_data["requesting_team_id"]) == to_string(team.id)}
-                      >
-                        {team.name}
-                      </option>
-                    </select>
+                      options={Enum.map(@teams, &{&1.name, &1.id})}
+                      value={@form_data["requesting_team_id"]}
+                    />
 
                     <div :if={@can_pick_user?}>
                       <label class="form-label" style="margin-top:14px">
                         {gettext("Requesting user")}<span class="req">*</span>
                       </label>
-                      <select
+                      <.input
                         id="requesting-user-select"
                         name="request[created_by_id]"
+                        type="select"
                         class="form-input"
-                      >
-                        <option
-                          :for={user <- @team_users}
-                          value={user.id}
-                          selected={to_string(@form_data["created_by_id"]) == to_string(user.id)}
-                        >
-                          {user_option_label(user)}
-                        </option>
-                      </select>
+                        options={Enum.map(@team_users, &{user_option_label(&1), &1.id})}
+                        value={@form_data["created_by_id"]}
+                      />
                       <div :if={@team_users == []} class="f-hint">
                         {gettext(
                           "This team has no active members; the request will be created in your name."
