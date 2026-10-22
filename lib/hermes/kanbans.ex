@@ -118,8 +118,6 @@ defmodule Hermes.Kanbans do
     %{
       id: "mine",
       name: Gettext.gettext(HermesWeb.Gettext, "My board"),
-      team_id: List.first(team_ids),
-      team_b_id: nil,
       teams: Enum.map(team_ids, &Map.fetch!(teams_by_id, &1)),
       columns: build_columns(Requests.list_requests_by_teams(team_ids)),
       updated_at: NaiveDateTime.utc_now()

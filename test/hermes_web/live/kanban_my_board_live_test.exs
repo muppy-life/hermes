@@ -94,6 +94,21 @@ defmodule HermesWeb.KanbanMyBoardLiveTest do
       assert has_element?(view, "#kanban-card-#{ctx.tech_request.id}")
     end
 
+    test "perspective filters match every selected team", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/mine?perspective=assigned_to_us")
+
+      # Assigned to Sales (not ours) / to Ops (our extra team) / Sales -> Ops.
+      refute has_element?(view, "#kanban-card-#{ctx.tech_request.id}")
+      assert has_element?(view, "#kanban-card-#{ctx.ops_request.id}")
+      assert has_element?(view, "#kanban-card-#{ctx.hidden_request.id}")
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/mine?perspective=created_by_us")
+
+      assert has_element?(view, "#kanban-card-#{ctx.tech_request.id}")
+      assert has_element?(view, "#kanban-card-#{ctx.ops_request.id}")
+      refute has_element?(view, "#kanban-card-#{ctx.hidden_request.id}")
+    end
+
     test "the last selected team can't be turned off", ctx do
       {:ok, view, _html} = live(ctx.conn, ~p"/boards/mine?#{%{teams: "#{ctx.ops.id}"}}")
 

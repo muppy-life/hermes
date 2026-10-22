@@ -365,7 +365,7 @@ defmodule HermesWeb.KanbanLive.Board do
       Enum.map(board.columns, fn column ->
         filtered_cards =
           column.cards
-          |> filter_by_perspective(filter_perspective, board.team_id)
+          |> filter_by_perspective(filter_perspective, our_team_ids(board))
           |> filter_by_priority(filter_priority)
           |> filter_by_team(filter_team)
           |> filter_by_search(filter_search)
@@ -376,18 +376,21 @@ defmodule HermesWeb.KanbanLive.Board do
     Map.put(board, :columns, filtered_columns)
   end
 
-  # "Us" is the board's own-side team, i.e. the viewer's team within the pair.
-  defp filter_by_perspective(cards, filter_perspective, our_team_id) do
+  # "Us" is the viewer's side: their team within a pair, or every team picked on My board.
+  defp our_team_ids(%{teams: teams}), do: Enum.map(teams, & &1.id)
+  defp our_team_ids(board), do: [board.team_id]
+
+  defp filter_by_perspective(cards, filter_perspective, our_team_ids) do
     Enum.filter(cards, fn card ->
       case filter_perspective do
         :all ->
           true
 
         :created_by_us ->
-          card.request.requesting_team_id == our_team_id
+          card.request.requesting_team_id in our_team_ids
 
         :assigned_to_us ->
-          card.request.assigned_to_team_id == our_team_id
+          card.request.assigned_to_team_id in our_team_ids
 
         _ ->
           true
