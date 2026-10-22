@@ -11,6 +11,50 @@
 </div>
 
 <div class="dept-grid">
+  <%= if @my_teams != [] do %>
+    <% total = @my_board_stats.total
+    done = @my_board_stats.completed
+    pct = if total > 0, do: round(done / total * 100), else: 0 %>
+    <%!-- MyBoardLink points the link at the teams last picked on the board. --%>
+    <.link
+      navigate={~p"/boards/mine"}
+      id="my-board-card"
+      class="dept-card"
+      phx-hook="MyBoardLink"
+    >
+      <div class="dept-card-top">
+        <div class="dept-card-icon">
+          <.icon name="hero-user-circle" class="size-5" />
+        </div>
+        <div class="dept-card-name">{gettext("My board")}</div>
+        <div class="dept-card-count">
+          {ngettext("%{count} request", "%{count} requests", total, count: total)}
+        </div>
+      </div>
+
+      <div class="dept-card-bottom">
+        <div class="dept-card-stats">
+          <span class="dept-stat">{total - done}</span>
+          <span class="dept-stat-l">
+            {gettext("open")} · {pct}% {gettext("complete")}
+          </span>
+        </div>
+
+        <div class="dept-card-bar">
+          <div class="dept-card-bar-fill" style={"width:#{pct}%"}></div>
+        </div>
+
+        <div class="dept-card-metrics">
+          <.icon name="hero-user-group" class="size-3.5" />{Enum.map_join(
+            @my_teams,
+            ", ",
+            & &1.name
+          )}
+        </div>
+      </div>
+    </.link>
+  <% end %>
+
   <%= for board <- @boards do %>
     <% board_id = Map.get(board, :id)
     total = board.stats.total

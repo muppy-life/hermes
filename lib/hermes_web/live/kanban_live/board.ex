@@ -71,6 +71,21 @@ defmodule HermesWeb.KanbanLive.Board do
   end
 
   @impl true
+  def mount(_params, _session, %{assigns: %{live_action: :mine}} = socket) do
+    team_ids = Accounts.team_ids(socket.assigns.current_user)
+    teams = Accounts.list_teams()
+    teams_by_id = Map.new(teams, &{&1.id, &1})
+
+    {:ok,
+     socket
+     |> NavigationHistory.assign_return_path(default: ~p"/boards")
+     |> assign(:team_ids, team_ids)
+     |> assign(:my_teams, Enum.map(team_ids, &Map.fetch!(teams_by_id, &1)))
+     |> assign(:page_title, gettext("My board"))
+     |> assign(:teams, teams)
+     |> assign(:show_new_request, false)}
+  end
+
   def mount(%{"id" => board_id}, _session, socket) do
     current_user = socket.assigns[:current_user]
     team_ids = Accounts.team_ids(current_user)
@@ -100,8 +115,8 @@ defmodule HermesWeb.KanbanLive.Board do
     filter_team = params["team"] || "all"
     filter_search = params["search"] || ""
 
-    board_id = socket.assigns[:raw_board_id]
-    board = Kanbans.get_board!(board_id, socket.assigns.team_ids)
+    socket = assign_selected_teams(socket, params["teams"])
+    board = load_board(socket)
 
     filtered_board =
       apply_all_filters(
@@ -169,7 +184,7 @@ defmodule HermesWeb.KanbanLive.Board do
     case Requests.update_request(request, %{status: new_status}, current_user.id) do
       {:ok, _updated_request} ->
         # Reload the board with updated data
-        board = Kanbans.get_board!(socket.assigns.raw_board_id, socket.assigns.team_ids)
+        board = load_board(socket)
 
         filtered_board =
           apply_all_filters(
@@ -190,9 +205,7 @@ defmodule HermesWeb.KanbanLive.Board do
 
   def handle_event("set_filter", %{"filter" => filter}, socket) do
     {:noreply,
-     push_patch(socket,
-       to: ~p"/boards/#{socket.assigns.raw_board_id}?#{build_params(socket, perspective: filter)}"
-     )}
+     push_patch(socket, to: board_path(socket, build_params(socket, perspective: filter)))}
   end
 
   def handle_event("apply_filters", %{"priority" => priority, "team" => team} = params, socket) do
@@ -201,16 +214,41 @@ defmodule HermesWeb.KanbanLive.Board do
     {:noreply,
      push_patch(socket,
        to:
-         ~p"/boards/#{socket.assigns.raw_board_id}?#{build_params(socket, priority: priority, team: team, search: search)}"
+         board_path(socket, build_params(socket, priority: priority, team: team, search: search))
      )}
   end
 
   def handle_event("clear_filters", _params, socket) do
     {:noreply,
      push_patch(socket,
-       to:
-         ~p"/boards/#{socket.assigns.raw_board_id}?perspective=#{socket.assigns.filter_perspective}"
+       to: board_path(socket, build_params(socket, priority: "all", team: "all", search: ""))
      )}
+  end
+
+  # My board team chips. The last selected team can't be turned off, so the
+  # board never ends up empty by accident.
+  def handle_event("toggle_team", %{"team-id" => team_id}, socket) do
+    team_id = String.to_integer(team_id)
+    %{team_ids: team_ids, selected_team_ids: selected_ids} = socket.assigns
+
+    selected_ids =
+      if team_id in selected_ids,
+        do: List.delete(selected_ids, team_id),
+        else: [team_id | selected_ids]
+
+    case Enum.filter(team_ids, &(&1 in selected_ids)) do
+      [] ->
+        {:noreply, socket}
+
+      ^team_ids ->
+        {:noreply, push_patch(socket, to: board_path(socket, build_params(socket, teams: "")))}
+
+      ids ->
+        {:noreply,
+         push_patch(socket,
+           to: board_path(socket, build_params(socket, teams: Enum.join(ids, ",")))
+         )}
+    end
   end
 
   def handle_event("load_more", %{"column_id" => column_id}, socket) do
@@ -232,8 +270,7 @@ defmodule HermesWeb.KanbanLive.Board do
   end
 
   def handle_info({:new_request_created, _request}, socket) do
-    board_id = socket.assigns.raw_board_id
-    board = Kanbans.get_board!(board_id, socket.assigns.team_ids)
+    board = load_board(socket)
 
     filtered_board =
       apply_all_filters(
@@ -262,12 +299,55 @@ defmodule HermesWeb.KanbanLive.Board do
       "perspective" => Atom.to_string(socket.assigns.filter_perspective),
       "priority" => socket.assigns.filter_priority,
       "team" => socket.assigns.filter_team,
-      "search" => socket.assigns.filter_search
+      "search" => socket.assigns.filter_search,
+      "teams" => socket.assigns.teams_param
     }
     |> Map.merge(updates_map)
     |> Enum.reject(fn {_k, v} -> v in ["all", ""] end)
     |> Enum.into(%{})
   end
+
+  # My board only shows the viewer's own teams: unknown ids are dropped and an
+  # empty selection means all of them. `teams_param` stays empty for "all" so
+  # the URL keeps following the user's teams.
+  defp assign_selected_teams(%{assigns: %{live_action: :mine}} = socket, teams_param) do
+    requested_ids =
+      teams_param
+      |> to_string()
+      |> String.split(",", trim: true)
+      |> Enum.flat_map(fn id ->
+        case Integer.parse(id) do
+          {int, ""} -> [int]
+          _ -> []
+        end
+      end)
+
+    team_ids = socket.assigns.team_ids
+
+    selected_ids =
+      case Enum.filter(team_ids, &(&1 in requested_ids)) do
+        [] -> team_ids
+        ids -> ids
+      end
+
+    socket
+    |> assign(:selected_team_ids, selected_ids)
+    |> assign(
+      :teams_param,
+      if(selected_ids == team_ids, do: "", else: Enum.join(selected_ids, ","))
+    )
+  end
+
+  defp assign_selected_teams(socket, _teams_param), do: assign(socket, :teams_param, "")
+
+  defp load_board(%{assigns: %{live_action: :mine}} = socket),
+    do: Kanbans.get_my_board(socket.assigns.selected_team_ids)
+
+  defp load_board(socket),
+    do: Kanbans.get_board!(socket.assigns.raw_board_id, socket.assigns.team_ids)
+
+  defp board_path(%{assigns: %{live_action: :mine}}, params), do: ~p"/boards/mine?#{params}"
+  defp board_path(socket, params), do: ~p"/boards/#{socket.assigns.raw_board_id}?#{params}"
 
   defp can_access_board?(user, board) do
     Accounts.can_access_team?(user, board.team_id) or
@@ -285,7 +365,7 @@ defmodule HermesWeb.KanbanLive.Board do
       Enum.map(board.columns, fn column ->
         filtered_cards =
           column.cards
-          |> filter_by_perspective(filter_perspective, board.team_id)
+          |> filter_by_perspective(filter_perspective, our_team_ids(board))
           |> filter_by_priority(filter_priority)
           |> filter_by_team(filter_team)
           |> filter_by_search(filter_search)
@@ -296,18 +376,21 @@ defmodule HermesWeb.KanbanLive.Board do
     Map.put(board, :columns, filtered_columns)
   end
 
-  # "Us" is the board's own-side team, i.e. the viewer's team within the pair.
-  defp filter_by_perspective(cards, filter_perspective, our_team_id) do
+  # "Us" is the viewer's side: their team within a pair, or every team picked on My board.
+  defp our_team_ids(%{teams: teams}), do: Enum.map(teams, & &1.id)
+  defp our_team_ids(board), do: [board.team_id]
+
+  defp filter_by_perspective(cards, filter_perspective, our_team_ids) do
     Enum.filter(cards, fn card ->
       case filter_perspective do
         :all ->
           true
 
         :created_by_us ->
-          card.request.requesting_team_id == our_team_id
+          card.request.requesting_team_id in our_team_ids
 
         :assigned_to_us ->
-          card.request.assigned_to_team_id == our_team_id
+          card.request.assigned_to_team_id in our_team_ids
 
         _ ->
           true

@@ -95,6 +95,36 @@ defmodule Hermes.Kanbans do
           (not cross_team_board? or request.requesting_team_id != request.assigned_to_team_id)
       end)
 
+    %{
+      id: board_id,
+      name: "#{team.name} ↔ #{team_b.name}",
+      team_id: team.id,
+      team_b_id: team_b.id,
+      team: team,
+      team_b: team_b,
+      columns: build_columns(requests),
+      updated_at: NaiveDateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Get the personal board of a user: every request requested by or assigned to
+  any of `team_ids` (the teams the user picked among their own), on a single
+  board regardless of the other team involved.
+  """
+  def get_my_board(team_ids) do
+    teams_by_id = Map.new(Accounts.list_teams(), &{&1.id, &1})
+
+    %{
+      id: "mine",
+      name: Gettext.gettext(HermesWeb.Gettext, "My board"),
+      teams: Enum.map(team_ids, &Map.fetch!(teams_by_id, &1)),
+      columns: build_columns(Requests.list_requests_by_teams(team_ids)),
+      updated_at: NaiveDateTime.utc_now()
+    }
+  end
+
+  defp build_columns(requests) do
     # Define columns for all status types
     columns = [
       %{id: 1, name: Gettext.gettext(HermesWeb.Gettext, "New"), position: 0, status: "new"},
@@ -144,32 +174,20 @@ defmodule Hermes.Kanbans do
     ]
 
     # Organize requests into columns
-    columns_with_requests =
-      Enum.map(columns, fn column ->
-        column_requests =
-          requests
-          |> Enum.filter(&(&1.status == column.status))
-          |> Enum.sort_by(& &1.updated_at, {:desc, NaiveDateTime})
+    Enum.map(columns, fn column ->
+      column_requests =
+        requests
+        |> Enum.filter(&(&1.status == column.status))
+        |> Enum.sort_by(& &1.updated_at, {:desc, NaiveDateTime})
 
-        Map.put(
-          column,
-          :cards,
-          Enum.map(column_requests, fn request ->
-            %{id: request.id, request: request}
-          end)
-        )
-      end)
-
-    %{
-      id: board_id,
-      name: "#{team.name} ↔ #{team_b.name}",
-      team_id: team.id,
-      team_b_id: team_b.id,
-      team: team,
-      team_b: team_b,
-      columns: columns_with_requests,
-      updated_at: NaiveDateTime.utc_now()
-    }
+      Map.put(
+        column,
+        :cards,
+        Enum.map(column_requests, fn request ->
+          %{id: request.id, request: request}
+        end)
+      )
+    end)
   end
 
   @doc """

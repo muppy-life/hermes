@@ -27,7 +27,32 @@ import topbar from "../vendor/topbar"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
+// Teams picked on My board ("" = all of them), kept per browser so the Boards
+// card reopens the same selection.
+const MY_BOARD_TEAMS_KEY = "hermes:my-board-teams"
+
 const Hooks = {
+  MyBoardTeams: {
+    mounted() { this.save() },
+    updated() { this.save() },
+    save() {
+      try { localStorage.setItem(MY_BOARD_TEAMS_KEY, this.el.dataset.teams || "") } catch (_e) {}
+    }
+  },
+  // Points the My board card at the last selection; the server drops any team
+  // the user no longer belongs to.
+  MyBoardLink: {
+    mounted() { this.apply() },
+    updated() { this.apply() },
+    apply() {
+      let teams = ""
+      try { teams = localStorage.getItem(MY_BOARD_TEAMS_KEY) || "" } catch (_e) {}
+      const url = new URL(this.el.href)
+      if (teams) url.searchParams.set("teams", teams)
+      else url.searchParams.delete("teams")
+      this.el.href = url.pathname + url.search
+    }
+  },
   // Makes a whole tech ops row toggle its own expand checkbox, so the long free-text
   // cells can be un-clamped by clicking anywhere in the row rather than only the
   // chevrons. Delegated from the <tbody> so it survives stream patches and needs no

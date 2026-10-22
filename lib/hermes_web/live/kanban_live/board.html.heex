@@ -16,6 +16,9 @@
         </h1>
         <p id="board-task-count" class="text-[13px] text-base-content/50 font-medium mt-1.5">
           {ngettext("%{count} task", "%{count} tasks", @total_count, count: @total_count)}
+          <span :if={@live_action == :mine and length(@my_teams) == 1}>
+            · {Enum.map_join(@my_teams, ", ", & &1.name)}
+          </span>
         </p>
       </div>
     </div>
@@ -50,6 +53,33 @@
         placeholder={gettext("Search by title, description or ID…")}
         class="w-full bg-transparent text-[12.5px] text-base-content placeholder:text-base-content/40 outline-none"
       />
+    </div>
+
+    <%!-- MyBoardTeams remembers the selection so the Boards card reopens it. --%>
+    <div
+      :if={@live_action == :mine and length(@my_teams) > 1}
+      id="my-board-teams"
+      class="flex gap-1.5 flex-wrap"
+      phx-hook="MyBoardTeams"
+      data-teams={@teams_param}
+    >
+      <% only_one? = length(@selected_team_ids) == 1 %>
+      <button
+        :for={team <- @my_teams}
+        type="button"
+        id={"my-board-team-#{team.id}"}
+        phx-click="toggle_team"
+        phx-value-team-id={team.id}
+        class={["team-chip", team.id in @selected_team_ids && "is-active"]}
+        aria-pressed={to_string(team.id in @selected_team_ids)}
+        disabled={only_one? and team.id in @selected_team_ids}
+      >
+        <.icon
+          name={if team.id in @selected_team_ids, do: "hero-check", else: "hero-plus"}
+          class="size-3"
+        />
+        {team.name}
+      </button>
     </div>
   </.form>
 
