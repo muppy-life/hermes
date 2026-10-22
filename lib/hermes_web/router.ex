@@ -96,6 +96,7 @@ defmodule HermesWeb.Router do
       live "/backlog/:id/edit", RequestLive.Edit, :edit
 
       live "/boards", KanbanLive.Index, :index
+      live "/boards/mine", KanbanLive.Board, :mine
       live "/boards/:id", KanbanLive.Board, :show
       live "/boards/:id/metrics", KanbanLive.Metrics, :index
 
