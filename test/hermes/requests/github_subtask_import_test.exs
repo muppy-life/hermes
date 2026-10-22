@@ -182,12 +182,15 @@ defmodule Hermes.Requests.GitHubSubtaskImportTest do
     alias Hermes.Requests.GitHubIssue
     alias Hermes.Services.GitHub
 
+    # Derived from the request id so the stale marker never matches it.
+    stale_marker = "[Hermes ##{request.id + 1}]"
+
     {:ok, %{number: n}} =
       InMemory.create_issue(%{
         owner: "dev-org",
         repo: "hermes-fake",
         # Simulate a stale marker from a previous (now-removed) link.
-        title: "[Hermes #99] Build login form",
+        title: "#{stale_marker} Build login form",
         body: "b",
         labels: []
       })
@@ -198,7 +201,7 @@ defmodule Hermes.Requests.GitHubSubtaskImportTest do
 
     # The stale marker is replaced, not stacked.
     assert title == "[Hermes ##{request.id}] Build login form"
-    refute title =~ "[Hermes #99]"
+    refute title =~ stale_marker
 
     # Re-prefixing for the same request is a no-op (idempotent).
     issue = %GitHubIssue{owner: "dev-org", repo: "hermes-fake", number: n}
