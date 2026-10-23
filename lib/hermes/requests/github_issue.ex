@@ -56,9 +56,7 @@ defmodule Hermes.Requests.GitHubIssue do
     :project_status,
     :last_sync_source,
     :last_sync_at,
-    :link_comment_id,
-    :body_hash,
-    :pending_body_hash
+    :link_comment_id
   ]
 
   def changeset(github_issue, attrs) do

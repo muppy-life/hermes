@@ -936,7 +936,7 @@ defmodule Hermes.Requests do
 
   defp push_github_issue_body(%GitHubIssue{} = issue, %Request{} = request) do
     hash = request |> GitHub.render_body() |> GitHub.body_hash()
-    issue = issue |> GitHubIssue.changeset(%{pending_body_hash: hash}) |> Repo.update!()
+    issue = issue |> Ecto.Changeset.change(pending_body_hash: hash) |> Repo.update!()
 
     issue
     |> GitHub.update_issue(request)
@@ -947,7 +947,7 @@ defmodule Hermes.Requests do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     issue
-    |> GitHubIssue.changeset(Map.put(attrs, :last_synced_at, now))
+    |> Ecto.Changeset.change(Map.put(attrs, :last_synced_at, now))
     |> Repo.update()
   end
 
@@ -1170,8 +1170,11 @@ defmodule Hermes.Requests do
   end
 
   defp insert_github_issue(request_id, attrs) do
+    # Set by Hermes from the body it wrote, never cast from attrs.
+    {body_hash, attrs} = Map.pop(attrs, :body_hash)
+
     result =
-      %GitHubIssue{}
+      %GitHubIssue{body_hash: body_hash}
       |> GitHubIssue.changeset(
         Map.merge(attrs, %{
           request_id: request_id,
