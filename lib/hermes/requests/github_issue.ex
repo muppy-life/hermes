@@ -34,6 +34,11 @@ defmodule Hermes.Requests.GitHubIssue do
     # recognizer; this id is the primary delete key.
     field :link_comment_id, :integer
 
+    # SHA-256 of the last body Hermes wrote to the issue. A sync only
+    # overwrites the body while GitHub still holds that exact text, so manual
+    # edits made on GitHub survive. Nil for links that predate this field.
+    field :body_hash, :string
+
     belongs_to :request, Hermes.Requests.Request
 
     timestamps(type: :utc_datetime)
@@ -47,7 +52,8 @@ defmodule Hermes.Requests.GitHubIssue do
     :project_status,
     :last_sync_source,
     :last_sync_at,
-    :link_comment_id
+    :link_comment_id,
+    :body_hash
   ]
 
   def changeset(github_issue, attrs) do

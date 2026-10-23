@@ -451,8 +451,8 @@ defmodule Hermes.Requests do
         :ok
 
       %GitHubIssue{} = issue ->
-        # Re-issue an update so labels (including new Epic label) sync
-        GitHub.update_issue(issue, annotate_epic(parent))
+        # Labels only: rewriting the body here would wipe edits made on GitHub
+        GitHub.update_labels(issue, annotate_epic(parent))
         :ok
     end
   end
@@ -999,14 +999,15 @@ defmodule Hermes.Requests do
 
       true ->
         case GitHub.create_issue(annotate_epic(request), opts) do
-          {:ok, %{owner: owner, repo: repo, number: number, url: url}} ->
+          {:ok, %{owner: owner, repo: repo, number: number, url: url, body_hash: body_hash}} ->
             with {:ok, issue} <-
                    insert_github_issue(request.id, %{
                      owner: owner,
                      repo: repo,
                      number: number,
                      url: url,
-                     state: "open"
+                     state: "open",
+                     body_hash: body_hash
                    }) do
               issue = maybe_post_link_comment(issue, request)
               cascade_subtasks_to_github(request, issue, opts)
@@ -1255,13 +1256,14 @@ defmodule Hermes.Requests do
 
       true ->
         case GitHub.create_issue(subtask, opts) do
-          {:ok, %{owner: o, repo: r, number: n, url: u}} ->
+          {:ok, %{owner: o, repo: r, number: n, url: u, body_hash: h}} ->
             case insert_github_issue(subtask.id, %{
                    owner: o,
                    repo: r,
                    number: n,
                    url: u,
-                   state: "open"
+                   state: "open",
+                   body_hash: h
                  }) do
               {:ok, child_issue} ->
                 attach_sub_issue(parent_issue, child_issue)

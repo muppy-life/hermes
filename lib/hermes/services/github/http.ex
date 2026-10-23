@@ -25,25 +25,28 @@ defmodule Hermes.Services.GitHub.HTTP do
   end
 
   @impl true
-  def update_issue(%{
-        owner: owner,
-        repo: repo,
-        number: number,
-        title: title,
-        body: body,
-        labels: labels
-      }) do
-    patch("/repos/#{owner}/#{repo}/issues/#{number}", %{
-      "title" => title,
-      "body" => body,
-      "labels" => labels
-    })
+  def update_issue(
+        %{owner: owner, repo: repo, number: number, title: title, labels: labels} = payload
+      ) do
+    fields =
+      case payload do
+        %{body: body} -> %{"title" => title, "body" => body, "labels" => labels}
+        _ -> %{"title" => title, "labels" => labels}
+      end
+
+    patch("/repos/#{owner}/#{repo}/issues/#{number}", fields)
   end
 
   @impl true
   def set_issue_title(%{owner: owner, repo: repo, number: number}, title)
       when is_binary(title) do
     patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"title" => title})
+  end
+
+  @impl true
+  def set_issue_labels(%{owner: owner, repo: repo, number: number}, labels)
+      when is_list(labels) do
+    patch("/repos/#{owner}/#{repo}/issues/#{number}", %{"labels" => labels})
   end
 
   @impl true
@@ -80,7 +83,14 @@ defmodule Hermes.Services.GitHub.HTTP do
   def get_issue(owner, repo, number) when is_integer(number) do
     case get("/repos/#{owner}/#{repo}/issues/#{number}") do
       {:ok, %{"number" => n, "html_url" => url, "state" => state} = issue} ->
-        {:ok, %{number: n, url: url, state: state, title: Map.get(issue, "title", "")}}
+        {:ok,
+         %{
+           number: n,
+           url: url,
+           state: state,
+           title: Map.get(issue, "title", ""),
+           body: Map.get(issue, "body") || ""
+         }}
 
       {:ok, other} ->
         {:error, {:unexpected_payload, other}}

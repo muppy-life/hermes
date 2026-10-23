@@ -16,13 +16,14 @@ defmodule Hermes.Services.GitHub.Adapter do
           body: String.t(),
           labels: [String.t()]
         }
+  # `body` is omitted when the issue body must be left untouched.
   @type update_payload :: %{
-          owner: String.t(),
-          repo: String.t(),
-          number: pos_integer(),
-          title: String.t(),
-          body: String.t(),
-          labels: [String.t()]
+          required(:owner) => String.t(),
+          required(:repo) => String.t(),
+          required(:number) => pos_integer(),
+          required(:title) => String.t(),
+          optional(:body) => String.t(),
+          required(:labels) => [String.t()]
         }
 
   @callback create_issue(create_payload) ::
@@ -34,6 +35,11 @@ defmodule Hermes.Services.GitHub.Adapter do
   Updates only the issue title, leaving body and labels untouched.
   """
   @callback set_issue_title(issue_ref, String.t()) :: {:ok, map()} | {:error, term()}
+
+  @doc """
+  Replaces only the issue labels, leaving title and body untouched.
+  """
+  @callback set_issue_labels(issue_ref, [String.t()]) :: {:ok, map()} | {:error, term()}
 
   @type close_reason :: :completed | :not_planned
 
@@ -60,7 +66,8 @@ defmodule Hermes.Services.GitHub.Adapter do
                  number: pos_integer(),
                  url: String.t(),
                  state: String.t(),
-                 title: String.t()
+                 title: String.t(),
+                 body: String.t()
                }}
               | {:error, term()}
 

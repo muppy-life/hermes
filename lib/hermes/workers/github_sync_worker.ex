@@ -111,16 +111,21 @@ defmodule Hermes.Workers.GitHubSyncWorker do
   end
 
   defp wrap(result, request \\ nil)
+  defp wrap({:ok, %{body_hash: hash}}, request), do: touch_last_synced(request, body_hash: hash)
   defp wrap({:ok, _}, request), do: touch_last_synced(request)
   defp wrap({:error, reason}, _), do: {:error, inspect(reason)}
 
-  defp touch_last_synced(nil), do: :ok
+  defp touch_last_synced(request, changes \\ [])
 
-  defp touch_last_synced(%{github_issue: nil}), do: :ok
+  defp touch_last_synced(nil, _changes), do: :ok
 
-  defp touch_last_synced(%{github_issue: %GitHubIssue{} = issue}) do
+  defp touch_last_synced(%{github_issue: nil}, _changes), do: :ok
+
+  defp touch_last_synced(%{github_issue: %GitHubIssue{} = issue}, changes) do
     issue
-    |> Ecto.Changeset.change(last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Ecto.Changeset.change(
+      Keyword.put(changes, :last_synced_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    )
     |> Repo.update()
 
     :ok
