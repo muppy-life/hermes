@@ -374,41 +374,10 @@ const Hooks = {
 
       this.el.addEventListener('scroll', this.updateIndicators)
 
-      // A card list that scrolls vertically swallows the wheel when the pointer is
-      // over it. Translate a wheel gesture into board panning whenever the column
-      // underneath cannot use it: either the gesture is mostly horizontal, or it is
-      // vertical and that list is already at the end it is being pushed toward.
-      // deltaMode 1 reports lines and 2 reports pages; treating either as pixels
-      // would pan the board a few px per notch while preventDefault() cancels the
-      // native scroll, so convert to pixels first.
-      const LINE_HEIGHT = 16
-      this.wheelPixels = (value, mode) => {
-        if (mode === 1) return value * LINE_HEIGHT
-        if (mode === 2) return value * this.el.clientWidth
-        return value
-      }
-
-      this.onWheel = (e) => {
-        if (!this.canScroll() || e.ctrlKey) return
-
-        const horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY)
-        const delta = this.wheelPixels(horizontal ? e.deltaX : e.deltaY, e.deltaMode)
-
-        if (!horizontal) {
-          const list = e.target.closest('.kanban-cards-area')
-          if (list && list.scrollHeight - list.clientHeight > 4) {
-            const atTop = list.scrollTop <= 0
-            const atBottom = list.scrollTop >= list.scrollHeight - list.clientHeight - 1
-            // The column can still absorb this gesture, so leave it alone.
-            if (!((delta < 0 && atTop) || (delta > 0 && atBottom))) return
-          }
-        }
-
-        if (delta === 0) return
-        e.preventDefault()
-        this.el.scrollLeft += delta
-      }
-      this.el.addEventListener('wheel', this.onWheel, {passive: false})
+      // No wheel handler on purpose: a vertical wheel must scroll the page, never
+      // pan the board sideways. Horizontal gestures (trackpad swipe, Shift+wheel)
+      // reach the board natively because columns contain only their Y overscroll,
+      // and the arrow buttons cover plain mice.
 
       // Re-evaluate when the board or the viewport resizes: adding a column, or
       // narrowing the window, flips whether there is anything to scroll at all.
@@ -502,7 +471,6 @@ const Hooks = {
     },
     destroyed() {
       this.el.removeEventListener('scroll', this.updateIndicators)
-      this.el.removeEventListener('wheel', this.onWheel)
       if (this.resizeObserver) this.resizeObserver.disconnect()
       for (const [indicator, handler] of this.arrowHandlers || []) {
         indicator.removeEventListener('click', handler)
