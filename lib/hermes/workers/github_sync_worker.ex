@@ -40,7 +40,7 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     cond do
       is_nil(request) -> {:discard, "Request not found"}
       is_nil(request.github_issue) -> :ok
-      true -> wrap(GitHub.update_issue(request.github_issue, request), request)
+      true -> wrap(Requests.push_github_issue_content(request))
     end
   end
 

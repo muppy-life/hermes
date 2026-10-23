@@ -8,6 +8,7 @@ defmodule Hermes.Services.GitHub.InMemory do
     * `list_issues/0`
     * `get/3`
     * `set_state/4`
+    * `set_body/4`
     * `add_comment/4`
     * `reset/0`
 
@@ -90,16 +91,11 @@ defmodule Hermes.Services.GitHub.InMemory do
   end
 
   @impl true
-  def update_issue(%{
-        owner: owner,
-        repo: repo,
-        number: number,
-        title: title,
-        body: body,
-        labels: labels
-      }) do
+  def update_issue(%{owner: owner, repo: repo, number: number} = payload) do
     mutate(owner, repo, number, fn issue ->
-      %{issue | title: title, body: body, labels: labels, updated_at: DateTime.utc_now()}
+      issue
+      |> Map.merge(Map.take(payload, [:title, :body, :labels]))
+      |> Map.put(:updated_at, DateTime.utc_now())
     end)
   end
 
@@ -108,6 +104,14 @@ defmodule Hermes.Services.GitHub.InMemory do
       when is_binary(title) do
     mutate(owner, repo, number, fn issue ->
       %{issue | title: title, updated_at: DateTime.utc_now()}
+    end)
+  end
+
+  @impl true
+  def set_issue_labels(%{owner: owner, repo: repo, number: number}, labels)
+      when is_list(labels) do
+    mutate(owner, repo, number, fn issue ->
+      %{issue | labels: labels, updated_at: DateTime.utc_now()}
     end)
   end
 
@@ -174,7 +178,14 @@ defmodule Hermes.Services.GitHub.InMemory do
         {:error, {:http_error, 404, %{"message" => "Not Found"}}}
 
       issue ->
-        {:ok, %{number: issue.number, url: issue.url, state: issue.state, title: issue.title}}
+        {:ok,
+         %{
+           number: issue.number,
+           url: issue.url,
+           state: issue.state,
+           title: issue.title,
+           body: issue.body || ""
+         }}
     end
   end
 
@@ -358,6 +369,13 @@ defmodule Hermes.Services.GitHub.InMemory do
   def set_state(owner, repo, number, state) when state in ["open", "closed"] do
     mutate(owner, repo, number, fn issue ->
       %{issue | state: state, updated_at: DateTime.utc_now()}
+    end)
+  end
+
+  @doc "Overwrites an issue body, as a manual edit on GitHub would."
+  def set_body(owner, repo, number, body) when is_binary(body) do
+    mutate(owner, repo, number, fn issue ->
+      %{issue | body: body, updated_at: DateTime.utc_now()}
     end)
   end
 

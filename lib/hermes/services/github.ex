@@ -59,11 +59,13 @@ defmodule Hermes.Services.GitHub do
           "GitHub.create_issue request_id=#{request.id} target=#{owner}/#{repo} adapter=#{inspect(adapter())}"
         )
 
+        body = render_body(request)
+
         payload = %{
           owner: owner,
           repo: repo,
           title: issue_title(request),
-          body: render_body(request),
+          body: body,
           labels: labels_for(request)
         }
 
@@ -73,7 +75,8 @@ defmodule Hermes.Services.GitHub do
               "GitHub.create_issue ok request_id=#{request.id} issue=#{owner}/#{repo}##{number}"
             )
 
-            {:ok, %{owner: owner, repo: repo, number: number, url: url}}
+            {:ok,
+             %{owner: owner, repo: repo, number: number, url: url, body_hash: body_hash(body)}}
 
           {:error, reason} = err ->
             Logger.warning(
@@ -93,21 +96,64 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
-  Updates the linked GitHub issue's title and body.
+  Updates the linked GitHub issue's title and labels, and its body unless
+  `body: false` is passed (used to keep a body edited on GitHub).
+
+  Whether the body may be overwritten is decided by the caller, see
+  `Hermes.Requests.push_github_issue_content/1`.
   """
-  def update_issue(%GitHubIssue{owner: owner, repo: repo, number: number}, %Request{} = request) do
+  def update_issue(
+        %GitHubIssue{owner: owner, repo: repo, number: number},
+        %Request{} = request,
+        opts \\ []
+      ) do
     Logger.info("GitHub.update_issue request_id=#{request.id} issue=#{owner}/#{repo}##{number}")
 
-    %{
+    payload = %{
       owner: owner,
       repo: repo,
       number: number,
       title: issue_title(request),
-      body: render_body(request),
       labels: labels_for(request)
     }
+
+    payload =
+      if Keyword.get(opts, :body, true),
+        do: Map.put(payload, :body, render_body(request)),
+        else: payload
+
+    payload
     |> adapter().update_issue()
     |> log_result("update_issue", "#{owner}/#{repo}##{number}")
+  end
+
+  @doc """
+  Replaces only the issue labels, leaving title and body untouched.
+  """
+  def update_labels(%GitHubIssue{owner: owner, repo: repo, number: number}, %Request{} = request) do
+    Logger.info("GitHub.update_labels request_id=#{request.id} issue=#{owner}/#{repo}##{number}")
+
+    %{owner: owner, repo: repo, number: number}
+    |> adapter().set_issue_labels(labels_for(request))
+    |> log_result("update_labels", "#{owner}/#{repo}##{number}")
+  end
+
+  @doc """
+  Hash used to recognise the body Hermes last wrote to an issue. Line endings
+  and surrounding whitespace are normalised so GitHub's storage doesn't count
+  as an edit.
+  """
+  def body_hash(body) when is_binary(body) do
+    normalized = body |> String.replace("\r\n", "\n") |> String.trim()
+    :sha256 |> :crypto.hash(normalized) |> Base.encode16(case: :lower)
+  end
+
+  @doc """
+  Whether `body` still carries the sync footer `render_body/1` appends for
+  request `id`.
+  """
+  def synced_footer?(body, id) when is_binary(body) do
+    String.contains?(body, "_Synced from Hermes request [##{id}]")
   end
 
   @doc """
@@ -256,9 +302,10 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
-  Fetches a single issue. Used when linking an existing issue.
+  Fetches a single issue. Used when linking an existing issue and to read the
+  current body before a sync.
 
-  Returns `{:ok, %{number, url, state}}`.
+  Returns `{:ok, %{number, url, state, title, body}}`.
   """
   def get_issue(owner, repo, number) when is_integer(number) do
     Logger.info("GitHub.get_issue issue=#{owner}/#{repo}##{number}")
