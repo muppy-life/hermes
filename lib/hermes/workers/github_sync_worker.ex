@@ -44,7 +44,9 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     end
   end
 
-  defp handle("project_move", %{"request_id" => id, "status" => hermes_status}) do
+  # Moves to the request's saved status, not the enqueued one: a status change
+  # made while the issue was still unlinked never queued its own move.
+  defp handle("project_move", %{"request_id" => id}) do
     request = get_request(id)
 
     cond do
@@ -66,10 +68,10 @@ defmodule Hermes.Workers.GitHubSyncWorker do
         :ok
 
       true ->
-        case Repo.get_by(GitHubStatusMapping, hermes_status: hermes_status) do
+        case Repo.get_by(GitHubStatusMapping, hermes_status: request.status) do
           nil ->
             Logger.warning(
-              "GitHubSyncWorker project_move skipped: no mapping for hermes_status=#{hermes_status}"
+              "GitHubSyncWorker project_move skipped: no mapping for hermes_status=#{request.status}"
             )
 
             :ok
