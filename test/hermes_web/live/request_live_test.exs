@@ -384,6 +384,7 @@ defmodule HermesWeb.RequestLiveTest do
 
     test "changing the team reloads its members as reporters", %{
       conn: conn,
+      teammate: teammate,
       other_team: other_team,
       member: member,
       request: request
@@ -392,13 +393,19 @@ defmodule HermesWeb.RequestLiveTest do
 
       view |> element(~s|button[phx-click="open_edit_modal"]|) |> render_click()
 
-      html =
-        view
-        |> form("#edit-request-form", request: %{requesting_team_id: other_team.id})
-        |> render_change()
+      view
+      |> form("#edit-request-form", request: %{requesting_team_id: other_team.id})
+      |> render_change()
 
-      assert html =~ "Mary Vega (member@example.com)"
-      refute html =~ "teammate@example.com"
+      reporter_select = ~s|#edit-request-form select[name="request[created_by_id]"]|
+
+      assert has_element?(
+               view,
+               ~s|#{reporter_select} option[value="#{member.id}"]|,
+               "Mary Vega (member@example.com)"
+             )
+
+      refute has_element?(view, ~s|#{reporter_select} option[value="#{teammate.id}"]|)
 
       view
       |> form("#edit-request-form", request: %{requesting_team_id: other_team.id})
