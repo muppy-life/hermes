@@ -327,4 +327,110 @@ defmodule HermesWeb.RequestLiveTest do
       assert request.requesting_team_id == user.team_id
     end
   end
+
+  describe "edit request reporter" do
+    setup %{user: user} do
+      {:ok, teammate} =
+        Accounts.create_user(%{
+          name: "Tom",
+          surname: "Mate",
+          email: "teammate@example.com",
+          hashed_password: :crypto.hash(:sha256, "secret123") |> Base.encode16(case: :lower),
+          role: "team_member",
+          team_id: user.team_id
+        })
+
+      {:ok, other_team} = Accounts.create_team(%{name: "Other Team", description: "d"})
+
+      {:ok, member} =
+        Accounts.create_user(%{
+          name: "Mary",
+          surname: "Vega",
+          email: "member@example.com",
+          hashed_password: :crypto.hash(:sha256, "secret123") |> Base.encode16(case: :lower),
+          role: "team_member",
+          team_id: other_team.id
+        })
+
+      {:ok, request} =
+        Hermes.Requests.create_request(%{
+          "title" => "Reporter request",
+          "priority" => 2,
+          "requesting_team_id" => user.team_id,
+          "created_by_id" => user.id
+        })
+
+      %{teammate: teammate, other_team: other_team, member: member, request: request}
+    end
+
+    test "changes the reporter within the same team", %{
+      conn: conn,
+      user: user,
+      teammate: teammate,
+      request: request
+    } do
+      {:ok, view, _html} = live(conn, ~p"/backlog/#{request.id}")
+
+      view |> element(~s|button[phx-click="open_edit_modal"]|) |> render_click()
+
+      view
+      |> form("#edit-request-form",
+        request: %{requesting_team_id: user.team_id, created_by_id: teammate.id}
+      )
+      |> render_submit()
+
+      assert Hermes.Repo.get!(Request, request.id).created_by_id == teammate.id
+    end
+
+    test "changing the team reloads its members as reporters", %{
+      conn: conn,
+      teammate: teammate,
+      other_team: other_team,
+      member: member,
+      request: request
+    } do
+      {:ok, view, _html} = live(conn, ~p"/backlog/#{request.id}")
+
+      view |> element(~s|button[phx-click="open_edit_modal"]|) |> render_click()
+
+      view
+      |> form("#edit-request-form", request: %{requesting_team_id: other_team.id})
+      |> render_change()
+
+      reporter_select = ~s|#edit-request-form select[name="request[created_by_id]"]|
+
+      assert has_element?(
+               view,
+               ~s|#{reporter_select} option[value="#{member.id}"]|,
+               "Mary Vega (member@example.com)"
+             )
+
+      refute has_element?(view, ~s|#{reporter_select} option[value="#{teammate.id}"]|)
+
+      view
+      |> form("#edit-request-form", request: %{requesting_team_id: other_team.id})
+      |> render_submit(%{request: %{created_by_id: member.id}})
+
+      request = Hermes.Repo.get!(Request, request.id)
+      assert request.requesting_team_id == other_team.id
+      assert request.created_by_id == member.id
+    end
+
+    test "a reporter outside the requesting team is not saved", %{
+      conn: conn,
+      user: user,
+      member: member,
+      request: request
+    } do
+      {:ok, view, _html} = live(conn, ~p"/backlog/#{request.id}")
+
+      view |> element(~s|button[phx-click="open_edit_modal"]|) |> render_click()
+
+      view
+      |> form("#edit-request-form")
+      |> render_submit(%{request: %{created_by_id: member.id}})
+
+      assert Hermes.Repo.get!(Request, request.id).created_by_id == user.id
+    end
+  end
 end
