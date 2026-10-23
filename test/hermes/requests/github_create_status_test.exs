@@ -5,6 +5,7 @@ defmodule Hermes.Requests.GitHubCreateStatusTest do
   alias Hermes.Repo
   alias Hermes.Requests
   alias Hermes.Requests.GitHubStatusMapping
+  alias Hermes.Requests.Request
   alias Hermes.Services.GitHub.InMemory
 
   setup do
@@ -86,6 +87,20 @@ defmodule Hermes.Requests.GitHubCreateStatusTest do
 
     issue = Requests.get_request_with_github_issue(request.id).github_issue
     assert issue.project_status == "In progress"
+  end
+
+  test "uses the saved status when it changed while the issue was being created", %{
+    request: request
+  } do
+    enable_in_memory_github()
+
+    # Simulates a concurrent status change landing after the request struct
+    # was loaded but before the issue link was saved.
+    Repo.update_all(from(r in Request, where: r.id == ^request.id), set: [status: "new"])
+
+    assert {:ok, issue} = Requests.create_github_issue_for_request(request)
+
+    assert project_status_option(issue) == "OPT_NEW"
   end
 
   test "cascaded subtask issues get their own status on the project", %{
