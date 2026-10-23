@@ -4,6 +4,7 @@ defmodule HermesWeb.RequestLive.Show do
   require Logger
 
   alias Hermes.Accounts
+  alias Hermes.Accounts.User
   alias Hermes.Requests
   alias HermesWeb.RequestLive.UploadErrors
 
@@ -88,6 +89,7 @@ defmodule HermesWeb.RequestLive.Show do
      |> assign(:solution_tab, "goal")
      |> assign(:diagram_feature_enabled, Requests.diagram_generation_enabled?())
      |> assign(:teams, Accounts.list_teams())
+     |> assign(:reporter_options, reporter_options(request, request.requesting_team_id))
      |> assign(:mentionable_users, mentionable_users)
      |> assign(:github_enabled, Requests.github_integration_enabled?())
      |> assign(:github_link_form, to_form(%{"reference" => ""}, as: :github_link))
@@ -114,7 +116,13 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   def handle_event("close_edit_modal", _params, socket) do
-    {:noreply, assign(socket, :show_edit_modal, false)}
+    request = socket.assigns.request
+
+    {:noreply,
+     socket
+     |> assign(:show_edit_modal, false)
+     |> assign(:form, to_form(Requests.change_request(request)))
+     |> assign(:reporter_options, reporter_options(request, request.requesting_team_id))}
   end
 
   def handle_event("open_delete_modal", _params, socket) do
@@ -126,13 +134,19 @@ defmodule HermesWeb.RequestLive.Show do
   end
 
   def handle_event("validate", %{"request" => request_params}, socket) do
+    {request_params, options} = put_reporter(request_params, socket.assigns.request)
     changeset = Requests.change_request(socket.assigns.request, request_params)
-    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+
+    {:noreply,
+     socket
+     |> assign(:reporter_options, options)
+     |> assign(form: to_form(changeset, action: :validate))}
   end
 
   def handle_event("validate", _params, socket), do: {:noreply, socket}
 
   def handle_event("save", %{"request" => request_params}, socket) do
+    {request_params, _options} = put_reporter(request_params, socket.assigns.request)
     current_user = socket.assigns[:current_user]
     user_id = if current_user, do: current_user.id, else: nil
 
@@ -154,6 +168,10 @@ defmodule HermesWeb.RequestLive.Show do
              |> assign(:changes, changes)
              |> assign(:show_edit_modal, false)
              |> assign(:form, to_form(Requests.change_request(updated_request)))
+             |> assign(
+               :reporter_options,
+               reporter_options(updated_request, updated_request.requesting_team_id)
+             )
              |> put_flash(:info, "Request updated successfully")}
         end
 
@@ -715,6 +733,59 @@ defmodule HermesWeb.RequestLive.Show do
 
   # The request can disappear between a mutation and its reload (e.g. deleted
   # from another session); leave the page instead of rendering a nil request.
+  # The reporter must be a member of the requesting team. Picking another team
+  # reloads its members and, when the current pick is not one of them, moves
+  # the reporter to the first member. A stale or forged id is replaced the same
+  # way on save rather than reattributing the request to an outsider.
+  defp put_reporter(params, request) do
+    options = reporter_options(request, params["requesting_team_id"])
+    ids = Enum.map(options, & &1.id)
+    picked = parse_id(params["created_by_id"])
+
+    reporter_id =
+      cond do
+        picked in ids -> picked
+        request.created_by_id in ids -> request.created_by_id
+        true -> hd(ids)
+      end
+
+    {Map.put(params, "created_by_id", reporter_id), options}
+  end
+
+  # Members of the team, plus the current reporter while the team is unchanged
+  # so an existing attribution is never dropped silently. A team without
+  # members keeps the current reporter.
+  defp reporter_options(request, team_id) do
+    team_id = parse_id(team_id)
+
+    members =
+      if team_id,
+        do: Accounts.list_users_by_team(team_id),
+        else: []
+
+    members =
+      if team_id == request.requesting_team_id or members == [],
+        do: [request.created_by | members],
+        else: members
+
+    members
+    |> Enum.uniq_by(& &1.id)
+    |> Enum.sort_by(&String.downcase(User.display_name(&1)))
+  end
+
+  defp parse_id(id) when is_integer(id), do: id
+
+  defp parse_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp parse_id(_), do: nil
+
+  defp reporter_option_label(user), do: "#{User.display_name(user)} (#{user.email})"
+
   defp request_gone(socket) do
     socket
     |> put_flash(:error, "Request not found")

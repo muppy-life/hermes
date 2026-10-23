@@ -787,6 +787,12 @@ aging = aging_days(@request) %>
             options={Enum.map(@teams, &{&1.name, &1.id})}
           />
           <.input
+            field={@form[:created_by_id]}
+            type="select"
+            label={gettext("Reporter")}
+            options={Enum.map(@reporter_options, &{reporter_option_label(&1), &1.id})}
+          />
+          <.input
             field={@form[:assigned_to_team_id]}
             type="select"
             label={gettext("Assign To Team")}
