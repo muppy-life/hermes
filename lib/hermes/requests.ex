@@ -1009,6 +1009,7 @@ defmodule Hermes.Requests do
                      state: "open"
                    }) do
               issue = maybe_post_link_comment(issue, request)
+              sync_initial_project_status(request, issue)
               cascade_subtasks_to_github(request, issue, opts)
               {:ok, issue}
             end
@@ -1153,6 +1154,14 @@ defmodule Hermes.Requests do
     end
   end
 
+  # A freshly created issue lands in the project's default column; push the
+  # request's current status so the card starts where Hermes has it.
+  defp sync_initial_project_status(%Request{}, %GitHubIssue{project_item_id: nil}), do: :ok
+
+  defp sync_initial_project_status(%Request{} = request, %GitHubIssue{}) do
+    trigger_github_sync(request, "project_move", %{status: request.status})
+  end
+
   defp ensure_project_item(node_id) do
     case GitHub.find_project_item(node_id) do
       {:ok, item_id} when is_binary(item_id) ->
@@ -1264,6 +1273,7 @@ defmodule Hermes.Requests do
                    state: "open"
                  }) do
               {:ok, child_issue} ->
+                sync_initial_project_status(subtask, child_issue)
                 attach_sub_issue(parent_issue, child_issue)
 
               {:error, reason} ->
