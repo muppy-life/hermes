@@ -902,6 +902,67 @@ defmodule Hermes.Requests do
     Ecto.Query.CastError -> nil
   end
 
+  @doc """
+  Pushes a request's title, labels and body to its linked GitHub issue.
+
+  The body is only overwritten while GitHub still holds a body Hermes wrote,
+  so edits made by hand on GitHub are kept. The link row stays locked from
+  reading the issue until its hashes are saved, which keeps concurrent syncs
+  of the same request from leaving a hash GitHub no longer matches. The hash
+  of the body about to be written is saved as pending first, so a retry
+  after a write whose response was lost still recognises it.
+  """
+  def push_github_issue_content(%Request{id: id} = request) do
+    Repo.transaction(fn ->
+      issue = Repo.one!(from i in GitHubIssue, where: i.request_id == ^id, lock: "FOR UPDATE")
+
+      with {:ok, %{body: current}} <- GitHub.get_issue(issue.owner, issue.repo, issue.number) do
+        if hermes_owned_body?(issue, current) do
+          push_github_issue_body(issue, request)
+        else
+          Logger.info("GitHub issue body edited on GitHub, keeping it request_id=#{id}")
+
+          issue
+          |> GitHub.update_issue(request, body: false)
+          |> record_github_push(issue, %{})
+        end
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, _} = err -> err
+    end
+  end
+
+  defp push_github_issue_body(%GitHubIssue{} = issue, %Request{} = request) do
+    hash = request |> GitHub.render_body() |> GitHub.body_hash()
+    issue = issue |> GitHubIssue.changeset(%{pending_body_hash: hash}) |> Repo.update!()
+
+    issue
+    |> GitHub.update_issue(request)
+    |> record_github_push(issue, %{body_hash: hash, pending_body_hash: nil})
+  end
+
+  defp record_github_push({:ok, _}, %GitHubIssue{} = issue, attrs) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    issue
+    |> GitHubIssue.changeset(Map.put(attrs, :last_synced_at, now))
+    |> Repo.update()
+  end
+
+  defp record_github_push({:error, _} = err, _issue, _attrs), do: err
+
+  # Links that predate `body_hash` (or were linked/imported from GitHub) have
+  # no hash: the body is Hermes-owned only while it carries the sync footer.
+  defp hermes_owned_body?(%GitHubIssue{body_hash: nil, pending_body_hash: nil} = issue, body) do
+    GitHub.synced_footer?(body, issue.request_id)
+  end
+
+  defp hermes_owned_body?(%GitHubIssue{} = issue, body) do
+    GitHub.body_hash(body) in [issue.body_hash, issue.pending_body_hash]
+  end
+
   defp trigger_github_sync(request, action, extra \\ %{}) do
     if github_integration_enabled?() do
       Map.merge(%{action: action, request_id: request.id}, extra)

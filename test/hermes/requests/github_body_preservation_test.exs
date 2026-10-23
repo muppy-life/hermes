@@ -129,6 +129,28 @@ defmodule Hermes.Requests.GitHubBodyPreservationTest do
       assert gh.title =~ "Renamed"
     end
 
+    test "a retry recognises a body whose write response was lost", %{
+      request: request,
+      user: user,
+      issue: issue
+    } do
+      lost_body = "Body Hermes wrote but never got confirmed"
+      InMemory.set_body(issue.owner, issue.repo, issue.number, lost_body)
+
+      issue
+      |> Ecto.Changeset.change(pending_body_hash: GitHub.body_hash(lost_body))
+      |> Repo.update!()
+
+      {:ok, _} = Requests.update_request(request, %{"description" => "New text"}, user.id)
+
+      gh = InMemory.get(issue.owner, issue.repo, issue.number)
+      assert gh.body =~ "New text"
+
+      synced = Repo.get!(GitHubIssue, issue.id)
+      assert synced.body_hash == GitHub.body_hash(gh.body)
+      assert is_nil(synced.pending_body_hash)
+    end
+
     test "legacy links without a hash only overwrite bodies carrying the Hermes footer", %{
       request: request,
       user: user,

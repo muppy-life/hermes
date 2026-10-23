@@ -39,6 +39,10 @@ defmodule Hermes.Requests.GitHubIssue do
     # edits made on GitHub survive. Nil for links that predate this field.
     field :body_hash, :string
 
+    # Hash of a body write that was sent but not confirmed yet. A retry after
+    # a lost response still recognises that body as Hermes'.
+    field :pending_body_hash, :string
+
     belongs_to :request, Hermes.Requests.Request
 
     timestamps(type: :utc_datetime)
@@ -53,7 +57,8 @@ defmodule Hermes.Requests.GitHubIssue do
     :last_sync_source,
     :last_sync_at,
     :link_comment_id,
-    :body_hash
+    :body_hash,
+    :pending_body_hash
   ]
 
   def changeset(github_issue, attrs) do

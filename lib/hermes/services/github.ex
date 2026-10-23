@@ -96,47 +96,35 @@ defmodule Hermes.Services.GitHub do
   end
 
   @doc """
-  Updates the linked GitHub issue's title, body and labels.
+  Updates the linked GitHub issue's title and labels, and its body unless
+  `body: false` is passed (used to keep a body edited on GitHub).
 
-  The body is only overwritten while GitHub still holds the last body Hermes
-  wrote; if someone edited it on GitHub it is kept as is.
-
-  Returns `{:ok, %{body_hash: hash}}` with the hash of the body GitHub now
-  holds as Hermes-owned (unchanged when the body was kept).
+  Whether the body may be overwritten is decided by the caller, see
+  `Hermes.Requests.push_github_issue_content/1`.
   """
   def update_issue(
-        %GitHubIssue{owner: owner, repo: repo, number: number} = issue,
-        %Request{} = request
+        %GitHubIssue{owner: owner, repo: repo, number: number},
+        %Request{} = request,
+        opts \\ []
       ) do
     Logger.info("GitHub.update_issue request_id=#{request.id} issue=#{owner}/#{repo}##{number}")
-    ref = "#{owner}/#{repo}##{number}"
 
-    with {:ok, current} <- get_issue(owner, repo, number) do
-      payload = %{
-        owner: owner,
-        repo: repo,
-        number: number,
-        title: issue_title(request),
-        labels: labels_for(request)
-      }
+    payload = %{
+      owner: owner,
+      repo: repo,
+      number: number,
+      title: issue_title(request),
+      labels: labels_for(request)
+    }
 
-      if hermes_owned_body?(issue, current) do
-        body = render_body(request)
+    payload =
+      if Keyword.get(opts, :body, true),
+        do: Map.put(payload, :body, render_body(request)),
+        else: payload
 
-        payload
-        |> Map.put(:body, body)
-        |> adapter().update_issue()
-        |> log_result("update_issue", ref)
-        |> with_body_hash(body_hash(body))
-      else
-        Logger.info("GitHub.update_issue keeping body edited on GitHub issue=#{ref}")
-
-        payload
-        |> adapter().update_issue()
-        |> log_result("update_issue", ref)
-        |> with_body_hash(issue.body_hash)
-      end
-    end
+    payload
+    |> adapter().update_issue()
+    |> log_result("update_issue", "#{owner}/#{repo}##{number}")
   end
 
   @doc """
@@ -160,18 +148,13 @@ defmodule Hermes.Services.GitHub do
     :sha256 |> :crypto.hash(normalized) |> Base.encode16(case: :lower)
   end
 
-  # Links created before `body_hash` existed have no hash: the body is
-  # Hermes-owned only while it still carries this request's sync footer.
-  defp hermes_owned_body?(%GitHubIssue{body_hash: nil, request_id: id}, current) do
-    String.contains?(current.body, "_Synced from Hermes request [##{id}]")
+  @doc """
+  Whether `body` still carries the sync footer `render_body/1` appends for
+  request `id`.
+  """
+  def synced_footer?(body, id) when is_binary(body) do
+    String.contains?(body, "_Synced from Hermes request [##{id}]")
   end
-
-  defp hermes_owned_body?(%GitHubIssue{body_hash: hash}, current) do
-    body_hash(current.body) == hash
-  end
-
-  defp with_body_hash({:ok, _}, hash), do: {:ok, %{body_hash: hash}}
-  defp with_body_hash(error, _hash), do: error
 
   @doc """
   Sets the issue state. `state` is `:open` or `:closed`.

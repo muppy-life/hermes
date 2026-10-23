@@ -40,7 +40,7 @@ defmodule Hermes.Workers.GitHubSyncWorker do
     cond do
       is_nil(request) -> {:discard, "Request not found"}
       is_nil(request.github_issue) -> :ok
-      true -> wrap(GitHub.update_issue(request.github_issue, request), request)
+      true -> wrap(Requests.push_github_issue_content(request))
     end
   end
 
@@ -111,21 +111,16 @@ defmodule Hermes.Workers.GitHubSyncWorker do
   end
 
   defp wrap(result, request \\ nil)
-  defp wrap({:ok, %{body_hash: hash}}, request), do: touch_last_synced(request, body_hash: hash)
   defp wrap({:ok, _}, request), do: touch_last_synced(request)
   defp wrap({:error, reason}, _), do: {:error, inspect(reason)}
 
-  defp touch_last_synced(request, changes \\ [])
+  defp touch_last_synced(nil), do: :ok
 
-  defp touch_last_synced(nil, _changes), do: :ok
+  defp touch_last_synced(%{github_issue: nil}), do: :ok
 
-  defp touch_last_synced(%{github_issue: nil}, _changes), do: :ok
-
-  defp touch_last_synced(%{github_issue: %GitHubIssue{} = issue}, changes) do
+  defp touch_last_synced(%{github_issue: %GitHubIssue{} = issue}) do
     issue
-    |> Ecto.Changeset.change(
-      Keyword.put(changes, :last_synced_at, DateTime.utc_now() |> DateTime.truncate(:second))
-    )
+    |> Ecto.Changeset.change(last_synced_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
 
     :ok
