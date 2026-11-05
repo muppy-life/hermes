@@ -37,9 +37,14 @@ variable "instance_type" {
 }
 
 variable "instance_count" {
-  description = "Number of EC2 instances (2 for high availability with rolling deployments)"
+  description = <<-DESC
+    Number of EC2 instances. At 1 the CD rolling deploy skips deregistration
+    and swaps the container in place, so each deploy has a short window with
+    no target serving. There is also no ALB redundancy and no ASG, so
+    replacing a failed instance is manual.
+  DESC
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "key_name" {
