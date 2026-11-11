@@ -32,7 +32,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
      |> assign_new(:submitted, fn -> false end)
      |> assign_new(:created_request, fn -> nil end)
      |> allow_upload(:files,
-       accept: ~w(.jpg .jpeg .png .pdf .doc .docx .xls .xlsx .csv),
+       accept: ~w(.jpg .jpeg .png .pdf .doc .docx .xls .xlsx .csv .xml),
        max_entries: 10,
        max_file_size: @max_file_size,
        auto_upload: true
@@ -991,7 +991,7 @@ defmodule HermesWeb.RequestLive.NewRequestFormComponent do
                         {gettext("Drag files or click to upload")}
                       </div>
                       <div class="upload-text">
-                        {gettext("PNG, JPG, PDF, CSV, XLSX, DOCX · max. 15 MB")}
+                        {gettext("PNG, JPG, PDF, CSV, XLSX, DOCX, XML · max. 15 MB")}
                       </div>
                       <.live_file_input upload={@uploads.files} class="hidden" />
                     </label>

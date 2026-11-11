@@ -1465,8 +1465,8 @@ msgstr "Resumen del PM"
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:974
 #: lib/hermes_web/live/request_live/show.html.heex:344
 #, elixir-autogen, elixir-format
-msgid "PNG, JPG, PDF, CSV, XLSX, DOCX · max. 15 MB"
-msgstr "PNG, JPG, PDF, CSV, XLSX, DOCX · máx. 15 MB"
+msgid "PNG, JPG, PDF, CSV, XLSX, DOCX, XML · max. 15 MB"
+msgstr "PNG, JPG, PDF, CSV, XLSX, DOCX, XML · máx. 15 MB"
 
 #: lib/hermes_web/live/request_live/show.ex:888
 #, elixir-autogen, elixir-format
@@ -3207,5 +3207,5 @@ msgstr "Mostrar texto completo"
 
 #: lib/hermes_web/live/request_live/show.ex:825
 #, elixir-autogen, elixir-format
-msgid "Only PNG, JPG, PDF, CSV, XLS(X), DOC(X) files are allowed"
-msgstr "Solo se permiten archivos PNG, JPG, PDF, CSV, XLS(X), DOC(X)"
+msgid "Only PNG, JPG, PDF, CSV, XLS(X), DOC(X), XML files are allowed"
+msgstr "Solo se permiten archivos PNG, JPG, PDF, CSV, XLS(X), DOC(X), XML"
