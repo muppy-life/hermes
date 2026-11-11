@@ -1445,7 +1445,7 @@ msgstr ""
 #: lib/hermes_web/live/request_live/new_request_form_component.ex:974
 #: lib/hermes_web/live/request_live/show.html.heex:344
 #, elixir-autogen, elixir-format
-msgid "PNG, JPG, PDF, CSV, XLSX, DOCX · max. 15 MB"
+msgid "PNG, JPG, PDF, CSV, XLSX, DOCX, XML · max. 15 MB"
 msgstr ""
 
 #: lib/hermes_web/live/request_live/show.ex:888
@@ -3158,5 +3158,5 @@ msgstr ""
 
 #: lib/hermes_web/live/request_live/show.ex:825
 #, elixir-autogen, elixir-format
-msgid "Only PNG, JPG, PDF, CSV, XLS(X), DOC(X) files are allowed"
+msgid "Only PNG, JPG, PDF, CSV, XLS(X), DOC(X), XML files are allowed"
 msgstr ""
