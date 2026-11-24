@@ -12,18 +12,31 @@
       type="image/png"
       sizes="32x32"
       href={HermesWeb.Endpoint.static_url() <> "/favicon-32.png"}
+      data-href-light={HermesWeb.Endpoint.static_url() <> "/favicon-32.png"}
+      data-href-dark={HermesWeb.Endpoint.static_url() <> "/favicon-dark-32.png"}
     />
     <link
       rel="icon"
       type="image/png"
       sizes="16x16"
       href={HermesWeb.Endpoint.static_url() <> "/favicon-16.png"}
+      data-href-light={HermesWeb.Endpoint.static_url() <> "/favicon-16.png"}
+      data-href-dark={HermesWeb.Endpoint.static_url() <> "/favicon-dark-16.png"}
     />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
     <script>
       (() => {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+        const updateFavicon = () => {
+          const theme =
+            document.documentElement.getAttribute("data-theme") ||
+            (prefersDark.matches ? "dark" : "light");
+          document.querySelectorAll("link[rel=icon][data-href-dark]").forEach((link) => {
+            link.href = theme === "dark" ? link.dataset.hrefDark : link.dataset.hrefLight;
+          });
+        };
         const setTheme = (theme) => {
           if (theme === "system") {
             localStorage.removeItem("phx:theme");
@@ -32,10 +45,14 @@
             localStorage.setItem("phx:theme", theme);
             document.documentElement.setAttribute("data-theme", theme);
           }
+          updateFavicon();
         };
         if (!document.documentElement.hasAttribute("data-theme")) {
           setTheme(localStorage.getItem("phx:theme") || "system");
+        } else {
+          updateFavicon();
         }
+        prefersDark.addEventListener("change", updateFavicon);
         window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
         
         window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));

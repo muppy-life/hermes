@@ -18,7 +18,8 @@ defmodule HermesWeb do
   """
 
   def static_paths,
-    do: ~w(assets fonts images uploads favicon.ico favicon-16.png favicon-32.png robots.txt)
+    do:
+      ~w(assets fonts images uploads favicon.ico favicon-16.png favicon-32.png favicon-dark-16.png favicon-dark-32.png robots.txt)
 
   def router do
     quote do
